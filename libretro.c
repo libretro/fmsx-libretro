@@ -6,17 +6,35 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "MSX.h"
+#include "EMULib.h"
 
-static retro_log_printf_t log_cb;
-static retro_video_refresh_t video_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
-static retro_environment_t environ_cb;
-static retro_audio_sample_batch_t audio_batch_cb = NULL;
 
 static uint16_t* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
+
+static uint16_t XPal[80];
+static uint16_t BPal[256];
+static uint16_t XPal0;
+
+#define WIDTH  272
+#define HEIGHT 228
+#define XBuf image_buffer
+#define WBuf image_buffer
+#include "CommonMux.h"
+
+uint8_t XKeyState[20];
+#define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
+#define XKBD_RES(K) XKeyState[Keys[K][0]]|=Keys[K][1]
+
+static retro_log_printf_t log_cb = NULL;
+static retro_video_refresh_t video_cb = NULL;
+static retro_input_poll_t input_poll_cb = NULL;
+static retro_input_state_t input_state_cb = NULL;
+static retro_environment_t environ_cb = NULL;
+static retro_audio_sample_batch_t audio_batch_cb = NULL;
+static struct retro_perf_callback perf_cb = {};
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -37,10 +55,6 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->timing.fps = 60.0;
    info->timing.sample_rate = 44100.0;
 }
-
-
-static struct retro_perf_callback perf_cb;
-
 
 void retro_init(void)
 {
@@ -90,6 +104,7 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 
 void retro_reset(void)
 {
+   ResetMSX(Mode,RAMPages,VRAMPages);
 }
 
 size_t retro_serialize_size(void)
@@ -114,50 +129,6 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned a, bool b, const char * c) {}
 
-#include "MSX.h"
-#include "Help.h"
-#include "EMULib.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
-#define WIDTH       272                   /* Buffer width    */
-#define HEIGHT      228                   /* Buffer height   */
-
-/* Press/Release keys in the background KeyState */
-#define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
-#define XKBD_RES(K) XKeyState[Keys[K][0]]|=Keys[K][1]
-
-/* Combination of EFF_* bits */
-int UseEffects  = EFF_SCALE|EFF_SAVECPU|EFF_MITSHM|EFF_VARBPP|EFF_SYNC;
-
-int InMenu;                /* 1: In MenuMSX(), ignore keys   */
-int UseZoom     = 2;       /* Zoom factor (1=no zoom)        */
-int UseSound    = 22050;   /* Audio sampling frequency (Hz)  */
-int SyncFreq    = 60;      /* Sync frequency (0=sync off)    */
-int FastForward;           /* Fast-forwarded UPeriod backup  */
-int SndSwitch;             /* Mask of enabled sound channels */
-int SndVolume;             /* Master volume for audio        */
-int OldScrMode;            /* fMSX "ScrMode" variable storage*/
-
-const char *Title     = "fMSX Unix 3.9";  /* Program version */
-
-Image NormScreen;          /* Main screen image              */
-Image WideScreen;          /* Wide screen image              */
-static pixel *WBuf;        /* From Wide.h                    */
-static pixel *XBuf;        /* From Common.h                  */
-static unsigned int XPal[80];
-static unsigned int BPal[256];
-static unsigned int XPal0;
-
-const char *Disks[2][MAXDISKS+1];         /* Disk names      */
-volatile byte XKeyState[20]; /* Temporary KeyState array     */
-
-void PutImage(void);
-#include "CommonMux.h"
-
 void PutImage(void)
 {
    ExitNow = 1;
@@ -176,46 +147,18 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-//fMSX
-   extern const char *Title;/* Program title                       */
-   extern int   UseSound;   /* Sound mode                          */
-   extern int   UseZoom;    /* Zoom factor (#ifdef UNIX)           */
-   extern int   UseEffects; /* EFF_* bits, ORed (UNIX/MAEMO/MSDOS) */
-   extern int   UseStatic;  /* Use static colors (#ifdef MSDOS)    */
-   extern int   FullScreen; /* Use 640x480 screen (#ifdef MSDOS)   */
-   extern int   SyncFreq;   /* Sync scr updates (UNIX/MAEMO/MSDOS) */
-   extern int   ARGC;       /* argc/argv from main (#ifdef UNIX)   */
-   extern char **ARGV;
-
-   /** Zero-terminated arrays of disk names for each drive ******/
-   extern const char *Disks[2][MAXDISKS+1];
-
-
-   int CartCount,TypeCount;
-   int JoyCount,DiskCount[2];
-   int N,J;
+   int J;
 
    Verbose=1;
 
-   /* Clear everything */
-   CartCount=TypeCount=JoyCount=0;
-   DiskCount[0]=DiskCount[1]=0;
-
-   /* Default disk images */
-   Disks[0][1]=Disks[1][1]=0;
-   Disks[0][0]=DSKName[0];
-   Disks[1][0]=DSKName[1];
    UPeriod=100;
-//   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
-   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
+//   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
 
-   ROMName[0] = "Castle.rom";
-//   ROMName[0] = "mg1.mx2";
+//   ROMName[0] = "Castle.rom";
+   ROMName[0] = "mg1.mx2";
    SETJOYTYPE(0,1);
    ProgDir=".";
-
-   XBuf = image_buffer;
-   WBuf = image_buffer;
 
    static Image fMSX_image;
    fMSX_image.Cropped = 0;
@@ -225,72 +168,24 @@ bool retro_load_game(const struct retro_game_info *info)
    fMSX_image.H = image_buffer_height;
    fMSX_image.L = image_buffer_width;
 
-
-
-
-//UNIX
    GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
 
-   /* Set all colors to black */
    for(J=0;J<80;J++)
       SetColor(J, 0, 0, 0);
 #define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
-   /* Create SCREEN8 palette (GGGRRRBB) */
+
    for(J=0;J<256;J++)
      BPal[J]=PIXEL(((J>>2)&0x07)*255/7,((J>>5)&0x07)*255/7,(J&0x03)*255/3);
 
-   /* Initialize temporary keyboard array */
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
-
-   /* Initialize sound */
-   InitSound(UseSound,150);
-   SndSwitch=(1<<MAXCHANNELS)-1;
-   SndVolume=255/MAXCHANNELS;
-   SetChannels(SndVolume,SndSwitch);
-
-   /* Initialize sync timer if needed */
-//   if((SyncFreq>0)&&!SetSyncTimer(SyncFreq*UPeriod/100)) SyncFreq=0;
-
-
-
-
-
-
-
+   InitSound(0,150);
+//   SetChannels(255,~0);
+   ExitNow = 1;
+   StartMSX(Mode,RAMPages,VRAMPages);
+   printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
    return true;
 }
-#include <sys/time.h>
-static volatile int TimerReady = 0;
-static int TimerON    = 0;
-static void TimerHandler(int Arg)
-{
-  /* Mark sync timer as "ready" */
-  TimerReady=1;
-  /* Repeat signal next time */
-  signal(Arg,TimerHandler);
-}
-int SetSyncTimer(int Hz)
-{
-  struct itimerval TimerValue;
-
-  /* Compute and set timer period */
-  TimerValue.it_interval.tv_sec  =
-  TimerValue.it_value.tv_sec     = 0;
-  TimerValue.it_interval.tv_usec =
-  TimerValue.it_value.tv_usec    = Hz? 1000000L/Hz:0;
-
-  /* Set timer */
-  if(setitimer(ITIMER_REAL,&TimerValue,NULL)) return(0);
-
-  /* Set timer signal */
-  signal(SIGALRM,Hz? TimerHandler:SIG_DFL);
-
-  /* Done */
-  TimerON=Hz;
-  return(1);
-}
-
 
 void SetColor(byte N,byte R,byte G,byte B)
 {
@@ -329,7 +224,7 @@ unsigned int Joystick(void)
 
 void Keyboard(void)
 {
-  /* Everything is done in Joystick() */
+
 }
 
 unsigned int Mouse(byte N)
@@ -373,27 +268,28 @@ void retro_run(void)
 {
    int i,j;
 
-   RETRO_PERFORMANCE_INIT(core_retro_run);
-   RETRO_PERFORMANCE_START(core_retro_run);
-
    input_poll_cb();
 
-   static int first_run = 1;
-   if (first_run)
-   {
-      first_run = 0;
-      StartMSX(Mode,RAMPages,VRAMPages);
-   }
-   else
-   {
-      ExitNow = 0;
-      RunZ80(&CPU);
-   }
+//   static int first_run = 1;
+//   if (first_run)
+//   {
+//      first_run = 0;
+//      StartMSX(Mode,RAMPages,VRAMPages);
+//   }
+//   else
+//   {
+      RETRO_PERFORMANCE_INIT(core_retro_run);
+      RETRO_PERFORMANCE_START(core_retro_run);
 
-   RETRO_PERFORMANCE_STOP(core_retro_run);
+//      ExitNow = 0;
+      RunZ80(&CPU);
+      RETRO_PERFORMANCE_STOP(core_retro_run);
+//   }
+
+
 
    fflush(stdout);
-//   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 
 
 
