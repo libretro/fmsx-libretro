@@ -141,6 +141,7 @@ void PutImage(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
+   static char ROMName_buffer[MAXCARTS][1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -150,7 +151,7 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-
+   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
    Verbose=1;
 
@@ -159,9 +160,11 @@ bool retro_load_game(const struct retro_game_info *info)
 //   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
 
 //   ROMName[0] = "Castle.rom";
-   ROMName[0] = "mg1.mx2";
+//   ROMName[0] = "mg1.mx2"
+   strcpy(ROMName_buffer[0], info->path);
+   ROMName[0]=ROMName_buffer[0];
    SETJOYTYPE(0,1);
-   ProgDir=".";
+//   ProgDir=".";
 
    static Image fMSX_image;
    fMSX_image.Cropped = 0;
