@@ -19,7 +19,7 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 
 
-#define SND_RATE 44100
+#define SND_RATE 48000
 
 #define WIDTH  272
 #define HEIGHT 228
@@ -111,7 +111,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width = 640 ;
    info->geometry.max_height = 480 ;
    info->geometry.aspect_ratio = 0;
-   info->timing.fps = 60.0 / 1.001;
+   info->timing.fps = 60.0;
    info->timing.sample_rate = SND_RATE;
 }
 
@@ -151,6 +151,17 @@ void retro_deinit(void)
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+   static const struct retro_controller_description port[] = {
+      { "RetroKeyboard", RETRO_DEVICE_KEYBOARD },
+//      { "RetroPad", RETRO_DEVICE_JOYPAD }
+   };
+
+   static const struct retro_controller_info ports[] = {
+      { port, 1 },
+//      { port, 1 },
+      { 0 },
+   };
+   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -243,7 +254,8 @@ bool retro_load_game(const struct retro_game_info *info)
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
    InitSound(SND_RATE, 0);
-   SetChannels(192, ~0);
+   SetChannels(255/MAXCHANNELS, (1<<MAXCHANNELS)-1);
+
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
@@ -272,12 +284,23 @@ int PauseAudio(int Switch)
 
 unsigned int GetFreeAudio(void)
 {
-  return 2048 * 2;
+  return 2048;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)
 {
-   return audio_batch_cb(Data, Length / 2) * 2;
+   static uint16_t audio_buf[2048 * 2];
+   int i;
+   if (Length > 2048)
+      Length = 2048;
+   for (i=0; i < Length; i++)
+   {
+      audio_buf[i << 1]=Data[i];
+      audio_buf[(i << 1) + 1]=Data[i];
+   }
+
+
+   return audio_batch_cb(audio_buf, Length);
 }
 
 unsigned int Joystick(void)
@@ -344,18 +367,19 @@ void retro_run(void)
    int i;
    input_poll_cb();
 
+   for (i=0; i < 130; i++)
+      KBD_RES(i);
+
    for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
       if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
          KBD_SET(keymap[i].fmsx);
-      else
-         KBD_RES(keymap[i].fmsx);
 
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
 
    RunZ80(&CPU);
-   RenderAndPlayAudio(2 * SND_RATE/60);
+   RenderAndPlayAudio(SND_RATE/60);
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
