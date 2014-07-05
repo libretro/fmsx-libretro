@@ -1,6 +1,7 @@
 TARGET_NAME := fMSX
 
-DEBUG   = 0
+DEBUG     = 0
+PATCH_Z80 = 0
 
 ifneq ($(EMSCRIPTEN),)
    platform = emscripten
@@ -53,8 +54,6 @@ else ifeq ($(platform), ios)
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
-
-
    CC = clang -arch armv7 -isysroot $(IOSSDK)
    CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
    CXX = clang++ -arch armv7 -isysroot $(IOSSDK)
@@ -178,15 +177,20 @@ else
 endif
 
 
-DEFINES := -D__LIBRETRO__ $(PLATFORM_DEFINES)
+ifeq ($(PATCH_Z80), 1)
+DEFINES += -DPATCH_Z80
+OBJECTS += $(FMSXDIR)/Patch.o
+endif
+
+DEFINES += -D__LIBRETRO__ $(PLATFORM_DEFINES)
 
 DEFINES += -DUNIX -DMITSHM -DBPS16 -DZLIB -DFMSX -DLSB_FIRST -DBPP16
 
-CFLAGS   += $(fpic) $(DEFINES) -pthread
+CFLAGS   += $(fpic) $(DEFINES)
 CFLAGS   += -w
 #CFLAGS   += -Wall
 
-CXXFLAGS += $(fpic) $(DEFINES) -pthread
+CXXFLAGS += $(fpic) $(DEFINES)
 CXXFLAGS   += -w
 #CXXFLAGS   += -Wall
 
@@ -196,28 +200,14 @@ FMSXDIR = $(BASEDIR)/fMSX
 LIBZ80	= $(BASEDIR)/Z80
 
 
-# Platform-specific EMULib files
-EMUUNIX	 = $(EMULIB)/Unix/LibUnix.o $(EMULIB)/Unix/SndUnix.o $(EMULIB)/Unix/NetUnix.o
-EMUMAEMO = $(EMULIB)/Maemo/LibMaemo.o $(EMULIB)/Unix/GConf.o $(EMULIB)/Unix/NetUnix.o $(EMULIB)/LibARM-BPP16.o
-EMUMEEGO = $(EMULIB)/Meego/LibMeego.o $(EMULIB)/Unix/GConf.o $(EMULIB)/Unix/NetUnix.o $(EMULIB)/LibARM-BPP16.o
-EMUSTMP	 = $(EMULIB)/STMP3700/LibSTMP3700.o $(EMULIB)/Unix/SndALSA.o $(EMULIB)/LibARM-BPP16.o $(EMULIB)/LibARM-BPP32.o
-EMUNXC	 = $(EMULIB)/NXC2600/LibNXC2600.o $(EMULIB)/Unix/SndSDL.o
-
-
-
-
-
-
-
-OBJECTS := libretro.o
+OBJECTS += libretro.o
 
 # EMULib sound, console, and other utility functions
 OBJECTS	+= $(EMULIB)/EMULib.o $(EMULIB)/Sound.o
-OBJECTS	+= $(EMULIB)/Image.o
-OBJECTS += $(FMSXDIR)/MSX.o $(FMSXDIR)/V9938.o $(FMSXDIR)/I8251.o $(FMSXDIR)/Patch.o
+OBJECTS += $(FMSXDIR)/MSX.o $(FMSXDIR)/V9938.o $(FMSXDIR)/I8251.o
 
 OBJECTS += $(EMULIB)/SHA1.o $(EMULIB)/Floppy.o $(EMULIB)/FDIDisk.o
-OBJECTS += $(LIBZ80)/Z80.o $(LIBZ80)/ConDebug.o
+OBJECTS += $(LIBZ80)/Z80.o
 OBJECTS += $(EMULIB)/I8255.o $(EMULIB)/YM2413.o $(EMULIB)/AY8910.o $(EMULIB)/SCC.o $(EMULIB)/WD1793.o
 
 
@@ -225,7 +215,7 @@ INCDIRS := -I. -I$(EMULIB) -I$(EMULIB)/Unix -I$(LIBZ80) -I$(FMSXDIR)
 INCDIRS += $(EXTRA_INCLUDES)
 CFLAGS +=
 
-LIBS := -lz -lpthread
+LIBS := -lz
 
 
 all: $(TARGET)

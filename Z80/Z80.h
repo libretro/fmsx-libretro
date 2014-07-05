@@ -150,7 +150,11 @@ byte InZ80(register word Port);
 /** such as disk and tape access. Replace it with an empty  **/
 /** macro for no patching.                                  **/
 /************************************ TO BE WRITTEN BY USER **/
+#ifdef PATCH_Z80
 void PatchZ80(register Z80 *R);
+#else
+#define PatchZ80(R)
+#endif
 
 /** DebugZ80() ***********************************************/
 /** This function should exist if DEBUG is #defined. When   **/

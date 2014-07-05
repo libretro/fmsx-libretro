@@ -18,8 +18,11 @@ static uint16_t XPal[80];
 static uint16_t BPal[256];
 static uint16_t XPal0;
 
+
 #define WIDTH  272
 #define HEIGHT 228
+#define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
+
 #define XBuf image_buffer
 #define WBuf image_buffer
 #include "CommonMux.h"
@@ -137,7 +140,7 @@ void PutImage(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-
+   int i;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -147,7 +150,7 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   int J;
+
 
    Verbose=1;
 
@@ -170,12 +173,11 @@ bool retro_load_game(const struct retro_game_info *info)
 
    GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
 
-   for(J=0;J<80;J++)
-      SetColor(J, 0, 0, 0);
-#define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
+   for(i = 0; i < 80; i++)
+      SetColor(i, 0, 0, 0);
 
-   for(J=0;J<256;J++)
-     BPal[J]=PIXEL(((J>>2)&0x07)*255/7,((J>>5)&0x07)*255/7,(J&0x03)*255/3);
+   for(i = 0; i < 256; i++)
+     BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
 
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
@@ -266,26 +268,15 @@ size_t retro_get_memory_size(unsigned id)
 
 void retro_run(void)
 {
-   int i,j;
 
    input_poll_cb();
 
-//   static int first_run = 1;
-//   if (first_run)
-//   {
-//      first_run = 0;
-//      StartMSX(Mode,RAMPages,VRAMPages);
-//   }
-//   else
-//   {
-      RETRO_PERFORMANCE_INIT(core_retro_run);
-      RETRO_PERFORMANCE_START(core_retro_run);
+   RETRO_PERFORMANCE_INIT(core_retro_run);
+   RETRO_PERFORMANCE_START(core_retro_run);
 
-//      ExitNow = 0;
-      RunZ80(&CPU);
-      RETRO_PERFORMANCE_STOP(core_retro_run);
-//   }
+   RunZ80(&CPU);
 
+   RETRO_PERFORMANCE_STOP(core_retro_run);
 
 
    fflush(stdout);
