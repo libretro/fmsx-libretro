@@ -8,7 +8,7 @@
 
 #include "MSX.h"
 #include "EMULib.h"
-
+#include "Sound.h"
 
 static uint16_t* image_buffer;
 static unsigned image_buffer_width;
@@ -18,6 +18,8 @@ static uint16_t XPal[80];
 static uint16_t BPal[256];
 static uint16_t XPal0;
 
+
+#define SND_RATE 22050
 
 #define WIDTH  272
 #define HEIGHT 228
@@ -62,7 +64,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_height = 480 ;
    info->geometry.aspect_ratio = 0;
    info->timing.fps = 60.0;
-   info->timing.sample_rate = 44100.0;
+   info->timing.sample_rate = SND_RATE;
 }
 
 void retro_init(void)
@@ -192,8 +194,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
-   InitSound(0,150);
-//   SetChannels(255,~0);
+   InitSound(SND_RATE, 150);
+   SetChannels(255, ~0);
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
@@ -208,7 +210,7 @@ void SetColor(byte N,byte R,byte G,byte B)
 
 unsigned int InitAudio(unsigned int Rate,unsigned int Latency)
 {
-   return 0;
+   return Rate;
 }
 
 void TrashAudio(void)
@@ -222,16 +224,18 @@ int PauseAudio(int Switch)
 
 unsigned int GetFreeAudio(void)
 {
-  return 800;
+  return 512 * 2;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)
 {
-   return Length;
+   return audio_batch_cb(Data, Length / 2) * 2;
 }
 
 unsigned int Joystick(void)
 {
+   if (audio_batch_cb)
+      RenderAndPlayAudio(SND_RATE/30);
    return 0;
 }
 
@@ -299,12 +303,13 @@ void retro_run(void)
    RETRO_PERFORMANCE_START(core_retro_run);
 
    RunZ80(&CPU);
+//   RenderAndPlayAudio(22050 / 15);
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
-   current_ticks =
-
    fflush(stdout);
+
+
 
 #ifdef PSP
    static unsigned int __attribute__((aligned(16))) d_list[32];
