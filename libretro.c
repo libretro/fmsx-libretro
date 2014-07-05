@@ -284,15 +284,15 @@ int PauseAudio(int Switch)
 
 unsigned int GetFreeAudio(void)
 {
-  return 2048;
+  return 1024;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)
 {
-   static uint16_t audio_buf[2048 * 2];
+   static uint16_t audio_buf[1024 * 2];
    int i;
-   if (Length > 2048)
-      Length = 2048;
+   if (Length > 1024)
+      Length = 1024;
    for (i=0; i < Length; i++)
    {
       audio_buf[i << 1]=Data[i];
