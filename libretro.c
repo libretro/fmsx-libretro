@@ -160,7 +160,7 @@ void PutImage(void);
 
 void PutImage(void)
 {
-//   video_cb(image_buffer,image_buffer_width,image_buffer_height,image_buffer_width * 2);
+   ExitNow = 1;
 
 }
 
@@ -386,13 +386,15 @@ void retro_run(void)
    }
    else
    {
+      ExitNow = 0;
       RunZ80(&CPU);
    }
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
    fflush(stdout);
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+//   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+
 
 
 }

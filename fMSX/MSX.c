@@ -2023,15 +2023,6 @@ word LoopZ80(Z80 *R)
   static byte Drawing=0;
   register int J;
 
-
-  static int need_stop = 0;
-
-  if (need_stop)
-  {
-     need_stop = 0;
-     return INT_QUIT;
-  }
-
   /* Flip HRefresh bit */
   VDPStatus[2]^=0x20;
 
@@ -2054,12 +2045,7 @@ word LoopZ80(Z80 *R)
       VDPStatus[2]&=0xBF;
 
       /* Refresh display */
-      if(UCount>=100)
-      {
-         UCount-=100;
-         RefreshScreen();
-//         need_stop = 1;
-      }
+      if(UCount>=100) { UCount-=100;RefreshScreen(); }
       UCount+=UPeriod;
 
       /* Blinking for TEXT80 */
@@ -2143,12 +2129,7 @@ word LoopZ80(Z80 *R)
     VDPStatus[2]|=0x40;
 
     /* Generate VBlank interrupt */
-    if(VDP[1]&0x20)
-    {
-       SetIRQ(INT_IE0);
-       return INT_QUIT;
-//       need_stop = 1;
-    }
+    if(VDP[1]&0x20) SetIRQ(INT_IE0);
   }
 
   /* Run V9938 engine */
