@@ -19,7 +19,7 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 
 
-#define SND_RATE 22050
+#define SND_RATE 48000
 
 #define WIDTH  272
 #define HEIGHT 228
@@ -194,7 +194,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
-   InitSound(SND_RATE, 150);
+   InitSound(SND_RATE, 0);
    SetChannels(255, ~0);
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
@@ -224,7 +224,7 @@ int PauseAudio(int Switch)
 
 unsigned int GetFreeAudio(void)
 {
-  return 512 * 2;
+  return 2048 * 2;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)
@@ -234,8 +234,6 @@ unsigned int WriteAudio(sample *Data,unsigned int Length)
 
 unsigned int Joystick(void)
 {
-   if (audio_batch_cb)
-      RenderAndPlayAudio(SND_RATE/30);
    return 0;
 }
 
@@ -303,7 +301,7 @@ void retro_run(void)
    RETRO_PERFORMANCE_START(core_retro_run);
 
    RunZ80(&CPU);
-//   RenderAndPlayAudio(22050 / 15);
+   RenderAndPlayAudio(2 * SND_RATE/60);
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
