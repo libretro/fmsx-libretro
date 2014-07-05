@@ -19,7 +19,7 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 
 
-#define SND_RATE 48000
+#define SND_RATE 44100
 
 #define WIDTH  272
 #define HEIGHT 228
@@ -37,7 +37,7 @@ uint8_t XKeyState[20];
 #define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
 #define XKBD_RES(K) XKeyState[Keys[K][0]]|=Keys[K][1]
 
-static retro_log_printf_t log_cb = NULL;
+retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t input_poll_cb = NULL;
 static retro_input_state_t input_state_cb = NULL;
@@ -46,6 +46,54 @@ static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static struct retro_perf_callback perf_cb = {};
 
 static retro_perf_tick_t max_frame_ticks = 0;
+
+
+typedef struct
+{
+   int retro;
+   int fmsx;
+}keymap_t;
+keymap_t keymap[] =
+{
+{ RETROK_LEFT,      KBD_LEFT     },
+{ RETROK_UP,        KBD_UP       },
+{ RETROK_RIGHT,     KBD_RIGHT    },
+{ RETROK_DOWN,      KBD_DOWN     },
+{ RETROK_LSHIFT,    KBD_SHIFT    },
+{ RETROK_RSHIFT,    KBD_SHIFT    },
+{ RETROK_LCTRL,     KBD_CONTROL  },
+{ RETROK_RCTRL,     KBD_CONTROL  },
+{ RETROK_LALT,      KBD_GRAPH    },
+{ RETROK_BACKSPACE, KBD_BS       },
+{ RETROK_TAB,       KBD_TAB      },
+{ RETROK_CAPSLOCK,  KBD_CAPSLOCK },
+{ RETROK_END,       KBD_SELECT   },
+{ RETROK_HOME,      KBD_HOME     },
+{ RETROK_RETURN,    KBD_ENTER    },
+{ RETROK_DELETE,    KBD_DELETE   },
+{ RETROK_INSERT,    KBD_INSERT   },
+{ RETROK_PAGEUP,    KBD_COUNTRY  },
+{ RETROK_PAUSE,     KBD_STOP     },
+{ RETROK_F1,        KBD_F1       },
+{ RETROK_F2,        KBD_F2       },
+{ RETROK_F3,        KBD_F3       },
+{ RETROK_F4,        KBD_F4       },
+{ RETROK_F5,        KBD_F5       },
+{ RETROK_KP0,       KBD_NUMPAD0  },
+{ RETROK_KP1,       KBD_NUMPAD1  },
+{ RETROK_KP2,       KBD_NUMPAD2  },
+{ RETROK_KP3,       KBD_NUMPAD3  },
+{ RETROK_ESCAPE,    KBD_ESCAPE   },
+{ RETROK_KP4,       KBD_NUMPAD4  },
+{ RETROK_KP5,       KBD_NUMPAD5  },
+{ RETROK_KP6,       KBD_NUMPAD6  },
+{ RETROK_KP7,       KBD_NUMPAD7  },
+{ RETROK_SPACE,     KBD_SPACE    },
+{ RETROK_KP8,       KBD_NUMPAD8  },
+{ RETROK_KP9,       KBD_NUMPAD9  }
+};
+
+
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -63,7 +111,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width = 640 ;
    info->geometry.max_height = 480 ;
    info->geometry.aspect_ratio = 0;
-   info->timing.fps = 60.0;
+   info->timing.fps = 60.0 / 1.001;
    info->timing.sample_rate = SND_RATE;
 }
 
@@ -195,7 +243,7 @@ bool retro_load_game(const struct retro_game_info *info)
    memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
    InitSound(SND_RATE, 0);
-   SetChannels(255, ~0);
+   SetChannels(192, ~0);
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
@@ -293,8 +341,14 @@ size_t retro_get_memory_size(unsigned id)
 #endif
 void retro_run(void)
 {
-
+   int i;
    input_poll_cb();
+
+   for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
+      if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
+         KBD_SET(keymap[i].fmsx);
+      else
+         KBD_RES(keymap[i].fmsx);
 
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
@@ -334,4 +388,3 @@ void retro_run(void)
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
-
