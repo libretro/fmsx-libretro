@@ -125,6 +125,9 @@ void SetVideo(Image *Img,int X,int Y,int W,int H)
 /*************************************************************/
 unsigned int WaitJoystick(unsigned int Mask)
 {
+#ifdef __LIBRETRO__
+   return 0;
+#else
   unsigned int I;
 
 #if defined(ANDROID)
@@ -143,9 +146,10 @@ unsigned int WaitJoystick(unsigned int Mask)
   /* Wait for any of the buttons to become pressed */
   do I=GetJoystick()&Mask; while(!I);
 #endif
-
   /* Return pressed buttons */
   return(I);
+#endif
+
 }
 
 /** SetKeyHandler() ******************************************/

@@ -127,6 +127,17 @@
 #define CON_OK       0xFE
 #define CON_EXIT     0xFF
 
+#ifdef __LIBRETRO__
+#define SND_CHANNELS    16     /* Number of sound channels   */
+#define SND_BITS        8
+#define SND_BUFSIZE     (1<<SND_BITS)
+
+#define PIXEL(R,G,B)  (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
+#define PIXEL2MONO(P) (522*(((P)&31)+(((P)>>5)&63)+(((P)>>11)&31))>>8)
+#define RMASK 0xF800
+#define GMASK 0x07E0
+#define BMASK 0x001F
+#else
 #ifdef WINDOWS
 #include "LibWin.h"
 #endif
@@ -162,6 +173,7 @@
 #define ARM_CPU
 #include "LibSym.h"
 #include "LibSym.rh"
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -207,6 +219,7 @@ typedef struct
   pixel *Data;               /* Buffer containing WxH pixels */
   int W,H,L,D;               /* Image size, pitch, depth     */
   char Cropped;              /* 1: Cropped, do not free()    */
+#ifndef __LIBRETRO__
 #ifdef WINDOWS
   HDC hDC;                   /* Handle to device context     */
   HBITMAP hBMap;             /* Handle to bitmap             */
@@ -222,6 +235,7 @@ typedef struct
   int Attrs;                 /* USE_SHM and other attributes */
 #ifdef MITSHM
   XShmSegmentInfo SHMInfo;   /* Shared memory information    */
+#endif
 #endif
 #endif
 } Image;
