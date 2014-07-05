@@ -160,7 +160,7 @@ void PutImage(void);
 
 void PutImage(void)
 {
-   video_cb(image_buffer,image_buffer_width,image_buffer_height,image_buffer_width * 2);
+//   video_cb(image_buffer,image_buffer_width,image_buffer_height,image_buffer_width * 2);
 
 }
 
@@ -176,8 +176,6 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-//   ROMName[0] = "Castle.rom";
-   ROMName[0] = "mg1.mx2";
 //fMSX
    extern const char *Title;/* Program title                       */
    extern int   UseSound;   /* Sound mode                          */
@@ -208,8 +206,11 @@ bool retro_load_game(const struct retro_game_info *info)
    Disks[0][0]=DSKName[0];
    Disks[1][0]=DSKName[1];
    UPeriod=100;
-   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
-//   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+//   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
+   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+
+   ROMName[0] = "Castle.rom";
+//   ROMName[0] = "mg1.mx2";
    SETJOYTYPE(0,1);
    ProgDir=".";
 
@@ -377,10 +378,20 @@ void retro_run(void)
 
    input_poll_cb();
 
-   StartMSX(Mode,RAMPages,VRAMPages);
+   static int first_run = 1;
+   if (first_run)
+   {
+      first_run = 0;
+      StartMSX(Mode,RAMPages,VRAMPages);
+   }
+   else
+   {
+      RunZ80(&CPU);
+   }
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
+   fflush(stdout);
    video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 
 
