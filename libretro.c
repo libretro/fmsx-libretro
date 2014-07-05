@@ -21,7 +21,11 @@ static uint16_t XPal0;
 
 #define WIDTH  272
 #define HEIGHT 228
+#ifdef PSP
+#define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
+#else
 #define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
+#endif
 
 #define XBuf image_buffer
 #define WBuf image_buffer
@@ -38,6 +42,8 @@ static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static struct retro_perf_callback perf_cb = {};
+
+static retro_perf_tick_t max_frame_ticks = 0;
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -88,6 +94,8 @@ void retro_deinit(void)
    image_buffer_height = 0;
 
    perf_cb.perf_log();
+
+   log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -265,14 +273,27 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-#define RETRO_PERFORMANCE_INIT(name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
-#define RETRO_PERFORMANCE_START(name) perf_cb.perf_start(&(name))
-#define RETRO_PERFORMANCE_STOP(name) perf_cb.perf_stop(&(name))
+#define RETRO_PERFORMANCE_INIT(name) \
+   retro_perf_tick_t current_ticks;\
+   static struct retro_perf_counter name = {#name};\
+   if (!name.registered) perf_cb.perf_register(&(name));\
+   current_ticks = name.total
 
+#define RETRO_PERFORMANCE_START(name) perf_cb.perf_start(&(name))
+#define RETRO_PERFORMANCE_STOP(name) \
+   perf_cb.perf_stop(&(name));\
+   current_ticks = name.total - current_ticks;\
+   if (max_frame_ticks < current_ticks) max_frame_ticks = current_ticks
+
+
+#ifdef PSP
+#include <pspgu.h>
+#endif
 void retro_run(void)
 {
 
    input_poll_cb();
+
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
@@ -281,9 +302,29 @@ void retro_run(void)
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
+   current_ticks =
 
    fflush(stdout);
+
+#ifdef PSP
+   static unsigned int __attribute__((aligned(16))) d_list[32];
+   void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
+
+   sceKernelDcacheWritebackRange(XBuf, 256*240 );
+   sceGuStart(GU_DIRECT, d_list);
+   sceGuCopyImage(GU_PSM_5650, 0, 0, image_buffer_width, image_buffer_height, image_buffer_width, image_buffer, 0, 0, image_buffer_width, texture_vram_p);
+
+   sceGuTexSync();
+   sceGuTexImage(0, 512, 256, image_buffer_width, texture_vram_p);
+   sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuDisable(GU_BLEND);
+   sceGuFinish();
+
+   video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#else
    video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#endif
 
 
 
