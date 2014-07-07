@@ -25,6 +25,7 @@ static pixel YJKColor(int Y,int J,int K);
 /** Refresh screen. This function is called in the end of   **/
 /** refresh cycle to show the entire screen.                **/
 /*************************************************************/
+extern void PutImage(void);
 void RefreshScreen(void) { PutImage(); }
 
 /** ClearLine() **********************************************/
