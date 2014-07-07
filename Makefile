@@ -1,4 +1,4 @@
-TARGET_NAME := fMSX
+TARGET_NAME := fmsx
 
 DEBUG     = 0
 PATCH_Z80 = 0
