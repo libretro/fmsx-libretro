@@ -216,9 +216,6 @@ INCDIRS := -I. -I$(EMULIB) -I$(EMULIB)/Unix -I$(LIBZ80) -I$(FMSXDIR)
 INCDIRS += $(EXTRA_INCLUDES)
 CFLAGS +=
 
-LIBS := -lz
-
-
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
