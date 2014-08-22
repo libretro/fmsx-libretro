@@ -23,10 +23,6 @@
 #include <direct.h>
 #endif
 
-#ifdef ZLIB
-#include <zlib.h>
-#endif
-
 #define DSK_RESERVED_SECS 0
 #define DSK_FATS_PER_DISK 2
 #define DSK_SECS_PER_BOOT 1
@@ -435,12 +431,6 @@ byte *DSKLoad(const char *Name,byte *Dsk)
     return(Dsk1);
   }
 
-#ifdef ZLIB
-#define fopen(N,M)      (FILE *)gzopen(N,M)
-#define fclose(F)       gzclose((gzFile)(F))
-#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
-#endif
-
   /* Assume <Name> to be a disk image file */
   F=fopen(Name,"rb");
   if(!F) { if(!Dsk) free(Dsk1);return(0); }
@@ -452,12 +442,6 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   /* Done */
   fclose(F);
   return(Dsk1);
-
-#ifdef ZLIB
-#undef fopen
-#undef fclose
-#undef fread
-#endif
 }
 
 const byte *DSKSave(const char *Name,const byte *Dsk)
@@ -503,12 +487,6 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
     return(Dsk);
   }
 
-#ifdef ZLIB
-#define fopen(N,M)      (FILE *)gzopen(N,M)
-#define fclose(F)       gzclose((gzFile)F)
-#define fwrite(B,L,N,F) gzwrite((gzFile)F,(byte *)B,(L)*(N))
-#endif
-
   /* Assume <Name> to be a disk image file */
   F=fopen(Name,"wb");
   if(!F) return(0);
@@ -520,10 +498,4 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
   /* Done */
   fclose(F);
   return(Dsk);
-
-#ifdef ZLIB
-#undef fopen
-#undef fclose
-#undef fwrite
-#endif
 }

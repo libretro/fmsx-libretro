@@ -37,16 +37,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef ZLIB
-#include <zlib.h>
-#endif
-
-#ifdef ANDROID
-#include "MemFS.h"
-#define puts   LOGI
-#define printf LOGI
-#endif
-
 #define PRINTOK           if(Verbose) puts("OK")
 #define PRINTFAILED       if(Verbose) puts("FAILED")
 #define PRINTRESULT(R)    if(Verbose) puts((R)? "OK":"FAILED")
@@ -2448,28 +2438,6 @@ int LoadFile(const char *FileName)
   return(0);
 }
 
-#if defined(ANDROID)
-#define fopen           mopen
-#define fclose          mclose
-#define fread           mread
-#define fwrite          mwrite
-#define fgets           mgets
-#define fseek           mseek
-#define rewind          mrewind
-#define fgetc           mgetc
-#define ftell           mtell
-#elif defined(ZLIB)
-#define fopen(N,M)      (FILE *)gzopen(N,M)
-#define fclose(F)       gzclose((gzFile)(F))
-#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
-#define fwrite(B,L,N,F) gzwrite((gzFile)(F),B,(L)*(N))
-#define fgets(B,L,F)    gzgets((gzFile)(F),B,L)
-#define fseek(F,O,W)    gzseek((gzFile)(F),O,W)
-#define rewind(F)       gzrewind((gzFile)(F))
-#define fgetc(F)        gzgetc((gzFile)(F))
-#define ftell(F)        gztell((gzFile)(F))
-#endif
-
 /** GuessROM() ***********************************************/
 /** Guess MegaROM mapper of a ROM.                          **/
 /*************************************************************/
@@ -3203,14 +3171,3 @@ int LoadSTA(const char *FileName)
 }
 
 #endif /* !NEW_STATES */
-
-#if defined(ZLIB) || defined(ANDROID)
-#undef fopen
-#undef fclose
-#undef fread
-#undef fwrite
-#undef fgets
-#undef fseek
-#undef ftell
-#undef fgetc
-#endif

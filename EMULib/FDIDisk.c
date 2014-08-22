@@ -18,10 +18,6 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#ifdef ZLIB
-#include <zlib.h>
-#endif
-
 #define IMAGE_SIZE(Fmt) \
   (Formats[Fmt].Sides*Formats[Fmt].Tracks*    \
    Formats[Fmt].Sectors*Formats[Fmt].SecSize)
@@ -177,18 +173,6 @@ byte *NewFDI(FDIDisk *D,int Sides,int Tracks,int Sectors,int SecSize)
   return(FDI_DATA(P));
 }
 
-#ifdef ZLIB
-#define fopen(N,M)      (FILE *)gzopen(N,M)
-#define fclose(F)       gzclose((gzFile)(F))
-#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
-#define fwrite(B,L,N,F) gzwrite((gzFile)(F),B,(L)*(N))
-#define fgets(B,L,F)    gzgets((gzFile)(F),B,L)
-#define fseek(F,O,W)    gzseek((gzFile)(F),O,W)
-#define rewind(F)       gzrewind((gzFile)(F))
-#define fgetc(F)        gzgetc((gzFile)(F))
-#define ftell(F)        gztell((gzFile)(F))
-#endif
-
 /** LoadFDI() ************************************************/
 /** Load a disk image from a given file, in a given format  **/
 /** (see FMT_* #defines). Guess format from the file name   **/
@@ -241,12 +225,8 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
 
   /* Open file and find its size */
   if(!(F=fopen(FileName,"rb"))) return(0);
-#ifdef ZLIB
-  for(J=0;(I=fread(Buf,1,sizeof(Buf),F));J+=I);
-#else
   if(fseek(F,0,SEEK_END)<0) { fclose(F);return(0); }
   if((J=ftell(F))<=0)       { fclose(F);return(0); }
-#endif
   rewind(F);
 
   switch(Format)
@@ -534,16 +514,6 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
   D->Format = Format;
   return(Format);
 }
-
-#ifdef ZLIB
-#undef fopen
-#undef fclose
-#undef fread
-#undef fwrite
-#undef fseek
-#undef ftell
-#undef rewind
-#endif
 
 /** SaveFDI() ************************************************/
 /** Save a disk image to a given file, in a given format    **/

@@ -16,10 +16,6 @@ static const char *HelpText[] =
   "Usage: fmsx [-option1 [-option2...]] [filename1] [filename2]",
   "[filename1] = name of file to load as cartridge A",
   "[filename2] = name of file to load as cartridge B",
-#if defined(ZLIB)
-  "  This program will transparently uncompress singular GZIPped",
-  "  and PKZIPped files.",
-#endif
   "[-option]   =",
   "  -verbose <level>    - Select debugging messages [1]",
   "                         0 - Silent       1 - Startup messages",
