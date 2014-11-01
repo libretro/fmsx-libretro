@@ -186,7 +186,6 @@ endif
 
 ifeq ($(PATCH_Z80), 1)
 DEFINES += -DPATCH_Z80
-OBJECTS += $(FMSXDIR)/Patch.o
 endif
 
 DEFINES += -D__LIBRETRO__ $(PLATFORM_DEFINES)

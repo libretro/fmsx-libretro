@@ -1,19 +1,23 @@
 INCFLAGS := -I$(CORE_DIR) -I$(EMULIB) -I$(EMULIB)/Unix -I$(LIBZ80) -I$(FMSXDIR)
 
-SOURCES_C += libretro.c
 
 # EMULib sound, console, and other utility functions
-SOURCES_C	+= $(EMULIB)/EMULib.c \
-					$(EMULIB)/Sound.c \
-					$(FMSXDIR)/MSX.c \
-					$(FMSXDIR)/V9938.c \
-					$(FMSXDIR)/I8251.c \
-					$(EMULIB)/SHA1.c \
-					$(EMULIB)/Floppy.c \
-					$(EMULIB)/FDIDisk.c \
-					$(LIBZ80)/Z80.c \
-					$(EMULIB)/I8255.c \
-					$(EMULIB)/YM2413.c \
-					$(EMULIB)/AY8910.c \
-					$(EMULIB)/SCC.c \
-					$(EMULIB)/WD1793.c
+SOURCES_C := $(CORE_DIR)/libretro.c \
+	$(EMULIB)/EMULib.c \
+	$(EMULIB)/Sound.c \
+	$(FMSXDIR)/MSX.c \
+	$(FMSXDIR)/V9938.c \
+	$(FMSXDIR)/I8251.c \
+	$(EMULIB)/SHA1.c \
+	$(EMULIB)/Floppy.c \
+	$(EMULIB)/FDIDisk.c \
+	$(LIBZ80)/Z80.c \
+	$(EMULIB)/I8255.c \
+	$(EMULIB)/YM2413.c \
+	$(EMULIB)/AY8910.c \
+	$(EMULIB)/SCC.c \
+	$(EMULIB)/WD1793.c
+
+ifeq ($(PATCH_Z80), 1)
+SOURCES_C += $(FMSXDIR)/Patch.c
+endif
