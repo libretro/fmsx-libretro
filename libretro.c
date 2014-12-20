@@ -164,6 +164,7 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX1|MSX2|MSX2+" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
+      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
       { NULL, NULL },
    };
 
@@ -222,7 +223,6 @@ static void check_variables(void)
    var.value = NULL;
 
    Mode = 0;
-   Mode |= MSX_GUESSA;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -251,6 +251,21 @@ static void check_variables(void)
    else
    {
       Mode |= MSX_NTSC;
+   }
+
+   var.key = "fmsx_mapper_type_mode";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Guess Mapper Type A") == 0)
+         Mode |= MSX_GUESSA;
+      else if (strcmp(var.value, "Guess Mapper Type B") == 0)
+         Mode |= MSX_GUESSB;
+   }
+   else
+   {
+      Mode |= MSX_GUESSA;
    }
 }
 
@@ -309,7 +324,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void SetColor(byte N,byte R,byte G,byte B)
 {
-  if(N) XPal[N]=PIXEL(R,G,B); else XPal0=PIXEL(R,G,B);
+  if(N)
+     XPal[N]=PIXEL(R,G,B);
+  else
+     XPal0=PIXEL(R,G,B);
 }
 
 
