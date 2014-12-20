@@ -126,7 +126,6 @@
 #define CON_OK       0xFE
 #define CON_EXIT     0xFF
 
-#ifdef __LIBRETRO__
 #define SND_CHANNELS    16     /* Number of sound channels   */
 #define SND_BITS        8
 #define SND_BUFSIZE     (1<<SND_BITS)
@@ -136,44 +135,6 @@
 #define RMASK 0xF800
 #define GMASK 0x07E0
 #define BMASK 0x001F
-#else
-#ifdef WINDOWS
-#include "LibWin.h"
-#endif
-#ifdef MSDOS
-#include "LibMSDOS.h"
-#endif
-#ifdef UNIX
-#include "LibUnix.h"
-#endif
-#ifdef MAEMO
-#define ARM_CPU
-#include "LibMaemo.h"
-#endif
-#ifdef MEEGO
-#define ARM_CPU
-#include "LibMeego.h"
-#endif
-#ifdef NXC2600
-#include "LibNXC2600.h"
-#endif
-#ifdef STMP3700
-#define ARM_CPU
-#include "LibSTMP3700.h"
-#endif
-#ifdef ANDROID
-#include "LibAndroid.h"
-#endif
-#ifdef IOS
-#define ARM_CPU
-#include "LibApple.h"
-#endif
-#if defined(S60) || defined(UIQ)
-#define ARM_CPU
-#include "LibSym.h"
-#include "LibSym.rh"
-#endif
-#endif
 
 #ifdef __cplusplus
 extern "C" {
