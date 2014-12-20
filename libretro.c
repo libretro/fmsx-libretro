@@ -162,7 +162,8 @@ void retro_set_environment(retro_environment_t cb)
       { 0 },
    };
    static const struct retro_variable vars[] = {
-      { "fmsx_mode", "MSX Mode; MSX1|MSX2+" },
+      { "fmsx_mode", "MSX Mode; MSX1|MSX2|MSX2+" },
+      { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { NULL, NULL },
    };
 
@@ -220,16 +221,36 @@ static void check_variables(void)
    var.key = "fmsx_mode";
    var.value = NULL;
 
+   Mode = 0;
+   Mode |= MSX_GUESSA;
+
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "MSX1") == 0)
-         Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+         Mode |= MSX_MSX1;
+      else if (strcmp(var.value, "MSX2") == 0)
+         Mode |= MSX_MSX2;
       else if (strcmp(var.value, "MSX2+") == 0)
-         Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
+         Mode |= MSX_MSX2P;
    }
    else
    {
-      Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+      Mode |= MSX_MSX1;
+   }
+
+   var.key = "fmsx_video_mode";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "NTSC") == 0)
+         Mode |= MSX_NTSC;
+      else if (strcmp(var.value, "PAL") == 0)
+         Mode |= MSX_PAL;
+   }
+   else
+   {
+      Mode |= MSX_NTSC;
    }
 }
 
@@ -408,13 +429,11 @@ void retro_run(void)
    RETRO_PERFORMANCE_START(core_retro_run);
 
    RunZ80(&CPU);
-   RenderAndPlayAudio(SND_RATE/60);
+   RenderAndPlayAudio(SND_RATE / 60);
 
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
    fflush(stdout);
-
-
 
 #ifdef PSP
    static unsigned int __attribute__((aligned(16))) d_list[32];
