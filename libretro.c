@@ -161,7 +161,13 @@ void retro_set_environment(retro_environment_t cb)
 //      { port, 1 },
       { 0 },
    };
+   static const struct retro_variable vars[] = {
+      { "fmsx_mode", "MSX Mode; MSX1|MSX2+" },
+      { NULL, NULL },
+   };
+
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -207,6 +213,26 @@ void PutImage(void)
 
 }
 
+static void check_variables(void)
+{
+   bool reset_sfx = false;
+   struct retro_variable var;
+   var.key = "fmsx_mode";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "MSX1") == 0)
+         Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+      else if (strcmp(var.value, "MSX2+") == 0)
+         Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
+   }
+   else
+   {
+      Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
+   }
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
@@ -222,14 +248,12 @@ bool retro_load_game(const struct retro_game_info *info)
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
+   check_variables();
+
    Verbose=1;
 
    UPeriod=100;
-   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX2P;
-//   Mode=MSX_NTSC|MSX_GUESSA|MSX_MSX1;
 
-//   ROMName[0] = "Castle.rom";
-//   ROMName[0] = "mg1.mx2"
    strcpy(ROMName_buffer[0], info->path);
    ROMName[0]=ROMName_buffer[0];
    SETJOYTYPE(0,1);
@@ -365,6 +389,11 @@ size_t retro_get_memory_size(unsigned id)
 void retro_run(void)
 {
    int i;
+   bool updated = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
    input_poll_cb();
 
    for (i=0; i < 130; i++)
