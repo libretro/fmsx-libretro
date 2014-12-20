@@ -396,14 +396,14 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(*T==1)
   {
     printf("********* This machine is little-endian. **********\n");
-    printf("Insert #define MSB_FIRST and compile fMSX again.\n");
+    printf("Take #define MSB_FIRST out and compile fMSX again.\n");
     return(0);
   }
 #else
   if(*T!=1)
   {
     printf("********** This machine is big-endian. **********\n");
-    printf("Take #define LSB_FIRST out and compile fMSX again.\n");
+    printf("Insert #define MSB_FIRST and compile fMSX again.\n");
     return(0);
   }
 #endif
