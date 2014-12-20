@@ -189,21 +189,23 @@ void retro_reset(void)
 
 size_t retro_serialize_size(void)
 {
-   return 0;
+   return 0x40000;
 }
 
 bool retro_serialize(void *data, size_t size)
 {
-   (void)data;
-   (void)size;
-   return false;
+   if (!SaveState(data, size))
+      return false;
+
+   return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-   (void)data;
-   (void)size;
-   return false;
+   if (LoadState(data, size) == 0)
+      return false;
+
+   return true;
 }
 
 void retro_cheat_reset(void) {}

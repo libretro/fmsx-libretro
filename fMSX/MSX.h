@@ -353,7 +353,6 @@ byte LoadFNT(const char *FileName);
 /*************************************************************/
 int SetScreenDepth(int Depth);
 
-#ifdef NEW_STATES
 /** SaveState() **********************************************/
 /** Save emulation state to a memory buffer. Returns size   **/
 /** on success, 0 on failure.                               **/
@@ -365,7 +364,6 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /** on success, 0 on failure.                               **/
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
-#endif /* NEW_STATES */
 
 /** InitMachine() ********************************************/
 /** Allocate resources needed by the machine-dependent code.**/

@@ -2932,35 +2932,53 @@ int LoadCart(const char *FileName,int Slot,int Type)
   return(Pages);
 }
 
-#ifdef NEW_STATES
-#include "State.h"
-#else
+#define SaveSTRUCT(Name) \
+  if(Size+sizeof(Name)>MaxSize) return(0); \
+  else { memcpy(Buf+Size,&(Name),sizeof(Name));Size+=sizeof(Name); }
 
-/** SaveSTA() ************************************************/
-/** Save emulation state to a .STA file.                    **/
+#define SaveARRAY(Name) \
+  if(Size+sizeof(Name)>MaxSize) return(0); \
+  else { memcpy(Buf+Size,(Name),sizeof(Name));Size+=sizeof(Name); }
+
+#define SaveDATA(Name,DataSize) \
+  if(Size+(DataSize)>MaxSize) return(0); \
+  else { memcpy(Buf+Size,(Name),(DataSize));Size+=(DataSize); }
+
+#define LoadSTRUCT(Name) \
+  if(Size+sizeof(Name)>MaxSize) return(0); \
+  else { memcpy(&(Name),Buf+Size,sizeof(Name));Size+=sizeof(Name); }
+
+#define SkipSTRUCT(Name) \
+  if(Size+sizeof(Name)>MaxSize) return(0); \
+  else Size+=sizeof(Name)
+
+#define LoadARRAY(Name) \
+  if(Size+sizeof(Name)>MaxSize) return(0); \
+  else { memcpy((Name),Buf+Size,sizeof(Name));Size+=sizeof(Name); }
+
+#define LoadDATA(Name,DataSize) \
+  if(Size+(DataSize)>MaxSize) return(0); \
+  else { memcpy((Name),Buf+Size,(DataSize));Size+=(DataSize); }
+
+#define SkipDATA(DataSize) \
+  if(Size+(DataSize)>MaxSize) return(0); \
+  else Size+=(DataSize)
+
+/** SaveState() **********************************************/
+/** Save emulation state to a memory buffer. Returns size   **/
+/** on success, 0 on failure.                               **/
 /*************************************************************/
-int SaveSTA(const char *FileName)
+unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
 {
-  static byte Header[16] = "STE\032\003\0\0\0\0\0\0\0\0\0\0\0";
-  unsigned int State[256],J,I,K;
-  FILE *F;
+  unsigned int State[256],Size;
+  int J,I,K;
 
-  /* Open state file */
-  if(!(F=fopen(FileName,"wb"))) return(0);
-
-  /* Prepare the header */
-  J=StateID();
-  Header[5] = RAMPages;
-  Header[6] = VRAMPages;
-  Header[7] = J&0x00FF;
-  Header[8] = J>>8;
-
-  /* Write out the header */
-  if(fwrite(Header,1,sizeof(Header),F)!=sizeof(Header))
-  { fclose(F);return(0); }
+  /* No data written yet */
+  Size = 0;
 
   /* Fill out hardware state */
   J=0;
+  memset(State,0,sizeof(State));
   State[J++] = VDPData;
   State[J++] = PLatch;
   State[J++] = ALatch;
@@ -2995,89 +3013,47 @@ int SaveSTA(const char *FileName)
     for(K=0;K<4;++K) State[J++]=ROMMapper[I][K];
   }
 
-  /* Write out hardware state */
-  if(fwrite(&CPU,1,sizeof(CPU),F)!=sizeof(CPU))
-  { fclose(F);return(0); }
-  if(fwrite(&PPI,1,sizeof(PPI),F)!=sizeof(PPI))
-  { fclose(F);return(0); }
-  if(fwrite(VDP,1,sizeof(VDP),F)!=sizeof(VDP))
-  { fclose(F);return(0); }
-  if(fwrite(VDPStatus,1,sizeof(VDPStatus),F)!=sizeof(VDPStatus))
-  { fclose(F);return(0); }
-  if(fwrite(Palette,1,sizeof(Palette),F)!=sizeof(Palette))
-  { fclose(F);return(0); }
-  if(fwrite(&PSG,1,sizeof(PSG),F)!=sizeof(PSG))
-  { fclose(F);return(0); }
-  if(fwrite(&OPLL,1,sizeof(OPLL),F)!=sizeof(OPLL))
-  { fclose(F);return(0); }
-  if(fwrite(&SCChip,1,sizeof(SCChip),F)!=sizeof(SCChip))
-  { fclose(F);return(0); }
-  if(fwrite(State,1,sizeof(State),F)!=sizeof(State))
-  { fclose(F);return(0); }
+  /* Write out data structures */
+  SaveSTRUCT(CPU);
+  SaveSTRUCT(PPI);
+  SaveSTRUCT(VDP);
+  SaveARRAY(VDPStatus);
+  SaveARRAY(Palette);
+  SaveSTRUCT(PSG);
+  SaveSTRUCT(OPLL);
+  SaveSTRUCT(SCChip);
+  SaveARRAY(State);
+  SaveDATA(RAMData,RAMPages*0x4000);
+  SaveDATA(VRAM,VRAMPages*0x4000);
 
-  /* Save memory contents */
-  if(fwrite(RAMData,1,RAMPages*0x4000,F)!=RAMPages*0x4000)
-  { fclose(F);return(0); }
-  if(fwrite(VRAM,1,VRAMPages*0x4000,F)!=VRAMPages*0x4000)
-  { fclose(F);return(0); }
-
-  /* Done */
-  fclose(F);
-  return(1);
+  /* Return amount of data written */
+  return(Size);
 }
 
-/** LoadSTA() ************************************************/
-/** Load emulation state from a .STA file.                  **/
+/** LoadState() **********************************************/
+/** Load emulation state from a memory buffer. Returns size **/
+/** on success, 0 on failure.                               **/
 /*************************************************************/
-int LoadSTA(const char *FileName)
+unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
 {
-  unsigned int State[256],J,I,K;
-  byte Header[16];
-  FILE *F;
+  int State[256],J,I,K;
+  unsigned int Size;
 
-  /* Open state file */
-  if(!(F=fopen(FileName,"rb"))) return(0);
+  /* No data read yet */
+  Size = 0;
 
-  /* Read the header */
-  if(fread(Header,1,sizeof(Header),F)!=sizeof(Header))
-  { fclose(F);return(0); }
-
-  /* Verify the header */
-  if(memcmp(Header,"STE\032\003",5))
-  { fclose(F);return(0); }
-  if(Header[7]+Header[8]*256!=StateID())
-  { fclose(F);return(0); }
-  if((Header[5]!=(RAMPages&0xFF))||(Header[6]!=(VRAMPages&0xFF)))
-  { fclose(F);return(0); }
-
-  /* Read the hardware state */
-  if(fread(&CPU,1,sizeof(CPU),F)!=sizeof(CPU))
-  { fclose(F);return(0); }
-  if(fread(&PPI,1,sizeof(PPI),F)!=sizeof(PPI))
-  { fclose(F);return(0); }
-  if(fread(VDP,1,sizeof(VDP),F)!=sizeof(VDP))
-  { fclose(F);return(0); }
-  if(fread(VDPStatus,1,sizeof(VDPStatus),F)!=sizeof(VDPStatus))
-  { fclose(F);return(0); }
-  if(fread(Palette,1,sizeof(Palette),F)!=sizeof(Palette))
-  { fclose(F);return(0); }
-  if(fread(&PSG,1,sizeof(PSG),F)!=sizeof(PSG))
-  { fclose(F);return(0); }
-  if(fread(&OPLL,1,sizeof(OPLL),F)!=sizeof(OPLL))
-  { fclose(F);return(0); }
-  if(fread(&SCChip,1,sizeof(SCChip),F)!=sizeof(SCChip))
-  { fclose(F);return(0); }
-  if(fread(State,1,sizeof(State),F)!=sizeof(State))
-  { fclose(F);return(0); }
-
-  /* Load memory contents */
-  if(fread(RAMData,1,Header[5]*0x4000,F)!=Header[5]*0x4000)
-  { fclose(F);return(0); }
-  if(fread(VRAM,1,Header[6]*0x4000,F)!=Header[6]*0x4000)
-  { fclose(F);return(0); }
-
-  /* Done with the file */
-  fclose(F);
+  /* Load hardware state */
+  LoadSTRUCT(CPU);
+  LoadSTRUCT(PPI);
+  LoadSTRUCT(VDP);
+  LoadARRAY(VDPStatus);
+  LoadARRAY(Palette);
+  LoadSTRUCT(PSG);
+  LoadSTRUCT(OPLL);
+  LoadSTRUCT(SCChip);
+  LoadARRAY(State);
+  LoadDATA(RAMData,RAMPages*0x4000);
+  LoadDATA(VRAM,VRAMPages*0x4000);
 
   /* Parse hardware state */
   J=0;
@@ -3111,7 +3087,7 @@ int LoadSTA(const char *FileName)
   /* Cartridge setup */
   for(I=0;I<MAXSLOTS;++I)
   {
-    ROMType[I]      = State[J++];
+    ROMType[I] = State[J++];
     for(K=0;K<4;++K) ROMMapper[I][K]=State[J++];
   }
 
@@ -3158,8 +3134,96 @@ int LoadSTA(const char *FileName)
   OPLL.PChanged   = (1<<YM2413_CHANNELS)-1;
   OPLL.DChanged   = (1<<YM2413_CHANNELS)-1;
 
-  /* Done */
-  return(1);
+  /* Return amount of data read */
+  return(Size);
 }
 
-#endif /* !NEW_STATES */
+/** SaveSTA() ************************************************/
+/** Save emulation state into a .STA file. Returns 1 on     **/
+/** success, 0 on failure.                                  **/
+/*************************************************************/
+int SaveSTA(const char *Name)
+{
+  static byte Header[16] = "STE\032\003\0\0\0\0\0\0\0\0\0\0\0";
+  unsigned int J,Size;
+  byte *Buf;
+  FILE *F;
+
+  /* Fail if no state file */
+  if(!Name) return(0);
+
+  /* Allocate temporary buffer */
+  Buf = malloc(MAX_STASIZE);
+  if(!Buf) return(0);
+
+  /* Try saving state */
+  Size = SaveState(Buf,MAX_STASIZE);
+  if(!Size) { free(Buf);return(0); }
+
+  /* Open new state file */
+  F = fopen(Name,"wb");
+  if(!F) { free(Buf);return(0); }
+
+  /* Prepare the header */
+  J=StateID();
+  Header[5] = RAMPages;
+  Header[6] = VRAMPages;
+  Header[7] = J&0x00FF;
+  Header[8] = J>>8;
+
+  /* Write out the header and the data */
+  if(F && (fwrite(Header,1,16,F)!=16))  { fclose(F);F=0; }
+  if(F && (fwrite(Buf,1,Size,F)!=Size)) { fclose(F);F=0; }
+
+  /* If failed writing state, delete open file */
+  if(F) fclose(F); else unlink(Name);
+
+  /* Done */
+  free(Buf);
+  return(!!F);
+}
+
+/** LoadSTA() ************************************************/
+/** Load emulation state from a .STA file. Returns 1 on     **/
+/** success, 0 on failure.                                  **/
+/*************************************************************/
+int LoadSTA(const char *Name)
+{
+  int Size,OldMode,OldRAMPages,OldVRAMPages;
+  byte Header[16],*Buf;
+  FILE *F;
+
+  /* Fail if no state file */
+  if(!Name) return(0);
+
+  /* Open saved state file */
+  if(!(F=fopen(Name,"rb"))) return(0);
+
+  /* Read and check the header */
+  if(fread(Header,1,16,F)!=16)           { fclose(F);return(0); }
+  if(memcmp(Header,"STE\032\003",5))     { fclose(F);return(0); }
+  if(Header[7]+Header[8]*256!=StateID()) { fclose(F);return(0); }
+  if((Header[5]!=(RAMPages&0xFF))||(Header[6]!=(VRAMPages&0xFF)))
+  { fclose(F);return(0); }
+
+  /* Allocate temporary buffer */
+  Buf = malloc(MAX_STASIZE);
+  if(!Buf) { fclose(F);return(0); }
+
+  /* Save current configuration */
+  OldMode      = Mode;
+  OldRAMPages  = RAMPages;
+  OldVRAMPages = VRAMPages;
+
+  /* Read state into temporary buffer, then load it */
+  Size = fread(Buf,1,MAX_STASIZE,F);
+  Size = Size>0? LoadState(Buf,Size):0;
+
+  /* If failed loading state, reset hardware */
+  if(!Size) ResetMSX(OldMode,OldRAMPages,OldVRAMPages);
+
+  /* Done */
+  free(Buf);
+  fclose(F);
+  return(!!Size);
+}
