@@ -56,7 +56,6 @@
 #define EFF_LIGHT    0x200000  /* Keep backlight on          */
 #define EFF_USEHAL   0x400000  /* Use direct image rendering without DSB */
 #elif defined(UNIX)
-#define EFF_MITSHM   0x100000  /* Use MITSHM X11 extension   */
 #define EFF_VARBPP   0x200000  /* X11 determines Image depth */
 #endif
 
@@ -219,25 +218,6 @@ typedef struct
   pixel *Data;               /* Buffer containing WxH pixels */
   int W,H,L,D;               /* Image size, pitch, depth     */
   char Cropped;              /* 1: Cropped, do not free()    */
-#ifndef __LIBRETRO__
-#ifdef WINDOWS
-  HDC hDC;                   /* Handle to device context     */
-  HBITMAP hBMap;             /* Handle to bitmap             */
-#endif
-#ifdef MAEMO
-  GdkImage *GImg;            /* Pointer to GdkImage object   */
-#endif
-#ifdef MEEGO
-  QImage *QImg;              /* Pointer to QImage object     */
-#endif
-#ifdef UNIX
-  XImage *XImg;              /* Pointer to XImage structure  */
-  int Attrs;                 /* USE_SHM and other attributes */
-#ifdef MITSHM
-  XShmSegmentInfo SHMInfo;   /* Shared memory information    */
-#endif
-#endif
-#endif
 } Image;
 
 /** Current Video Image **************************************/

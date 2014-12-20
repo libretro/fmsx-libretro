@@ -75,9 +75,6 @@ static const char *HelpText[] =
 #endif /* UNIX || MAEMO */
 
 #if defined(UNIX)
-#ifdef MITSHM
-  "  -shm/-noshm         - Use MIT SHM extensions for X [-shm]",
-#endif
   "  -scale <factor>     - Scale window by <factor> [2]",
 #endif /* UNIX */
 

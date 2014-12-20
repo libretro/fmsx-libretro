@@ -246,10 +246,6 @@ int main(int argc,char *argv[])
 #endif /* UNIX || MAEMO */
 
 #if defined(UNIX)
-#if defined(MITSHM)
-        case 36: UseEffects|=EFF_MITSHM;break;
-        case 37: UseEffects&=~EFF_MITSHM;break;
-#endif
         case 38: N++;
                  if(N<argc) UseZoom=atoi(argv[N]);
                  else printf("%s: No scaling factor supplied\n",argv[0]);
