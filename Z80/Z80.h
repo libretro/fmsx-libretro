@@ -19,8 +19,6 @@ extern "C" {
 
                                /* Compilation options:       */
 /* #define DEBUG */            /* Compile debugging version  */
-/* #define LSB_FIRST */        /* Compile for low-endian CPU */
-/* #define MSB_FIRST */        /* Compile for hi-endian CPU  */
 
                                /* LoopZ80() may return:      */
 #define INT_RST00   0x00C7     /* RST 00h                    */
@@ -67,15 +65,13 @@ typedef unsigned short word;
 typedef signed char offset;
 
 /** Structured Datatypes *************************************/
-/** NOTICE: #define LSB_FIRST for machines where least      **/
-/**         signifcant byte goes first.                     **/
 /*************************************************************/
 typedef union
 {
-#ifdef LSB_FIRST
-  struct { byte l,h; } B;
-#else
+#ifdef MSB_FIRST
   struct { byte h,l; } B;
+#else
+  struct { byte l,h; } B;
 #endif
   word W;
 } pair;

@@ -400,18 +400,18 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /*** STARTUP CODE starts here: ***/
 
   T=(int *)"\01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-#ifdef LSB_FIRST
-  if(*T!=1)
+#ifdef MSB_FIRST 
+  if(*T==1)
   {
-    printf("********** This machine is high-endian. **********\n");
-    printf("Take #define LSB_FIRST out and compile fMSX again.\n");
+    printf("********* This machine is little-endian. **********\n");
+    printf("Insert #define LSB_FIRST and compile fMSX again.\n");
     return(0);
   }
 #else
-  if(*T==1)
+  if(*T!=1)
   {
-    printf("********* This machine is low-endian. **********\n");
-    printf("Insert #define LSB_FIRST and compile fMSX again.\n");
+    printf("********** This machine is big-endian. **********\n");
+    printf("Take #define LSB_FIRST out and compile fMSX again.\n");
     return(0);
   }
 #endif
