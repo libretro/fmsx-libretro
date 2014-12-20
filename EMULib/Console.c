@@ -396,13 +396,13 @@ static const char *nth(const char *S,int N)
   return(S);  
 }
 
-#if !defined(_MSC_VER) && !defined(__WATCOMC__)
+#if !defined(_MSC_VER)
 static int stricmp(const char *S1,const char *S2)
 {
   while(*S1&&(toupper(*S1)==toupper(*S2))) { ++S1;++S2; }
   return(toupper(*S1)-toupper(*S2));
 }
-#endif /* !_MSC_VER & !__WATCOMC__ */
+#endif /* !_MSC_VER */
 
 static int smartcpy(char *D,const char *S,int N)
 {

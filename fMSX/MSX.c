@@ -25,14 +25,6 @@
 #include <fcntl.h>
 #include <time.h>
 
-#ifdef __BORLANDC__
-#include <dir.h>
-#endif
-
-#ifdef __WATCOMC__
-#include <direct.h>
-#endif
-
 #if defined(UNIX) || defined(S60)
 #include <unistd.h>
 #endif
