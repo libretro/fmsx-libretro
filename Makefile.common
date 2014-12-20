@@ -1,4 +1,4 @@
-INCFLAGS := -I$(CORE_DIR) -I$(EMULIB) -I$(EMULIB)/Unix -I$(LIBZ80) -I$(FMSXDIR)
+INCFLAGS := -I$(CORE_DIR) -I$(EMULIB) -I$(LIBZ80) -I$(FMSXDIR)
 
 
 # EMULib sound, console, and other utility functions
