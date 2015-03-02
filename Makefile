@@ -33,10 +33,16 @@ endif
 
 CC_AS ?= $(CC)
 
-ifneq (,$(findstring unix,$(platform)))
+ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,-version-script=link.T -Wl,-no-undefined
+else ifeq ($(platform), linux-portable)
+   TARGET := $(TARGET_NAME)_libretro.so
+   fpic := -fPIC -nostdlib
+   SHARED := -shared -Wl,-version-script=link.T -Wl,-no-undefined
+	LIBM :=
+	LDFLAGS += -L. -lmusl
 else ifneq (,$(findstring rpi,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.so
    LDFLAGS += -shared -Wl,--version-script=libretro/link.T
@@ -208,10 +214,8 @@ DEFINES += -D__LIBRETRO__ $(PLATFORM_DEFINES)
 DEFINES += -DUNIX -DFMSX -DBPS16 -DBPP16
 
 CFLAGS   += $(fpic) $(DEFINES)
-CFLAGS   += -w
 
 CXXFLAGS += $(fpic) $(DEFINES)
-CXXFLAGS   += -w
 
 CORE_DIR	= .
 EMULIB	= $(CORE_DIR)/EMULib
@@ -224,9 +228,6 @@ OBJECTS := $(SOURCES_C:.c=.o)
 
 INCDIRS := $(INCFLAGS) $(EXTRA_INCLUDES)
 CFLAGS +=
-
-%.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
@@ -246,7 +247,7 @@ $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
 else
-	$(CXX) -o $@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
+	$(CC) -o $@ $(SHARED) $(OBJECTS) $(LDFLAGS)
 endif
 
 clean-objects:
