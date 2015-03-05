@@ -42,7 +42,7 @@ else ifeq ($(platform), linux-portable)
    fpic := -fPIC
    SHARED := -shared -Wl,-version-script=link.T
 	LIBM :=
-	LDFLAGS += -L. -lmusl -nostdlib
+	LDFLAGS += -nostdlib
 else ifneq (,$(findstring rpi,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.so
    LDFLAGS += -shared -Wl,--version-script=libretro/link.T
