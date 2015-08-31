@@ -59,7 +59,6 @@ ifeq ($(OSX_LT_MAVERICKS),"YES")
 endif
 ifndef ($(NOUNIVERSAL))
    CFLAGS += $(ARCHFLAGS)
-   CXXFLAGS += $(ARCHFLAGS)
    LDFLAGS += $(ARCHFLAGS)
 endif
 else ifeq ($(platform), ios)
@@ -73,12 +72,10 @@ endif
 
    CC = clang -arch armv7 -isysroot $(IOSSDK)
    CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
-   CXX = clang++ -arch armv7 -isysroot $(IOSSDK)
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 ifeq ($(OSX_LT_MAVERICKS),"YES")
    CC += -miphoneos-version-min=5.0
-   CXX += -miphoneos-version-min=5.0
    CC_AS += -miphoneos-version-min=5.0
    PLATFORM_DEFINES := -miphoneos-version-min=5.0
 endif
@@ -98,14 +95,12 @@ else ifeq ($(platform), qnx)
    SHARED := -lcpp -lm -shared -Wl,-version-script=link.T
 	CC = qcc -Vgcc_ntoarmv7le
    CC_AS = qcc -Vgcc_ntoarmv7le
-	CXX = QCC -Vgcc_ntoarmv7le_cpp
 	AR = QCC -Vgcc_ntoarmv7le
    PLATFORM_DEFINES := -D__BLACKBERRY_QNX__ -fexceptions -marm -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp
 else ifeq ($(platform), ps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    CC_AS = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
-   CXX = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
    AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
    PLATFORM_DEFINES := -D__CELLOS_LV2__
     STATIC_LINKING = 1
@@ -113,7 +108,6 @@ else ifeq ($(platform), sncps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
    CC_AS = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-   CXX = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
    AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
    PLATFORM_DEFINES := -D__CELLOS_LV2__
     STATIC_LINKING = 1
@@ -121,26 +115,34 @@ else ifeq ($(platform), psl1ght)
    TARGET := $(TARGET_NAME)_libretro_psl1ght.a
    CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
    CC_AS = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
-   CXX = $(PS3DEV)/ppu/bin/ppu-g++$(EXE_EXT)
    AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
    PLATFORM_DEFINES := -D__CELLOS_LV2__
     STATIC_LINKING = 1
+
+# PSP 1
 else ifeq ($(platform), psp1)
    TARGET := $(TARGET_NAME)_libretro_psp1.a
    CC = psp-gcc$(EXE_EXT)
    CC_AS = psp-gcc$(EXE_EXT)
-   CXX = psp-g++$(EXE_EXT)
    AR = psp-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DPSP
    CFLAGS += -G0
-   CXXFLAGS += -G0
    STATIC_LINKING = 1
    EXTRA_INCLUDES := -I$(shell psp-config --pspsdk-path)/include
+
+# Vita
+else ifeq ($(platform), vita)
+   TARGET := $(TARGET_NAME)_libretro_vita.a
+	CC = arm-vita-eabi-gcc$(EXE_EXT)
+	CC_AS = arm-vita-eabi-gcc$(EXE_EXT)
+	AR = arm-vita-eabi-ar$(EXE_EXT)
+   PLATFORM_DEFINES := -DVITA
+   STATIC_LINKING = 1
+
 else ifeq ($(platform), xenon)
    TARGET := $(TARGET_NAME)_libretro_xenon360.a
    CC = xenon-gcc$(EXE_EXT)
    CC_AS = xenon-gcc$(EXE_EXT)
-   CXX = xenon-g++$(EXE_EXT)
    AR = xenon-ar$(EXE_EXT)
    PLATFORM_DEFINES := -D__LIBXENON__
     STATIC_LINKING = 1
@@ -148,7 +150,6 @@ else ifeq ($(platform), ngc)
    TARGET := $(TARGET_NAME)_libretro_ngc.a
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
-   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_DOL -mrvl -mcpu=750 -meabi -mhard-float
     STATIC_LINKING = 1
@@ -156,7 +157,6 @@ else ifeq ($(platform), wii)
    TARGET := $(TARGET_NAME)_libretro_wii.a
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
-   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
     STATIC_LINKING = 1
@@ -166,7 +166,6 @@ else ifneq (,$(findstring armv,$(platform)))
    SHARED := -shared -Wl,-version-script=link.T
    CC = gcc
    CC_AS = gcc
-   CXX = g++
 ifneq (,$(findstring cortexa8,$(platform)))
    PLATFORM_DEFINES += -marm -mcpu=cortex-a8
 else ifneq (,$(findstring cortexa9,$(platform)))
@@ -189,19 +188,15 @@ else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
    CC_AS = gcc
-   CXX = g++
    SHARED := -shared -static-libgcc -static-libstdc++ -Wl,-no-undefined -Wl,-version-script=link.T
 endif
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
-	CXXFLAGS += -O0 -g
 else ifeq ($(platform), emscripten)
 	CFLAGS += -O2
-	CXXFLAGS += -O2 -fno-exceptions -fno-rtti -DHAVE_STDINT_H
 else
 	CFLAGS += -O3
-	CXXFLAGS += -O3 -fno-exceptions -fno-rtti -DHAVE_STDINT_H
 endif
 
 
@@ -215,7 +210,6 @@ DEFINES += -DUNIX -DFMSX -DBPS16 -DBPP16
 
 CFLAGS   += $(fpic) $(DEFINES)
 
-CXXFLAGS += $(fpic) $(DEFINES)
 
 CORE_DIR	= .
 EMULIB	= $(CORE_DIR)/EMULib
