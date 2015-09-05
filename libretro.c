@@ -202,7 +202,7 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void *data, size_t size)
 {
-   if (LoadState(data, size) == 0)
+   if (LoadState((unsigned char*)data, size) == 0)
       return false;
 
    return true;

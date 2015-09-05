@@ -17,11 +17,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#if defined(UIQ) || defined(S60) || defined(UNIX) || defined(MAEMO) || defined(MEEGO) || defined(ANDROID)
-#include <dirent.h>
-#else
-#include <direct.h>
-#endif
+#include <retro_dirent.h>
 
 #define DSK_RESERVED_SECS 0
 #define DSK_FATS_PER_DISK 2
@@ -363,9 +359,8 @@ byte *DSKLoad(const char *Name,byte *Dsk)
 {
   byte *Dsk1,*Buf,FN[32],*Path;
   struct stat FS;
-  struct dirent *DE;
   FILE *F;
-  DIR *D;
+  struct RDIR *D;
   int J,I;
 
   /* Create disk image */
@@ -376,27 +371,28 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   if(!stat(Name,&FS)&&S_ISDIR(FS.st_mode))
   {
     /* Open directory */
-    D=opendir(Name);
+    D = retro_opendir(Name);
     if(!D) { if(!Dsk) free(Dsk1);return(0); }
 
     /* Scan, read, store files */
-    while(DE=readdir(D))
-      if(Path=malloc(strlen(Name)+strlen(DE->d_name)+5))
+    while(retro_readdir(D))
+      if(Path=malloc(strlen(Name)+strlen(retro_dirent_get_name(D))+5))
       {
+        const char *name = retro_dirent_get_name(D);
         /* Compose full input file name */
         strcpy(Path,Name);
         I=strlen(Path);
         if(Path[I-1]!='/') Path[I++]='/';
-        strcpy(Path+I,DE->d_name);
+        strcpy(Path+I, name);
 
         /* Compose 8.3 file name */
-        for(J=0;(J<8)&&DE->d_name[J]&&(DE->d_name[J]!='.');J++)
-          FN[J]=toupper(DE->d_name[J]);
+        for(J=0;(J<8)&& name[J]&&(name[J]!='.');J++)
+          FN[J]=toupper(name[J]);
         for(I=J;I<8;I++) FN[I]=' ';
-        for(;DE->d_name[J]&&(DE->d_name[J]!='.');J++);
-        if(DE->d_name[J]) J++;
-        for(;(I<11)&&DE->d_name[J];I++,J++)
-          FN[I]=toupper(DE->d_name[J]);
+        for(;name[J]&&(name[J]!='.');J++);
+        if(name[J]) J++;
+        for(;(I<11) && name[J];I++,J++)
+          FN[I]=toupper(name[J]);
         for(;I<11;I++) FN[I]=' ';
         FN[I]='\0';
 
@@ -427,7 +423,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
       }
 
     /* Done processing directory */
-    closedir(D);
+    retro_closedir(D);
     return(Dsk1);
   }
 
