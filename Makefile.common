@@ -1,8 +1,15 @@
-INCFLAGS := -I$(CORE_DIR) -I$(EMULIB) -I$(LIBZ80) -I$(FMSXDIR)
+INCFLAGS := \
+	-I$(CORE_DIR) \
+	-I$(CORE_DIR)/libretro-common/include \
+	-I$(EMULIB) \
+	-I$(LIBZ80) \
+	-I$(FMSXDIR)
 
 
 # EMULib sound, console, and other utility functions
-SOURCES_C := $(CORE_DIR)/libretro.c \
+SOURCES_C := \
+	$(CORE_DIR)/libretro.c \
+	$(CORE_DIR)/libretro-common/file/retro_dirent.c \
 	$(EMULIB)/EMULib.c \
 	$(EMULIB)/Sound.c \
 	$(FMSXDIR)/MSX.c \
