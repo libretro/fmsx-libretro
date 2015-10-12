@@ -94,6 +94,29 @@ keymap_t keymap[] =
 };
 
 int joystate;
+#define JOY_SET(K) joystate |= K
+// TODO: Use a less hacky method than hard-coding an offset into the joymap.
+const int joy_keyboard_begin = 6;
+
+keymap_t joymap[] = 
+{
+{ RETRO_DEVICE_ID_JOYPAD_UP,        JST_UP},
+{ RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
+{ RETRO_DEVICE_ID_JOYPAD_LEFT,   JST_LEFT },
+{ RETRO_DEVICE_ID_JOYPAD_RIGHT, JST_RIGHT },
+{ RETRO_DEVICE_ID_JOYPAD_A,     JST_FIREA },
+{ RETRO_DEVICE_ID_JOYPAD_B,     JST_FIREB },
+{ RETRO_DEVICE_ID_JOYPAD_X,        KBD_F3 },
+{ RETRO_DEVICE_ID_JOYPAD_Y,     KBD_SPACE },
+{ RETRO_DEVICE_ID_JOYPAD_START,    KBD_F1 },
+{ RETRO_DEVICE_ID_JOYPAD_SELECT,   KBD_F2 },
+{ RETRO_DEVICE_ID_JOYPAD_L,        KBD_F4 },
+{ RETRO_DEVICE_ID_JOYPAD_R,        KBD_F5 },
+{ RETRO_DEVICE_ID_JOYPAD_L2,    KBD_GRAPH },
+{ RETRO_DEVICE_ID_JOYPAD_R2,  KBD_CONTROL },
+{ RETRO_DEVICE_ID_JOYPAD_L3,    KBD_ENTER },
+{ RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
+};
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -146,6 +169,31 @@ void retro_deinit(void)
    perf_cb.perf_log();
 
    log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
+}
+
+static void set_input_descriptors(void)
+{
+	struct retro_input_descriptor descriptors[] = {
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "D-Pad Left" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "D-Pad Up" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "D-Pad Down" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,               "B" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,               "A" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,              "F3" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,        "Spacebar" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,         "F2" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,          "F1" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,              "F4" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,              "F5" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Graph" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,           "Ctrl" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,         "Return" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
+		{ 0 },
+	};
+
+	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -287,6 +335,7 @@ bool retro_load_game(const struct retro_game_info *info)
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
    check_variables();
+   set_input_descriptors();
 
    Verbose=1;
 
@@ -446,32 +495,16 @@ void retro_run(void)
 
    joystate = 0;
 
-#ifdef _3DS
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
-	   joystate |= JST_UP;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))
-	   joystate |= JST_DOWN;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))
-	   joystate |= JST_LEFT;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
-	   joystate |= JST_RIGHT;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
-	   joystate |= JST_FIREA;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
-	   joystate |= JST_FIREB;
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START))
-	   KBD_SET(KBD_F1);
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
-	   KBD_SET(KBD_F2);
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X))
-	   KBD_SET(KBD_F3);
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L))
-	   KBD_SET(KBD_F4);
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
-	   KBD_SET(KBD_F5);
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
-	   KBD_SET(KBD_SPACE);
-#endif
+   for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
+   {
+	   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
+	   {
+		   if (i < joy_keyboard_begin)
+			   JOY_SET(joymap[i].fmsx);
+		   else
+			   KBD_SET(joymap[i].fmsx);
+	   }
+   }
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
