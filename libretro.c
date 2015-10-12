@@ -424,12 +424,10 @@ unsigned int Joystick(void)
 
 void Keyboard(void)
 {
-
 }
 
 unsigned int Mouse(byte N)
 {
-
 }
 
 unsigned int GetJoystick(void)
