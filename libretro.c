@@ -93,7 +93,7 @@ keymap_t keymap[] =
 { RETROK_KP9,       KBD_NUMPAD9  }
 };
 
-
+int joystate;
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -370,7 +370,7 @@ unsigned int WriteAudio(sample *Data,unsigned int Length)
 
 unsigned int Joystick(void)
 {
-   return 0;
+   return joystate;
 }
 
 void Keyboard(void)
@@ -444,6 +444,34 @@ void retro_run(void)
       if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
          KBD_SET(keymap[i].fmsx);
 
+   joystate = 0;
+
+#ifdef _3DS
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
+	   joystate |= JST_UP;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))
+	   joystate |= JST_DOWN;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))
+	   joystate |= JST_LEFT;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+	   joystate |= JST_RIGHT;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
+	   joystate |= JST_FIREA;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
+	   joystate |= JST_FIREB;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START))
+	   KBD_SET(KBD_F1);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
+	   KBD_SET(KBD_F2);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X))
+	   KBD_SET(KBD_F3);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L))
+	   KBD_SET(KBD_F4);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
+	   KBD_SET(KBD_F5);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
+	   KBD_SET(KBD_SPACE);
+#endif
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
