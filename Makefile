@@ -61,7 +61,10 @@ ifndef ($(NOUNIVERSAL))
    CFLAGS += $(ARCHFLAGS)
    LDFLAGS += $(ARCHFLAGS)
 endif
-else ifeq ($(platform), ios)
+
+# iOS
+else ifneq (,$(findstring ios,$(platform)))
+
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
@@ -70,11 +73,13 @@ ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
 endif
 
-   CC = clang -arch armv7 -isysroot $(IOSSDK)
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
    CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
-   OSXVER = `sw_vers -productVersion | cut -d. -f 2`
-   OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
-ifeq ($(OSX_LT_MAVERICKS),"YES")
+ifeq ($(platform),ios9)
+   CC += -miphoneos-version-min=8.0
+   CC_AS += -miphoneos-version-min=8.0
+   PLATFORM_DEFINES := -miphoneos-version-min=8.0
+else
    CC += -miphoneos-version-min=5.0
    CC_AS += -miphoneos-version-min=5.0
    PLATFORM_DEFINES := -miphoneos-version-min=5.0
