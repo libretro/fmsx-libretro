@@ -381,16 +381,6 @@ void SetColor(byte N,byte R,byte G,byte B)
      XPal0=PIXEL(R,G,B);
 }
 
-
-unsigned int InitAudio(unsigned int Rate,unsigned int Latency)
-{
-   return Rate;
-}
-
-void TrashAudio(void)
-{
-}
-
 int PauseAudio(int Switch)
 {
    return 1;

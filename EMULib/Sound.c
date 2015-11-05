@@ -601,13 +601,6 @@ unsigned int InitSound(unsigned int Rate,unsigned int Latency)
     WaveCH[I].Freq   = 0;
   }
 
-  /* Initialize platform-dependent audio */
-#if defined(WINDOWS)
-  Rate = WinInitSound(Rate,Latency);
-#else
-  Rate = InitAudio(Rate,Latency);
-#endif
-
   /* Rate=0 means silence */
   if(!Rate) { SndRate=0;return(0); }
 
@@ -623,14 +616,6 @@ void TrashSound(void)
 {
   /* Sound is now off */
   SndRate = 0;
-  /* Shut down platform-dependent audio */
-#if !defined(NO_AUDIO_PLAYBACK)
-#if defined(WINDOWS)
-  WinTrashSound();
-#else
-  TrashAudio();
-#endif
-#endif
 }
 
 #if !defined(NO_AUDIO_PLAYBACK)
