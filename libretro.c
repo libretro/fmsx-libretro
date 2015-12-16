@@ -210,7 +210,7 @@ void retro_set_environment(retro_environment_t cb)
       { 0 },
    };
    static const struct retro_variable vars[] = {
-      { "fmsx_mode", "MSX Mode; MSX1|MSX2|MSX2+" },
+      { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
       { NULL, NULL },
