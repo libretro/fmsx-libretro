@@ -285,7 +285,7 @@ static void check_variables(void)
    }
    else
    {
-      Mode |= MSX_MSX1;
+      Mode |= MSX_MSX2P;
    }
 
    var.key = "fmsx_video_mode";
