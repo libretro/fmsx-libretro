@@ -3,10 +3,6 @@ TARGET_NAME := fmsx
 DEBUG     = 0
 PATCH_Z80 = 0
 
-ifneq ($(EMSCRIPTEN),)
-   platform = emscripten
-endif
-
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
@@ -95,7 +91,7 @@ include $(THEOS)/makefiles/common.mk
 
 LIBRARY_NAME = $(TARGET_NAME)_libretro_ios
 else ifeq ($(platform), qnx)
-   TARGET := $(TARGET_NAME)_libretro_qnx.so
+   TARGET := $(TARGET_NAME)_libretro_$(platform).so
    fpic := -fPIC
    SHARED := -lcpp -lm -shared -Wl,-version-script=link.T
 	CC = qcc -Vgcc_ntoarmv7le
@@ -103,7 +99,7 @@ else ifeq ($(platform), qnx)
 	AR = QCC -Vgcc_ntoarmv7le
    PLATFORM_DEFINES := -D__BLACKBERRY_QNX__ -fexceptions -marm -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp
 else ifeq ($(platform), ps3)
-   TARGET := $(TARGET_NAME)_libretro_ps3.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    CC_AS = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
@@ -117,7 +113,7 @@ else ifeq ($(platform), sncps3)
    PLATFORM_DEFINES := -D__CELLOS_LV2__
     STATIC_LINKING = 1
 else ifeq ($(platform), psl1ght)
-   TARGET := $(TARGET_NAME)_libretro_psl1ght.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
    CC_AS = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
    AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
@@ -126,7 +122,7 @@ else ifeq ($(platform), psl1ght)
 
 # PSP 1
 else ifeq ($(platform), psp1)
-   TARGET := $(TARGET_NAME)_libretro_psp1.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = psp-gcc$(EXE_EXT)
    CC_AS = psp-gcc$(EXE_EXT)
    AR = psp-ar$(EXE_EXT)
@@ -137,7 +133,7 @@ else ifeq ($(platform), psp1)
 
 # Vita
 else ifeq ($(platform), vita)
-   TARGET := $(TARGET_NAME)_libretro_vita.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = arm-vita-eabi-gcc$(EXE_EXT)
 	CC_AS = arm-vita-eabi-gcc$(EXE_EXT)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
@@ -146,7 +142,7 @@ else ifeq ($(platform), vita)
    
    # CTR(3DS)
 else ifeq ($(platform), ctr)
-	TARGET := $(TARGET_NAME)_libretro_ctr.a
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
 	CXX = $(DEVKITARM)/bin/arm-none-eabi-g++$(EXE_EXT)
 	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
@@ -166,14 +162,14 @@ else ifeq ($(platform), xenon)
    PLATFORM_DEFINES := -D__LIBXENON__
     STATIC_LINKING = 1
 else ifeq ($(platform), ngc)
-   TARGET := $(TARGET_NAME)_libretro_ngc.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_DOL -mrvl -mcpu=750 -meabi -mhard-float
     STATIC_LINKING = 1
 else ifeq ($(platform), wii)
-   TARGET := $(TARGET_NAME)_libretro_wii.a
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
@@ -202,7 +198,7 @@ else ifneq (,$(findstring hardfloat,$(platform)))
 endif
    PLATFORM_DEFINES += -DARM
 else ifeq ($(platform), emscripten)
-   TARGET := $(TARGET_NAME)_libretro_emscripten.bc
+   TARGET := $(TARGET_NAME)_libretro_$(platform).bc
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
