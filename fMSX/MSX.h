@@ -92,7 +92,7 @@ extern "C" {
 
 #define FMPAC_MAGIC 0x694D  /* FMPAC SRAM "magic value"      */
 
-#define PAGESIZE    0x4000L /* Size of a RAM page            */
+#define FMSX_PAGESIZE    0x4000L /* Size of a RAM page            */
 #define NORAM       0xFF    /* Byte to be returned from      */
                             /* non-existing pages and ports  */
 #define MAXSCREEN   12      /* Highest screen mode supported */
