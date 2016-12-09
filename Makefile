@@ -1,4 +1,8 @@
 TARGET_NAME := fmsx
+GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
+ifneq ($(GIT_VERSION)," unknown")
+	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+endif
 
 DEBUG     = 0
 PATCH_Z80 = 0

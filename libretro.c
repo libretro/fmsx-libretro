@@ -121,7 +121,10 @@ keymap_t joymap[] =
 void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name = "fMSX";
-   info->library_version = "3.9";
+#ifndef GIT_VERSION
+#define GIT_VERSION ""
+#endif
+   info->library_version = "3.9" GIT_VERSION;
    info->need_fullpath = true;
    info->block_extract = false;
    info->valid_extensions = "rom|mx1|mx2";
