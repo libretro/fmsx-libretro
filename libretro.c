@@ -152,9 +152,6 @@ void retro_init(void)
    else
       log_cb = NULL;
 
-   image_buffer = malloc(640*480*sizeof(uint16_t));
-   image_buffer_width =  272;
-   image_buffer_height =  228;
 
    environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
 
@@ -162,13 +159,6 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
-   if (image_buffer)
-      free(image_buffer);
-
-   image_buffer = NULL;
-   image_buffer_width = 0;
-   image_buffer_height = 0;
-
    perf_cb.perf_log();
 
    log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
@@ -328,12 +318,19 @@ bool retro_load_game(const struct retro_game_info *info)
    static char ROMName_buffer[MAXCARTS][1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
+   if (!info)
+      return false;
+
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (log_cb)
          log_cb(RETRO_LOG_INFO, "RGB565 is not supported.\n");
       return false;
    }
+
+   image_buffer        = (uint16_t*)malloc(640*480*sizeof(uint16_t));
+   image_buffer_width  =  272;
+   image_buffer_height =  228;
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -434,6 +431,13 @@ bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t
 
 void retro_unload_game(void)
 {
+   if (image_buffer)
+      free(image_buffer);
+
+   image_buffer = NULL;
+   image_buffer_width = 0;
+   image_buffer_height = 0;
+
 }
 
 unsigned retro_get_region(void)
