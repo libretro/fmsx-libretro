@@ -47,6 +47,7 @@ static struct retro_perf_callback perf_cb = {};
 
 static retro_perf_tick_t max_frame_ticks = 0;
 
+static unsigned port0_device;
 
 typedef struct
 {
@@ -55,52 +56,147 @@ typedef struct
 }keymap_t;
 keymap_t keymap[] =
 {
-{ RETROK_LEFT,      KBD_LEFT     },
-{ RETROK_UP,        KBD_UP       },
-{ RETROK_RIGHT,     KBD_RIGHT    },
-{ RETROK_DOWN,      KBD_DOWN     },
-{ RETROK_LSHIFT,    KBD_SHIFT    },
-{ RETROK_RSHIFT,    KBD_SHIFT    },
-{ RETROK_LCTRL,     KBD_CONTROL  },
-{ RETROK_RCTRL,     KBD_CONTROL  },
-{ RETROK_LALT,      KBD_GRAPH    },
-{ RETROK_BACKSPACE, KBD_BS       },
-{ RETROK_TAB,       KBD_TAB      },
-{ RETROK_CAPSLOCK,  KBD_CAPSLOCK },
-{ RETROK_END,       KBD_SELECT   },
-{ RETROK_HOME,      KBD_HOME     },
-{ RETROK_RETURN,    KBD_ENTER    },
-{ RETROK_DELETE,    KBD_DELETE   },
-{ RETROK_INSERT,    KBD_INSERT   },
-{ RETROK_PAGEUP,    KBD_COUNTRY  },
-{ RETROK_PAUSE,     KBD_STOP     },
-{ RETROK_F1,        KBD_F1       },
-{ RETROK_F2,        KBD_F2       },
-{ RETROK_F3,        KBD_F3       },
-{ RETROK_F4,        KBD_F4       },
-{ RETROK_F5,        KBD_F5       },
-{ RETROK_KP0,       KBD_NUMPAD0  },
-{ RETROK_KP1,       KBD_NUMPAD1  },
-{ RETROK_KP2,       KBD_NUMPAD2  },
-{ RETROK_KP3,       KBD_NUMPAD3  },
-{ RETROK_ESCAPE,    KBD_ESCAPE   },
-{ RETROK_KP4,       KBD_NUMPAD4  },
-{ RETROK_KP5,       KBD_NUMPAD5  },
-{ RETROK_KP6,       KBD_NUMPAD6  },
-{ RETROK_KP7,       KBD_NUMPAD7  },
-{ RETROK_SPACE,     KBD_SPACE    },
-{ RETROK_KP8,       KBD_NUMPAD8  },
-{ RETROK_KP9,       KBD_NUMPAD9  }
+   { RETROK_LEFT,       KBD_LEFT     },
+   { RETROK_UP,         KBD_UP       },
+   { RETROK_RIGHT,      KBD_RIGHT    },
+   { RETROK_DOWN,       KBD_DOWN     },
+   { RETROK_LSHIFT,     KBD_SHIFT    },
+   { RETROK_RSHIFT,     KBD_SHIFT    },
+   { RETROK_LCTRL,      KBD_CONTROL  },
+   { RETROK_RCTRL,      KBD_CONTROL  },
+   { RETROK_LALT,       KBD_GRAPH    },
+   { RETROK_BACKSPACE,  KBD_BS       },
+   { RETROK_TAB,        KBD_TAB      },
+   { RETROK_CAPSLOCK,   KBD_CAPSLOCK },
+   { RETROK_END,        KBD_SELECT   },
+   { RETROK_HOME,       KBD_HOME     },
+   { RETROK_RETURN,     KBD_ENTER    },
+   { RETROK_DELETE,     KBD_DELETE   },
+   { RETROK_INSERT,     KBD_INSERT   },
+   { RETROK_PAGEUP,     KBD_COUNTRY  },
+   { RETROK_PAUSE,      KBD_STOP     },
+   { RETROK_F1,         KBD_F1       },
+   { RETROK_F2,         KBD_F2       },
+   { RETROK_F3,         KBD_F3       },
+   { RETROK_F4,         KBD_F4       },
+   { RETROK_F5,         KBD_F5       },
+   { RETROK_KP0,        KBD_NUMPAD0  },
+   { RETROK_KP1,        KBD_NUMPAD1  },
+   { RETROK_KP2,        KBD_NUMPAD2  },
+   { RETROK_KP3,        KBD_NUMPAD3  },
+   { RETROK_ESCAPE,     KBD_ESCAPE   },
+   { RETROK_KP4,        KBD_NUMPAD4  },
+   { RETROK_KP5,        KBD_NUMPAD5  },
+   { RETROK_KP6,        KBD_NUMPAD6  },
+   { RETROK_KP7,        KBD_NUMPAD7  },
+   { RETROK_SPACE,      KBD_SPACE    },
+   { RETROK_EXCLAIM,    '!' },
+   { RETROK_QUOTE,      '"' },
+   { RETROK_HASH,       '#' },
+   { RETROK_DOLLAR,     '$' },
+/* { RETROK_UNKNOWN,    '%' }, */
+   { RETROK_AMPERSAND,  '&' },
+   { RETROK_BACKSLASH,  '\'' },
+   { RETROK_LEFTPAREN,  '(' },
+   { RETROK_RIGHTPAREN, ')' },
+   { RETROK_ASTERISK,   '*' },
+   { RETROK_PLUS,       '+' },
+   { RETROK_COMMA,      ',' },
+   { RETROK_MINUS,      '-' },
+   { RETROK_PERIOD,     '.' },
+   { RETROK_SLASH,      '/' },
+   { RETROK_0,          '0' },
+   { RETROK_1,          '1' },
+   { RETROK_2,          '2' },
+   { RETROK_3,          '3' },
+   { RETROK_4,          '4' },
+   { RETROK_5,          '5' },
+   { RETROK_6,          '6' },
+   { RETROK_7,          '7' },
+   { RETROK_8,          '8' },
+   { RETROK_9,          '9' },
+   { RETROK_COLON,      ':' },
+   { RETROK_SEMICOLON,  ';' },
+   { RETROK_LESS,       '<' },
+   { RETROK_EQUALS,     '=' },
+   { RETROK_GREATER,    '>' },
+   { RETROK_QUESTION,   '?' },
+   { RETROK_AT,         '@' },
+/* { RETROK_a,          'A' },
+   { RETROK_b,          'B' },
+   { RETROK_c,          'C' },
+   { RETROK_d,          'D' },
+   { RETROK_e,          'E' },
+   { RETROK_f,          'F' },
+   { RETROK_g,          'G' },
+   { RETROK_h,          'H' },
+   { RETROK_j,          'I' },
+   { RETROK_j,          'J' },
+   { RETROK_k,          'K' },
+   { RETROK_l,          'L' },
+   { RETROK_m,          'M' },
+   { RETROK_n,          'N' },
+   { RETROK_o,          'O' },
+   { RETROK_p,          'P' },
+   { RETROK_q,          'Q' },
+   { RETROK_r,          'R' },
+   { RETROK_s,          'S' },
+   { RETROK_t,          'T' },
+   { RETROK_u,          'U' },
+   { RETROK_v,          'V' },
+   { RETROK_w,          'W' },
+   { RETROK_x,          'X' },
+   { RETROK_y,          'Y' },
+   { RETROK_z,          'Z' }, */
+   { RETROK_LEFTBRACKET,'[' },
+   { RETROK_BACKSLASH,  '\\' },
+   { RETROK_RIGHTBRACKET,']' },
+   { RETROK_CARET,      '^' },
+   { RETROK_UNDERSCORE, '_' },
+   { RETROK_QUOTE,      '`' },
+   { RETROK_a,          'a' },
+   { RETROK_b,          'b' },
+   { RETROK_c,          'c' },
+   { RETROK_d,          'd' },
+   { RETROK_e,          'e' },
+   { RETROK_f,          'f' },
+   { RETROK_g,          'g' },
+   { RETROK_h,          'h' },
+   { RETROK_i,          'i' },
+   { RETROK_j,          'j' },
+   { RETROK_k,          'k' },
+   { RETROK_l,          'l' },
+   { RETROK_m,          'm' },
+   { RETROK_n,          'n' },
+   { RETROK_o,          'o' },
+   { RETROK_p,          'p' },
+   { RETROK_q,          'q' },
+   { RETROK_r,          'r' },
+   { RETROK_s,          's' },
+   { RETROK_t,          't' },
+   { RETROK_u,          'u' },
+   { RETROK_v,          'v' },
+   { RETROK_w,          'w' },
+   { RETROK_x,          'x' },
+   { RETROK_y,          'y' },
+   { RETROK_z,          'z' },
+   { RETROK_UNKNOWN,    '{' },
+   { RETROK_UNKNOWN,    '|' },
+   { RETROK_UNKNOWN,    '}' },
+   { RETROK_UNKNOWN,    '~' },
+/* { RETROK_DELETE,   0x7F }, DEL? */
+   { RETROK_KP8,        KBD_NUMPAD8  },
+   { RETROK_KP9,        KBD_NUMPAD9  }
 };
 
 int joystate;
-#define JOY_SET(K) joystate |= K
+#define JOY_SET(K, port) joystate |= K << (8 * port)
 // TODO: Use a less hacky method than hard-coding an offset into the joymap.
 const int joy_keyboard_begin = 6;
 
-keymap_t joymap[] = 
+keymap_t keybemu0_map[] =
 {
-{ RETRO_DEVICE_ID_JOYPAD_UP,        JST_UP},
+{ RETRO_DEVICE_ID_JOYPAD_UP,       JST_UP },
 { RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
 { RETRO_DEVICE_ID_JOYPAD_LEFT,   JST_LEFT },
 { RETRO_DEVICE_ID_JOYPAD_RIGHT, JST_RIGHT },
@@ -116,6 +212,36 @@ keymap_t joymap[] =
 { RETRO_DEVICE_ID_JOYPAD_R2,  KBD_CONTROL },
 { RETRO_DEVICE_ID_JOYPAD_L3,    KBD_ENTER },
 { RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
+};
+
+keymap_t keybemu1_map[] =
+{
+{ RETRO_DEVICE_ID_JOYPAD_UP,       KBD_UP },
+{ RETRO_DEVICE_ID_JOYPAD_DOWN,   KBD_DOWN },
+{ RETRO_DEVICE_ID_JOYPAD_LEFT,   KBD_LEFT },
+{ RETRO_DEVICE_ID_JOYPAD_RIGHT, KBD_RIGHT },
+{ RETRO_DEVICE_ID_JOYPAD_B,     KBD_ENTER },
+{ RETRO_DEVICE_ID_JOYPAD_A,     KBD_SPACE },
+{ RETRO_DEVICE_ID_JOYPAD_X,           'n' },
+{ RETRO_DEVICE_ID_JOYPAD_Y,           'm' },
+{ RETRO_DEVICE_ID_JOYPAD_SELECT,   KBD_F4 },
+{ RETRO_DEVICE_ID_JOYPAD_START,    KBD_F1 },
+{ RETRO_DEVICE_ID_JOYPAD_L,        KBD_F2 },
+{ RETRO_DEVICE_ID_JOYPAD_R,        KBD_F3 },
+{ RETRO_DEVICE_ID_JOYPAD_L2,    KBD_GRAPH },
+{ RETRO_DEVICE_ID_JOYPAD_R2,  KBD_CONTROL },
+{ RETRO_DEVICE_ID_JOYPAD_L3,       KBD_F5 },
+{ RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
+};
+
+keymap_t joymap[] =
+{
+{ RETRO_DEVICE_ID_JOYPAD_UP,       JST_UP },
+{ RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
+{ RETRO_DEVICE_ID_JOYPAD_LEFT,   JST_LEFT },
+{ RETRO_DEVICE_ID_JOYPAD_RIGHT, JST_RIGHT },
+{ RETRO_DEVICE_ID_JOYPAD_A,     JST_FIREA },
+{ RETRO_DEVICE_ID_JOYPAD_B,     JST_FIREB },
 };
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -166,40 +292,108 @@ void retro_deinit(void)
 
 static void set_input_descriptors(void)
 {
-	struct retro_input_descriptor descriptors[] = {
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "D-Pad Left" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "D-Pad Up" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "D-Pad Down" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,               "B" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,               "A" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,              "F3" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,        "Spacebar" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,         "F2" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,          "F1" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,              "F4" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,              "F5" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Graph" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,           "Ctrl" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,         "Return" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
-		{ 0 },
-	};
+   struct retro_input_descriptor descriptors_keyb_emu0[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Stick Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "Stick Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Stick Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Stick Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,          "Fire B" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,          "Fire A" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,              "F3" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,        "Spacebar" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,         "F2" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,          "F1" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,              "F4" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,              "F5" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Graph" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,           "Ctrl" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,          "Enter" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
+      { 0 },
+   };
+   struct retro_input_descriptor descriptors_keyb_emu1[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Arrow Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "Arrow Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Arrow Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Arrow Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,           "Enter" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,           "Space" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,               "N" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,               "M" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,         "F4" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,          "F1" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,              "F2" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,              "F3" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Graph" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,           "Ctrl" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,             "F5" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
+      { 0 },
+   };
+   struct retro_input_descriptor descriptors_joystick0[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Stick Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "Stick Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Stick Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Stick Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,          "Fire A" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,          "Fire B" },
+      { 0 },
+   };
+   struct retro_input_descriptor descriptors_joystick1[] = {
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Stick Left" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "Stick Up" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Stick Down" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Stick Right" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,          "Fire A" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,           "FireB" },
+      { 0 },
+   };
+   struct retro_input_descriptor descriptors[32];
+   struct retro_input_descriptor *out_ptr = descriptors;
+   struct retro_input_descriptor *in_ptr;
 
-	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
+   if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0))
+      in_ptr = descriptors_keyb_emu0;
+   else if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1))
+      in_ptr = descriptors_keyb_emu1;
+   else if (port0_device == RETRO_DEVICE_JOYPAD)
+      in_ptr = descriptors_joystick0;
+   else
+      in_ptr = NULL;
+
+   if(in_ptr)
+   {
+      while(in_ptr->description)
+         *(out_ptr++) = *(in_ptr)++;
+   }
+
+   in_ptr = descriptors_joystick1;
+   while(in_ptr->description)
+      *(out_ptr++) = *(in_ptr)++;
+
+   out_ptr->description = NULL;
+
+   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
 }
 
 void retro_set_environment(retro_environment_t cb)
 {
+   bool no_content = true;
+
    environ_cb = cb;
-   static const struct retro_controller_description port[] = {
-      { "RetroKeyboard", RETRO_DEVICE_KEYBOARD },
-//      { "RetroPad", RETRO_DEVICE_JOYPAD }
+   static const struct retro_controller_description port0[] = {
+   { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
+   { "Emulated Keyboard",              RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+   { "Keyboard",                       RETRO_DEVICE_KEYBOARD },
+   { "Joystick",                       RETRO_DEVICE_JOYPAD },
+   };
+   static const struct retro_controller_description port1[] = {
+   { "joystick",                       RETRO_DEVICE_JOYPAD}
    };
 
    static const struct retro_controller_info ports[] = {
-      { port, 1 },
-//      { port, 1 },
+      { port0, 4 },
+      { port1, 1 },
       { 0 },
    };
    static const struct retro_variable vars[] = {
@@ -211,6 +405,19 @@ void retro_set_environment(retro_environment_t cb)
 
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
+
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+
+}
+
+void retro_set_controller_port_device(unsigned port, unsigned device)
+{
+   if(port == 0)
+   {
+      port0_device = device;
+      set_input_descriptors();
+   }
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -219,9 +426,6 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 
-void retro_set_controller_port_device(unsigned port, unsigned device)
-{
-}
 
 void retro_reset(void)
 {
@@ -318,9 +522,6 @@ bool retro_load_game(const struct retro_game_info *info)
    static char ROMName_buffer[MAXCARTS][1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
-   if (!info)
-      return false;
-
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (log_cb)
@@ -341,8 +542,15 @@ bool retro_load_game(const struct retro_game_info *info)
 
    UPeriod=100;
 
-   strcpy(ROMName_buffer[0], info->path);
-   ROMName[0]=ROMName_buffer[0];
+   if (info)
+   {
+      strcpy(ROMName_buffer[0], info->path);
+      ROMName[0]=ROMName_buffer[0];
+   }
+   else
+      ROMName[0]=NULL;
+
+
    SETJOYTYPE(0,1);
 //   ProgDir=".";
 
@@ -484,22 +692,47 @@ void retro_run(void)
    for (i=0; i < 130; i++)
       KBD_RES(i);
 
-   for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
-      if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
-         KBD_SET(keymap[i].fmsx);
-
    joystate = 0;
+
+   switch(port0_device)
+   {
+   case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0):
+      for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu0_map[i].retro))
+            JOY_SET(keybemu0_map[i].fmsx, 0);
+      for (; i < sizeof(keybemu0_map) / sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu0_map[i].retro))
+            KBD_SET(keybemu0_map[i].fmsx);
+      break;
+
+   case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
+      for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu1_map[i].retro))
+            JOY_SET(keybemu1_map[i].fmsx, 0);
+      for (; i < sizeof(keybemu1_map) / sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu1_map[i].retro))
+            KBD_SET(keybemu1_map[i].fmsx);
+      break;
+
+   case RETRO_DEVICE_JOYPAD:
+      for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
+            JOY_SET(joymap[i].fmsx, 0);
+      break;
+
+   case RETRO_DEVICE_KEYBOARD:
+      for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
+         if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
+            KBD_SET(keymap[i].fmsx);
+      break;
+   }
 
    for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
    {
-	   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
-	   {
-		   if (i < joy_keyboard_begin)
-			   JOY_SET(joymap[i].fmsx);
-		   else
-			   KBD_SET(joymap[i].fmsx);
-	   }
+      if (input_state_cb(1, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
+         JOY_SET(joymap[i].fmsx, 1);
    }
+
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
