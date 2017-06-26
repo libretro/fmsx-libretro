@@ -400,6 +400,8 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
+      { "fmsx_ram_pages", "Main Memory; 64KB,128KB,256KB,512KB" },
+      { "fmsx_vram_pages", "Video Memory; 32KB,64KB,128KB,256KB,512KB" },
       { NULL, NULL },
    };
 
@@ -513,6 +515,46 @@ static void check_variables(void)
    else
    {
       Mode |= MSX_GUESSA;
+   }
+
+   var.key = "fmsx_ram_pages";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "64KB") == 0)
+         RAMPages = 4;
+      else if (strcmp(var.value, "128KB") == 0)
+         RAMPages = 8;
+      else if (strcmp(var.value, "256KB") == 0)
+         RAMPages = 16;
+      else if (strcmp(var.value, "512KB") == 0)
+         RAMPages = 32;
+   }
+   else
+   {
+      RAMPages = 4;
+   }
+
+   var.key = "fmsx_vram_pages";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "32KB") == 0)
+         VRAMPages = 2;
+      else if (strcmp(var.value, "64KB") == 0)
+         VRAMPages = 4;
+      else if (strcmp(var.value, "128KB") == 0)
+         VRAMPages = 8;
+      else if (strcp(var.value, "256KB") == 0)
+         VRAMPages = 16;
+      else if (strcmp(var.value, "512KB") == 0)
+         VRAMPages = 32;
+   }
+   else
+   {
+      VRAMPages = 2;
    }
 }
 
