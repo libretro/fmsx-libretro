@@ -401,7 +401,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
       { "fmsx_ram_pages", "Main Memory; Auto,64KB,128KB,256KB,512KB" },
-      { "fmsx_vram_pages", "Video Memory; Auto,32KB,64KB,128KB,256KB,512KB" },
+      { "fmsx_vram_pages", "Video Memory; Auto,32KB,64KB,128KB,192KB" },
       { NULL, NULL },
    };
 
@@ -487,7 +487,7 @@ static void check_variables(void)
          ModeVRAM = 8;
       else if (strcmp(var.value, "MSX2+") == 0)
          Mode |= MSX_MSX2P;
-         ModeRAM = 8;
+         ModeRAM = 16;
          ModeVRAM = 8;
    }
    else
@@ -561,10 +561,8 @@ static void check_variables(void)
          VRAMPages = 4;
       else if (strcmp(var.value, "128KB") == 0)
          VRAMPages = 8;
-      else if (strcp(var.value, "256KB") == 0)
-         VRAMPages = 16;
-      else if (strcmp(var.value, "512KB") == 0)
-         VRAMPages = 32;
+      else if (strcp(var.value, "192KB") == 0)
+         VRAMPages = 12;
    }
    else
    {
