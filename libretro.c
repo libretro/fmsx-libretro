@@ -436,7 +436,7 @@ void retro_reset(void)
 
 size_t retro_serialize_size(void)
 {
-   return (RAMPages + VRAMPages) * 16 * 1024;
+   return 0x100000;
 }
 
 bool retro_serialize(void *data, size_t size)
