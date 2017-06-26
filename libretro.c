@@ -493,7 +493,7 @@ static void check_variables(void)
    else
    {
       Mode |= MSX_MSX2P;
-      ModeRAM = 8;
+      ModeRAM = 16;
       ModeVRAM = 8;
    }
 
