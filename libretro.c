@@ -253,7 +253,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_version = "3.9" GIT_VERSION;
    info->need_fullpath = true;
    info->block_extract = false;
-   info->valid_extensions = "rom|mx1|mx2";
+   info->valid_extensions = "rom|mx1|mx2|dsk|cas";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
