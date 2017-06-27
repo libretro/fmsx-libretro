@@ -478,17 +478,23 @@ static void check_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "MSX1") == 0)
+      {
          Mode |= MSX_MSX1;
          ModeRAM = 4;
          ModeVRAM = 2;
+      }
       else if (strcmp(var.value, "MSX2") == 0)
+      {
          Mode |= MSX_MSX2;
          ModeRAM = 8;
          ModeVRAM = 8;
+      }
       else if (strcmp(var.value, "MSX2+") == 0)
+      {
          Mode |= MSX_MSX2P;
          ModeRAM = 16;
          ModeVRAM = 8;
+      }
    }
    else
    {
