@@ -520,6 +520,8 @@ bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
    static char ROMName_buffer[MAXCARTS][1024];
+   static char DSKName_buffer[MAXDRIVES][1024];
+   static char CasName_buffer[1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -544,11 +546,29 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (info)
    {
-      strcpy(ROMName_buffer[0], info->path);
-      ROMName[0]=ROMName_buffer[0];
+      char *dot = strrchr(info->path, '.');
+      if (dot && ( !strcmp(dot, ".rom") || !strcmp(dot, ".mx1") || !strcmp(dot, ".mx2") ))
+      {
+         strcpy(ROMName_buffer[0], info->path);
+         ROMName[0]=ROMName_buffer[0];
+      }
+      else if (dot && !strcmp(dot, ".dsk"))
+      {
+         strcpy(DSKName_buffer[0], info->path);
+         DSKName[0]=DSKName_buffer[0];
+      }
+      else if (dot && !strcmp(dot, ".cas"))
+      {
+         strcpy(CasName_buffer, info->path);
+         CasName=CasName_buffer;
+      }
    }
    else
+   {
       ROMName[0]=NULL;
+      DSKName[0]=NULL;
+      CasName=NULL;
+   }
 
 
    SETJOYTYPE(0,1);
