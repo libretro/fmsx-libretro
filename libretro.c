@@ -253,7 +253,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_version = "3.9" GIT_VERSION;
    info->need_fullpath = true;
    info->block_extract = false;
-   info->valid_extensions = "rom|mx1|mx2|dsk|cas";
+   info->valid_extensions = "rom|mx1|mx2";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -324,7 +324,7 @@ static void set_input_descriptors(void)
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,          "F1" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,              "F2" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,              "F3" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Graph" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,          "Grap192h" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,           "Ctrl" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,             "F5" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
@@ -472,23 +472,29 @@ static void check_variables(void)
    var.value = NULL;
 
    Mode = 0;
-   ModeRAM = 0;
-   ModeVRAM = 0;
+   int ModeRAM = 0;
+   int ModeVRAM = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "MSX1") == 0)
+      {
          Mode |= MSX_MSX1;
          ModeRAM = 4;
          ModeVRAM = 2;
+      }
       else if (strcmp(var.value, "MSX2") == 0)
+      {
          Mode |= MSX_MSX2;
          ModeRAM = 8;
          ModeVRAM = 8;
+      }
       else if (strcmp(var.value, "MSX2+") == 0)
+      {
          Mode |= MSX_MSX2P;
          ModeRAM = 16;
          ModeVRAM = 8;
+      }
    }
    else
    {
@@ -561,7 +567,7 @@ static void check_variables(void)
          VRAMPages = 4;
       else if (strcmp(var.value, "128KB") == 0)
          VRAMPages = 8;
-      else if (strcp(var.value, "192KB") == 0)
+      else if (strcmp(var.value, "192KB") == 0)
          VRAMPages = 12;
    }
    else
