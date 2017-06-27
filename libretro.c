@@ -472,8 +472,8 @@ static void check_variables(void)
    var.value = NULL;
 
    Mode = 0;
-   ModeRAM = 0;
-   ModeVRAM = 0;
+   int ModeRAM = 0;
+   int ModeVRAM = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
