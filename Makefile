@@ -1,3 +1,10 @@
+include ./EMULib/Rules.gcc
+
+CFLAGS += -I$(EMULIB)/Unix -I/usr/X11R6/include
+DEFINES+= -DUNIX -DMITSHM -DBPS16
+LIBS   += -lX11 -lXext
+OBJECTS+= $(EMUUNIX)
+
 TARGET_NAME := fmsx
 GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
 ifneq ($(GIT_VERSION)," unknown")
@@ -143,7 +150,7 @@ else ifeq ($(platform), vita)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DVITA
    STATIC_LINKING = 1
-   
+
    # CTR(3DS)
 else ifeq ($(platform), ctr)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
@@ -156,7 +163,7 @@ else ifeq ($(platform), ctr)
 	CFLAGS += -fomit-frame-pointer -ffast-math
 	CXXFLAGS += $(CFLAGS)
 	STATIC_LINKING = 1
-   
+
 
 else ifeq ($(platform), xenon)
    TARGET := $(TARGET_NAME)_libretro_xenon360.a
