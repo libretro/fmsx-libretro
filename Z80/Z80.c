@@ -7,7 +7,7 @@
 /** LoopZ80(), and PatchZ80() functions to accomodate the   **/
 /** emulated machine's architecture.                        **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -32,9 +32,9 @@
 /** up. It has to stay inlined to be fast.                  **/
 /*************************************************************/
 #ifdef COLEM
-#define RdZ80 RDZ80
+#define FAST_RDOP
 extern byte *ROMPage[];
-INLINE byte RdZ80(word A) { return(ROMPage[A>>13][A&0x1FFF]); }
+INLINE byte OpZ80(word A) { return(ROMPage[A>>13][A&0x1FFF]); }
 #endif
 
 #ifdef SPECCY
@@ -78,12 +78,7 @@ INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; 
 #define S(Fl)        R->AF.B.l|=Fl
 #define R(Fl)        R->AF.B.l&=~(Fl)
 #define FLAGS(Rg,Fl) R->AF.B.l=Fl|ZSTable[Rg]
-
-#ifdef REAL_REG_R
 #define INCR(N)      R->R=((R->R+(N))&0x7F)|(R->R&0x80)
-#else
-#define INCR(N)
-#endif
 
 #define M_RLC(Rg)      \
   R->AF.B.l=Rg>>7;Rg=(Rg<<1)|R->AF.B.l;R->AF.B.l|=PZSTable[Rg]
@@ -111,7 +106,7 @@ INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; 
     Rg=(Rg>>1)|(R->AF.B.l<<7);     \
     R->AF.B.l=PZSTable[Rg];        \
   }
-  
+
 #define M_SLA(Rg)      \
   R->AF.B.l=Rg>>7;Rg<<=1;R->AF.B.l|=PZSTable[Rg]
 #define M_SRA(Rg)      \
@@ -155,7 +150,7 @@ INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; 
     (~(R->AF.B.h^Rg)&(Rg^J.B.l)&0x80? V_FLAG:0)| \
     J.B.h|ZSTable[J.B.l]|                        \
     ((R->AF.B.h^Rg^J.B.l)&H_FLAG);               \
-  R->AF.B.h=J.B.l       
+  R->AF.B.h=J.B.l
 
 #define M_SUB(Rg)      \
   J.W=R->AF.B.h-Rg;    \
@@ -224,7 +219,7 @@ INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; 
     ((R->HL.W^R->Rg.W^J.W)&0x1000? H_FLAG:0)|                  \
     (J.W? 0:Z_FLAG)|(J.B.h&S_FLAG);                            \
   R->HL.W=J.W
-   
+
 #define M_SBCW(Rg)      \
   I=R->AF.B.l&C_FLAG;J.W=(R->HL.W-R->Rg.W-I)&0xFFFF;           \
   R->AF.B.l=                                                   \
@@ -296,7 +291,7 @@ enum CodesCB
   RES4_B,RES4_C,RES4_D,RES4_E,RES4_H,RES4_L,RES4_xHL,RES4_A,
   RES5_B,RES5_C,RES5_D,RES5_E,RES5_H,RES5_L,RES5_xHL,RES5_A,
   RES6_B,RES6_C,RES6_D,RES6_E,RES6_H,RES6_L,RES6_xHL,RES6_A,
-  RES7_B,RES7_C,RES7_D,RES7_E,RES7_H,RES7_L,RES7_xHL,RES7_A,  
+  RES7_B,RES7_C,RES7_D,RES7_E,RES7_H,RES7_L,RES7_xHL,RES7_A,
   SET0_B,SET0_C,SET0_D,SET0_E,SET0_H,SET0_L,SET0_xHL,SET0_A,
   SET1_B,SET1_C,SET1_D,SET1_E,SET1_H,SET1_L,SET1_xHL,SET1_A,
   SET2_B,SET2_C,SET2_D,SET2_E,SET2_H,SET2_L,SET2_xHL,SET2_A,
@@ -306,7 +301,7 @@ enum CodesCB
   SET6_B,SET6_C,SET6_D,SET6_E,SET6_H,SET6_L,SET6_xHL,SET6_A,
   SET7_B,SET7_C,SET7_D,SET7_E,SET7_H,SET7_L,SET7_xHL,SET7_A
 };
-  
+
 enum CodesED
 {
   DB_00,DB_01,DB_02,DB_03,DB_04,DB_05,DB_06,DB_07,
@@ -360,7 +355,7 @@ static void CodesCB(register Z80 *R)
     default:
       if(R->TrapBadOps)
         printf
-        (   
+        (
           "[Z80 %lX] Unrecognized instruction: CB %02X at PC=%04X\n",
           (long)(R->User),OpZ80(R->PC.W-1),R->PC.W-2
         );
@@ -372,7 +367,7 @@ static void CodesDDCB(register Z80 *R)
   register pair J;
   register byte I;
 
-#define XX IX    
+#define XX IX
   /* Get offset, read opcode and count cycles */
   J.W=R->XX.W+(offset)OpZ80(R->PC.W++);
   I=OpZ80(R->PC.W++);
@@ -692,7 +687,7 @@ word RunZ80(Z80 *R)
       case PFX_FD: CodesFD(R);break;
       case PFX_DD: CodesDD(R);break;
     }
- 
+
     /* If cycle counter expired... */
     if(R->ICount<=0)
     {

@@ -5,7 +5,7 @@
 /** This file contains implementation for the ED table of   **/
 /** Z80 commands. It is included from Z80.c.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -96,22 +96,12 @@ case LD_A_I:
   break;
 
 case LD_A_R:
-#ifdef REAL_REG_R
   R->AF.B.h=R->R;
-#else
-  ++R->R;
-  R->AF.B.h=(byte)(R->R-R->ICount);
-#endif
   R->AF.B.l=(R->AF.B.l&C_FLAG)|(R->IFF&IFF_2? P_FLAG:0)|ZSTable[R->AF.B.h];
   break;
 
 case LD_I_A:   R->I=R->AF.B.h;break;
-
-#ifdef REAL_REG_R
 case LD_R_A:   R->R=R->AF.B.h;break;
-#else
-case LD_R_A:   break;
-#endif
 
 case IM_0:     R->IFF&=~(IFF_IM1|IFF_IM2);break;
 case IM_1:     R->IFF=(R->IFF&~IFF_IM2)|IFF_IM1;break;
@@ -272,7 +262,7 @@ case CPIR:
   R->AF.B.l =
     N_FLAG|(R->AF.B.l&C_FLAG)|ZSTable[J.B.l]|
     ((R->AF.B.h^I^J.B.l)&H_FLAG)|(R->BC.W? P_FLAG:0);
-  break;  
+  break;
 
 case CPD:
   I=RdZ80(R->HL.W--);

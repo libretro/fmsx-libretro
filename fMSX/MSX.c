@@ -220,8 +220,8 @@ static const struct { byte R2,R3,R4,R5,M2,M3,M4,M5; } MSK[MAXSCREEN+2] =
 };
 
 /** MegaROM Mapper Names *************************************/
-static const char *ROMNames[MAXMAPPERS+1] = 
-{ 
+static const char *ROMNames[MAXMAPPERS+1] =
+{
   "GENERIC/8kB","GENERIC/16kB","KONAMI5/8kB",
   "KONAMI4/8kB","ASCII/8kB","ASCII/16kB",
   "GMASTER2/SRAM","FMPAC/SRAM","UNKNOWN"
@@ -392,7 +392,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /*** STARTUP CODE starts here: ***/
 
   T=(int *)"\01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-#ifdef MSB_FIRST 
+#ifdef MSB_FIRST
   if(*T==1)
   {
     printf("********* This machine is little-endian. **********\n");
@@ -428,7 +428,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     ROMType[J]  = 0;
     SRAMData[J] = 0;
     SRAMName[J] = 0;
-    SaveSRAM[J] = 0; 
+    SaveSRAM[J] = 0;
   }
 
   /* UPeriod has ot be in 1%..100% range */
@@ -552,7 +552,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   {
     FDD[J].Verbose=Verbose&0x04;
     if(ChangeDisk(J,DSKName[J]))
-      if(Verbose) printf("Inserting %s into drive %c\n",DSKName[J],J+'A');  
+      if(Verbose) printf("Inserting %s into drive %c\n",DSKName[J],J+'A');
   }
 
   /* Initialize sound logging */
@@ -616,7 +616,7 @@ void TrashMSX(void)
 
   /* Close tape */
   ChangeTape(0);
-  
+
   /* Close all IO streams */
   if(ComOStream&&(ComOStream!=stdout)) fclose(ComOStream);
   if(ComIStream&&(ComIStream!=stdin))  fclose(ComIStream);
@@ -697,7 +697,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         if(Verbose) printf("  Opening MSX2EXT.ROM...");
         P2=LoadROM("MSX2EXT.ROM",0x4000,0);
         PRINTRESULT(P2);
-        if(!P1||!P2) 
+        if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
           FreeMemory(P1);
@@ -723,7 +723,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         if(Verbose) printf("  Opening MSX2PEXT.ROM...");
         P2=LoadROM("MSX2PEXT.ROM",0x4000,0);
         PRINTRESULT(P2);
-        if(!P1||!P2) 
+        if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
           FreeMemory(P1);
@@ -1104,7 +1104,7 @@ case 0x99: /* VDP status registers */
   /* Read an appropriate status register */
   Port=VDPStatus[VDP[15]];
   /* Reset VAddr latch sequencer */
-// @@@ This breaks Sir Lancelot on ColecoVision, so it must be wrong! 
+// @@@ This breaks Sir Lancelot on ColecoVision, so it must be wrong!
 //  VKey=1;
   /* Update status register's contents */
   switch(VDP[15])
@@ -1206,7 +1206,7 @@ case 0x7C: WrCtrl2413(&OPLL,Value);return;        /* OPLL Register# */
 case 0x7D: WrData2413(&OPLL,Value);return;        /* OPLL Data      */
 case 0x91: Printer(Value);return;                 /* Printer Data   */
 case 0xA0: WrCtrl8910(&PSG,Value);return;         /* PSG Register#  */
-case 0xB4: RTCReg=Value&0x0F;return;              /* RTC Register#  */ 
+case 0xB4: RTCReg=Value&0x0F;return;              /* RTC Register#  */
 
 case 0xD8: /* Upper bits of Kanji ROM address */
   KanLetter=(KanLetter&0x1F800)|((int)(Value&0x3F)<<5);
@@ -1246,7 +1246,7 @@ case 0x98: /* VDP Data */
     VPAGE[VAddr]=Value;
   }
   /* If VAddr rolled over, modify VRAM page# */
-  if(!VAddr&&(ScrMode>3)) 
+  if(!VAddr&&(ScrMode>3))
   {
     VDP[14]=(VDP[14]+1)&(VRAMPages-1);
     VPAGE=VRAM+((int)VDP[14]<<14);
@@ -1346,7 +1346,7 @@ case 0xAB: /* PPI control register */
   if(PPI.Rout[2]!=IOReg) { PPIOut(PPI.Rout[2],IOReg);IOReg=PPI.Rout[2]; }
   /* If primary slot state has changed... */
   if(PPI.Rout[0]!=PSLReg) PSlot(PPI.Rout[0]);
-  /* Done */  
+  /* Done */
   return;
 
 case 0xB5: /* RTC Data */
@@ -1714,7 +1714,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
       break;
   }
 
-  /* No MegaROM mapper or there is an incorrect write */     
+  /* No MegaROM mapper or there is an incorrect write */
   if(Verbose&0x08) printf("MEMORY: Bad write (%d:%d:%04Xh) = %02Xh\n",PS,SS,A,V);
 }
 
@@ -1725,7 +1725,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
 void PSlot(register byte V)
 {
   register byte J,I;
-  
+
   if(PSLReg!=V)
     for(PSLReg=V,J=0;J<4;++J,V>>=2)
     {
@@ -1858,10 +1858,10 @@ void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3)
 /** Write value into a given VDP register.                  **/
 /*************************************************************/
 void VDPOut(register byte R,register byte V)
-{ 
+{
   register byte J;
 
-  switch(R)  
+  switch(R)
   {
     case  0: /* Reset HBlank interrupt if disabled */
              if((VDPStatus[1]&0x01)&&!(V&0x10))
@@ -1912,7 +1912,7 @@ void VDPOut(register byte R,register byte V)
 
   /* Write value into a register */
   VDP[R]=V;
-} 
+}
 
 /** Printer() ************************************************/
 /** Send a character to the printer.                        **/
@@ -1985,7 +1985,7 @@ byte RTCIn(register byte R)
         case 11: J=(TM.tm_year-80)%10;break;
         case 12: J=((TM.tm_year-80)/10)%10;break;
         default: J=0x0F;break;
-      } 
+      }
     }
 
   /* Four upper bits are always high */
@@ -2230,7 +2230,7 @@ void CheckSprites(void)
     for(J=0,S=SprTab;J<N;++J,S+=4)
       if((S[3]&0x0F)||M)
         for(I=J+1,D=S+4;I<N;++I,D+=4)
-          if((D[3]&0x0F)||M) 
+          if((D[3]&0x0F)||M)
           {
             DV=S[0]-D[0];
             if((DV<16)||(DV>240))
@@ -2539,7 +2539,7 @@ byte LoadFNT(const char *FileName)
   fread(FontBuf,1,256*8,F);
   /* Done */
   fclose(F);
-  return(1);  
+  return(1);
 }
 
 /** LoadROM() ************************************************/
@@ -2740,7 +2740,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
       C2=fgetc(F);
     }
 
-  /* If we can't find "AB" signature, drop out */     
+  /* If we can't find "AB" signature, drop out */
   if((C1!='A')||(C2!='B'))
   {
     if(Verbose) puts("  Not a valid cartridge ROM");
@@ -2777,7 +2777,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
       ROMData[Slot]+Len*0x2000,
       ROMData[Slot]+(Len-Pages/2)*0x2000,
       (Pages-Len)*0x2000
-    ); 
+    );
 
   /* Set memory map depending on the ROM size */
   switch(Len)
@@ -2882,7 +2882,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
     if(SRAMName[Slot]=GetMemory(strlen(FileName)+5))
     {
       /* Compose SRAM file name */
-      strcpy(SRAMName[Slot],FileName);      
+      strcpy(SRAMName[Slot],FileName);
       P=strrchr(SRAMName[Slot],'.');
       if(P) strcpy(P,".sav"); else strcat(SRAMName[Slot],".sav");
       /* Try opening file... */
@@ -2918,7 +2918,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
             break;
         }
       }
-    } 
+    }
   }
 
   /* Done setting up cartridge */
@@ -3004,7 +3004,7 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
     State[J++] = SSL[I];
     State[J++] = EnWrite[I];
     State[J++] = RAMMapper[I];
-  }  
+  }
 
   /* Cartridge setup */
   for(I=0;I<MAXSLOTS;++I)
@@ -3082,7 +3082,7 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
     SSL[I]          = State[J++];
     EnWrite[I]      = State[J++];
     RAMMapper[I]    = State[J++];
-  }  
+  }
 
   /* Cartridge setup */
   for(I=0;I<MAXSLOTS;++I)
