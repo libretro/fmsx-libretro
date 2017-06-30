@@ -7,9 +7,15 @@
 
 <CENTER>
 <H1><FONT COLOR=#FF0000>
-fMSX<BR>version 3.9
+fMSX
+<BR>
+version 4.9
 </FONT></H1>
-<H3>by <A HREF="http://fms.komkon.org/">Marat Fayzullin</A></H3>
+<H3>
+MSX Home Computer Emulator
+<BR>
+by <A HREF="http://fms.komkon.org/">Marat Fayzullin</A>
+</H3>
 </CENTER>
 <P>
 
@@ -31,15 +37,15 @@ fMSX<BR>version 3.9
 <H1>New in This Version</H1>
 </A>
 <UL>
-<LI>Majorly improved AY8910 PSG emulation.
-<LI>Added support for .MX1/.MX2 ROM files.
-<LI>Set precise CPU, VDP, and PSG frequences.
-<LI>Switched to table-based PSG envelopes.
-<LI>Switched to logarithmic PSG volumes.
-<LI>Fixed white noise frequency computation.
-<LI>Adjusted noise to be 50% of the melodic volume.
-<LI>Adjusted PSG envelopes length.
-<LI>Fixed recognition of multiple file extensions.
+<LI>Moved input settings to the "Input" menu in fMSX-Windows.
+<LI>Added <I>"Draw 65% Frames"</I> option to fMSX-Windows.
+<LI>Fixed screen updates after changing scaling algorithm in fMSX-Windows.
+<LI>Fixed <I>"Force 4:3 Screen"</I> option in TEXT80 screen mode.
+<LI>Fixed <I>"Load MSXDOS2 ROM"</I> option in fMSX-Windows.
+<LI>Fixed <I>"Hit MIDI Drums"</I> option in fMSX-Windows.
+<LI>Now computing MIDI volume by waveform analysis.
+<LI>Corrected MIDI drums volume in AY8910 emulation.
+<LI>Fixed MIDI keyboard click in fMSX-Windows.
 </UL>
 
 <A NAME="LABC">
@@ -213,13 +219,14 @@ people do not try to cheat on me.
   [PGDOWN]        - COUNTRY
   [F6]            - Load emulation state from .STA file
   [F7]            - Save emulation state to .STA file
-  [F8]            - Invoke built-in configuration menu
-  [CONTROL]+[F8]  - Toggle scanlines on/off
-  [ALT]+[F8]      - Toggle screen softening on/off
+  [F8]            - Rewind emulation back in time
   [F9]            - Fast-forward emulation
-  [F10]           - Go to the built-in debugger
+  [F10]           - Invoke built-in configuration menu
   [F11]           - Reset hardware
   [F12]           - Quit emulation
+  [CONTROL]+[F8]  - Toggle scanlines on/off
+  [ALT]+[F8]      - Toggle screen softening on/off
+  [CONTROL]+[F10] - Go to the built-in debugger
 </PRE>
 </FONT>
 
@@ -275,6 +282,16 @@ Usage: <B>fmsx [-option1 [-option2...]] [filename1] [filename2]</B>
   -simbdos/-wd1793    - Simulate DiskROM disk access calls [-wd1793]
   -sound [&lt;quality&gt;]  - Sound emulation quality (Hz) [44100]
   -nosound            - Same as '-sound 0'
+  -sync &lt;frequency&gt;   - Sync screen updates to &lt;frequency&gt; [60]
+  -nosync             - Do not sync screen updates [-nosync]
+  -static/-nostatic   - Use static color palette [-nostatic]
+  -tv/-lcd/-raster    - Simulate TV scanlines or LCD raster [off]
+  -soft/-eagle        - Scale display with 2xSaI or EAGLE [off]
+  -epx/-scale2x       - Scale display with EPX or Scale2X [off]
+  -cmy/-rgb           - Simulate CMY/RGB pixel raster [off]
+  -mono/-sepia        - Simulate monochrome or sepia CRT [off]
+  -green/-amber       - Simulate green or amber CRT [off]
+  -4x3                - Force 4:3 television screen ratio [off]
 
   <B>With #define DEBUG:</B>
   -trap &lt;address&gt;     - Trap execution when PC reaches address [FFFFh]
@@ -285,23 +302,12 @@ Usage: <B>fmsx [-option1 [-option2...]] [filename1] [filename2]</B>
   -shm/-noshm         - Use MIT SHM extensions for X [-shm]
 
   <B>With #define UNIX:</B>
-  -sync &lt;frequency&gt;   - Sync screen updates to &lt;frequency&gt; [60]
-  -nosync             - Do not sync screen updates [-nosync]
-  -static/-nostatic   - Use static color palette [-nostatic]
   -saver/-nosaver     - Save/don't save CPU when inactive [-saver]
   -scale &lt;factor&gt;     - Scale window by &lt;factor&gt; [2]
-  -tv/-notv           - Simulate/Don't simulate scanlines [-notv]
-  -soft/-nosoft       - Scale and soften display [-nosoft]
 
   <B>With #define MSDOS:</B>
   -vsync              - Sync screen updates to VBlank [-vsync]
-  -sync &lt;frequency&gt;   - Sync screen updates to &lt;frequency&gt; [-nosync]
-                        (&lt;frequency&gt; must be in 20Hz..100Hz range)
-  -nosync             - Do not sync screen updates [-nosync]
-  -static/-nostatic   - Use static color palette [-nostatic]
   -480/-200           - Use 640x480 or 320x200 VGA mode [-200]
-  -tv/-notv           - Simulate/Don't simulate scanlines [-notv]
-  -soft/-nosoft       - Scale and soften display [-nosoft]
 </PRE>
 </FONT>
 
@@ -470,6 +476,101 @@ available from the fMSX
 <A NAME="LABB">
 <H1>History</H1>
 </A>
+<H2>New in fMSX 4.8</H2>
+<UL>
+<LI>Fixed loading of BASIC-only cartridges (<I>Danger X4</I>, <I>Crazy Bullet</I>, etc).
+<LI>Added a hack to ignore bad writes to ASCII16 MegaROM mapper (<I>Vaxol</I>).
+<LI>Added <I>"Interpolate Video | Nearest Neighbor"</I> option to fMSX-Windows.
+<LI>fMSX-Windows will not overwrite last loaded file name with other names.
+<LI>Added <I>"Force 4:3 Screen"</I> option to fMSX-Windows.
+<LI>Added <CODE>-4x3</CODE> command line option to fMSX-Unix.
+<LI>Fixed file associations on Windows 8+.
+<LI>Slightly rearranged Windows menus.
+</UL>
+<H2>New in fMSX 4.7</H2>
+<UL>
+<LI>Added Scale2X scaling algorithm.
+<LI>Added Monochrome, Green, Amber, and Sepia CRT emulation.
+<LI>Added <CODE>-scale2x</CODE> and <CODE>-raster</CODE> command line options.
+<LI>Added <CODE>-mono</CODE>, <CODE>-sepia</CODE>, <CODE>-green</CODE>,
+    and <CODE>-amber</CODE> command line options.
+<LI>EMULib-specific command line options now processed inside EMULib.
+<LI>Added <I>"Scale2x Algorithm"</I> and <I>"LCD Raster"</I> options on Windows.
+<LI>Renamed <I>"Color Raster"</I> menu to <I>"Color Filter"</I> on Windows.
+<LI>Deprecated <CODE>-notv</CODE> and <CODE>-nolcd</CODE> command line options.
+</UL>
+<H2>New in fMSX 4.6</H2>
+<UL>
+<LI>Enabled magnified sprites (<I>Jawbreaker</I>, <I>Stray Cat</I>, <I>F-Zeru</I>, <I>Triumph</I>).
+<LI>Fixed sprite collision detection, especially in BASIC games.
+<LI>Added collision detection even on transparent sprites.
+<LI>Now stopping collision detection when Y=216 in SCREEN 4-8.
+<LI>Now setting lower VDPStatus bits to the last tested sprite.
+</UL>
+<H2>New in fMSX 4.5</H2>
+<UL>
+<LI>Changed VDP VRAM access logic to comply with TMS9918 datasheet.
+</UL>
+<H2>New in fMSX 4.4</H2>
+<UL>
+<LI>Added special effects simulating individual pixel components.
+<LI>Added EPX and EAGLE image scaling algorithms.
+<LI>Merged scanline options into "Simulate Scanlines" in fMSX-Windows.
+<LI>Merged scaling options into "Interpolate Video" in fMSX-Windows.
+<LI>Added "Clear File Associations" option to fMSX-Windows.
+<LI>Added "Play Sound When Inactive" option to fMSX-Windows.
+<LI>Added "Apply Color Raster" submenu to fMSX-Windows.
+<LI>Added <CODE>-rgb</CODE> and <CODE>-cmy</CODE> command line options.
+<LI>Added <CODE>-epx</CODE> and <CODE>-eagle</CODE> command line options.
+</UL>
+<H2>New in fMSX 4.3</H2>
+<UL>
+<LI>Added instant replay function (press [F8]) that "rewinds" gameplay.
+<LI>Switched to the new state saving code.
+<LI>Built-in menu now available when pressing [F10].
+<LI>Built-in debugger now available when pressing [CTRL]+[F10].
+<LI>Fixed a memory corruption bug in the instant replay recorder.
+<LI>Fixed instant replay not recording the first state.
+</UL>
+<H2>New in fMSX 4.2</H2>
+<UL>
+<LI>Added Cheat Hunter tool, press F8 and select "Search Cheats".
+<LI>Removed waveform interpolation for more realistic sound.
+<LI>Changed PSG noise to be more realistic.
+<LI>Switched fMSX-Windows to Direct3D textures-based rendering.
+<LI>Added <CODE>-lcd</CODE> and <CODE>-nolcd</CODE> command line options.
+<LI>Added "Video | Stretch Full Screen" option to fMSX-Windows.
+<LI>Added "Hardware | Debugger" option to fMSX-Windows.
+<LI>Added "Help | MSX.ORG Site" option to fMSX-Windows.
+<LI>Added "Help | MSX.ORG Forums" option to fMSX-Windows.
+</UL>
+<H2>New in fMSX 4.0</H2>
+<UL>
+<LI>Added custom palettes. To make a custom palette for <CODE>Game.rom</CODE>,
+    create <CODE>Game.pal</CODE> containing 16 <I>#RRGGBB</I> values, one
+    per line. This palette file will be loaded automatically.
+<LI>Added cheat codes. To make cheat codes for <CODE>Game.rom</CODE>,
+    create <CODE>Game.cht</CODE> containing codes in <I>00AAAAAA-DD</I> and
+    <I>00AAAAAA-DDDD</I> formats, one per line. The cheat file will be
+    loaded automatically.
+<LI><I>AAAAAA</I> is the ROM address and <I>DD</I> is the value to write
+    there. For 16bit values, use <I>DDDD</I>.
+<LI>To enable cheat codes, select <I>"Hardware | Cheats"</I> in fMSX-Windows,
+    or press F8 and select <I>"Cheats | Enable"</I>.
+<LI>To edit cheat codes, press F8 and select <I>"Cheats"</I>.
+</UL>
+<H2>New in fMSX 3.9</H2>
+<UL>
+<LI>Majorly improved AY8910 PSG emulation.
+<LI>Added support for .MX1/.MX2 ROM files.
+<LI>Set precise CPU, VDP, and PSG frequences.
+<LI>Switched to table-based PSG envelopes.
+<LI>Switched to logarithmic PSG volumes.
+<LI>Fixed white noise frequency computation.
+<LI>Adjusted noise to be 50% of the melodic volume.
+<LI>Adjusted PSG envelopes length.
+<LI>Fixed recognition of multiple file extensions.
+</UL>
 <H2>New in fMSX 3.8</H2>
 <UL>
 <LI>Added support for tape images, supplied in *.CAS files.
@@ -888,6 +989,7 @@ available from the fMSX
 <LI>Better resizing in fMSX-Windows Setup panel.
 </UL>
 <H2>New in fMSX 2.1</H2>
+<UL>
 <LI>New <B>fMSX-Windows</B> available. Buy it
     <A HREF="http://www.digibuy.com/cgi-bin/order.html?296825+92971118912">
     <B>now</B>
