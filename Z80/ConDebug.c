@@ -7,7 +7,7 @@
 /** ommitted, ConDebug.c just includes the default command  **/
 /** line based debugger (Debug.c).                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -32,6 +32,10 @@
 #define DebugZ80 OriginalDebugZ80
 #include "Debug.c"
 #undef DebugZ80
+
+#ifdef SPECCY
+#include "Spectrum.h"
+#endif
 
 #define CLR_BACK   PIXEL(255,255,255)
 #define CLR_TEXT   PIXEL(0,0,0)
@@ -67,6 +71,11 @@ byte DebugZ80(Z80 *R)
     R->Trace=0;
     return(1);
   }
+
+#ifdef SPECCY
+  /* Show currently refreshed scanline on Speccy */
+  RefreshScreen();
+#endif
 
   X    = ((VideoW>>3)-32)>>1;
   Y    = ((VideoH>>3)-23)>>1;

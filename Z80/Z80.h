@@ -5,7 +5,7 @@
 /** This file contains declarations relevant to emulation   **/
 /** of Z80 CPU.                                             **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -19,6 +19,13 @@ extern "C" {
 
                                /* Compilation options:       */
 /* #define DEBUG */            /* Compile debugging version  */
+/* #define LSB_FIRST */        /* Compile for low-endian CPU */
+/* #define MSB_FIRST */        /* Compile for hi-endian CPU  */
+#if defined (LSB_FIRST) || defined (__LITTLE_ENDIAN__) || (defined (LITTLE_ENDIAN) && LITTLE_ENDIAN+0 != 1234)
+  #define LSB_FIRST
+#else
+  #define MSB_FIRST
+#endif
 
                                /* LoopZ80() may return:      */
 #define INT_RST00   0x00C7     /* RST 00h                    */
@@ -65,13 +72,15 @@ typedef unsigned short word;
 typedef signed char offset;
 
 /** Structured Datatypes *************************************/
+/** NOTICE: #define LSB_FIRST for machines where least      **/
+/**         signifcant byte goes first.                     **/
 /*************************************************************/
 typedef union
 {
-#ifdef MSB_FIRST
-  struct { byte h,l; } B;
-#else
+#ifdef LSB_FIRST
   struct { byte l,h; } B;
+#else
+  struct { byte h,l; } B;
 #endif
   word W;
 } pair;
