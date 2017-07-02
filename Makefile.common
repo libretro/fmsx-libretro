@@ -30,7 +30,11 @@ SOURCES_C := \
 	$(EMULIB)/WD1793.c
 
 ifneq ($(STATIC_LINKING), 1)
-SOURCES_C += $(CORE_DIR)/libretro-common/file/retro_dirent.c
+SOURCES_C += $(CORE_DIR)/libretro-common/file/retro_dirent.c \
+				 $(CORE_DIR)/libretro-common/file/file_path.c \
+				 $(CORE_DIR)/libretro-common/compat/compat_posix_string.c \
+				 $(CORE_DIR)/libretro-common/compat/compat_strl.c \
+				 $(CORE_DIR)/libretro-common/compat/compat_strcasestr.c
 endif
 
 ifeq ($(PATCH_Z80), 1)
