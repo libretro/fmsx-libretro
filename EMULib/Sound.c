@@ -16,7 +16,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(UNIX) || defined(MAEMO) || defined(STMP3700) || defined(NXC2600) || defined(ANDROID)
+#if defined(_WIN32)
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
