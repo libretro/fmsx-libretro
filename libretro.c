@@ -372,8 +372,6 @@ static void set_input_descriptors(void)
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
-
-   environ_cb = cb;
    static const struct retro_controller_description port0[] = {
    { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
    { "Emulated Keyboard",              RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
@@ -383,6 +381,8 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port1[] = {
    { "joystick",                       RETRO_DEVICE_JOYPAD}
    };
+
+   environ_cb = cb;
 
    static const struct retro_controller_info ports[] = {
       { port0, 4 },
