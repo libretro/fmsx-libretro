@@ -381,9 +381,6 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port1[] = {
    { "joystick",                       RETRO_DEVICE_JOYPAD}
    };
-
-   environ_cb = cb;
-
    static const struct retro_controller_info ports[] = {
       { port0, 4 },
       { port1, 1 },
@@ -398,12 +395,13 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, NULL },
    };
 
+   environ_cb = cb;
+
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
 
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
-
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
