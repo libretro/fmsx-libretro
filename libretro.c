@@ -570,6 +570,7 @@ static void check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   static Image fMSX_image;
    int i;
    static char ROMName_buffer[MAXCARTS][1024];
    static char DSKName_buffer[MAXDRIVES][1024];
@@ -624,9 +625,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
 
    SETJOYTYPE(0,1);
-//   ProgDir=".";
 
-   static Image fMSX_image;
    fMSX_image.Cropped = 0;
    fMSX_image.D = 16;
    fMSX_image.Data = image_buffer;
