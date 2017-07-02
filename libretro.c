@@ -459,12 +459,13 @@ static void check_variables(void)
 {
    bool reset_sfx = false;
    struct retro_variable var;
+   int ModeRAM = 0;
+   int ModeVRAM = 0;
+
    var.key = "fmsx_mode";
    var.value = NULL;
 
    Mode = 0;
-   int ModeRAM = 0;
-   int ModeVRAM = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
