@@ -43,7 +43,6 @@ static retro_input_poll_t input_poll_cb = NULL;
 static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
-static struct retro_perf_callback perf_cb = {};
 
 static retro_perf_tick_t max_frame_ticks = 0;
 
@@ -277,16 +276,10 @@ void retro_init(void)
       log_cb = log.log;
    else
       log_cb = NULL;
-
-
-   environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
-
 }
 
 void retro_deinit(void)
 {
-   perf_cb.perf_log();
-
    log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
 }
 
@@ -743,18 +736,6 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-#define RETRO_PERFORMANCE_INIT(name) \
-   retro_perf_tick_t current_ticks;\
-   static struct retro_perf_counter name = {#name};\
-   if (!name.registered) perf_cb.perf_register(&(name));\
-   current_ticks = name.total
-
-#define RETRO_PERFORMANCE_START(name) perf_cb.perf_start(&(name))
-#define RETRO_PERFORMANCE_STOP(name) \
-   perf_cb.perf_stop(&(name));\
-   current_ticks = name.total - current_ticks;\
-   if (max_frame_ticks < current_ticks) max_frame_ticks = current_ticks
-
 
 #ifdef PSP
 #include <pspgu.h>
@@ -814,13 +795,8 @@ void retro_run(void)
    }
 
 
-   RETRO_PERFORMANCE_INIT(core_retro_run);
-   RETRO_PERFORMANCE_START(core_retro_run);
-
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / 60);
-
-   RETRO_PERFORMANCE_STOP(core_retro_run);
 
    fflush(stdout);
 
