@@ -5,6 +5,11 @@ INCFLAGS := \
 	-I$(LIBZ80) \
 	-I$(FMSXDIR)
 
+COREDEFINES := -DUNIX -DFMSX -DBPS16 -DBPP16
+
+ifeq ($(PATCH_Z80), 1)
+COREDEFINES += -DPATCH_Z80
+endif
 
 # EMULib sound, console, and other utility functions
 SOURCES_C := \
