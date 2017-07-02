@@ -25,7 +25,9 @@
 #include <fcntl.h>
 #include <time.h>
 
-#if defined(UNIX) || defined(S60)
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
