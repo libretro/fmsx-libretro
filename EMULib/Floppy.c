@@ -17,6 +17,12 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
+#if defined(WIN32) || defined(WIN64)
+    // Copied from linux libc sys/stat.h:
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
+
 #include <retro_dirent.h>
 
 #define DSK_RESERVED_SECS 0
