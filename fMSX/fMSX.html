@@ -9,7 +9,7 @@
 <H1><FONT COLOR=#FF0000>
 fMSX
 <BR>
-version 4.9
+version 5.0
 </FONT></H1>
 <H3>
 MSX Home Computer Emulator
@@ -37,15 +37,11 @@ by <A HREF="http://fms.komkon.org/">Marat Fayzullin</A>
 <H1>New in This Version</H1>
 </A>
 <UL>
-<LI>Moved input settings to the "Input" menu in fMSX-Windows.
-<LI>Added <I>"Draw 65% Frames"</I> option to fMSX-Windows.
-<LI>Fixed screen updates after changing scaling algorithm in fMSX-Windows.
-<LI>Fixed <I>"Force 4:3 Screen"</I> option in TEXT80 screen mode.
-<LI>Fixed <I>"Load MSXDOS2 ROM"</I> option in fMSX-Windows.
-<LI>Fixed <I>"Hit MIDI Drums"</I> option in fMSX-Windows.
-<LI>Now computing MIDI volume by waveform analysis.
-<LI>Corrected MIDI drums volume in AY8910 emulation.
-<LI>Fixed MIDI keyboard click in fMSX-Windows.
+<LI>Switched to microseconds in the AY8910 PSG emulation.
+<LI>Now updating, rendering, and playing sound every 8 scanlines.
+<LI>The <CODE>PLAY "S8M90O6G"</CODE> MML test works now.
+<LI>Added support for DirectInput joysticks to fMSX-Windows.
+<LI>Fixed crash when changing audio sampling rate in fMSX-Windows.
 </UL>
 
 <A NAME="LABC">
@@ -476,6 +472,18 @@ available from the fMSX
 <A NAME="LABB">
 <H1>History</H1>
 </A>
+<H2>New in fMSX 4.9</H2>
+<UL>
+<LI>Moved input settings to the "Input" menu in fMSX-Windows.
+<LI>Added <I>"Draw 65% Frames"</I> option to fMSX-Windows.
+<LI>Fixed screen updates after changing scaling algorithm in fMSX-Windows.
+<LI>Fixed <I>"Force 4:3 Screen"</I> option in TEXT80 screen mode.
+<LI>Fixed <I>"Load MSXDOS2 ROM"</I> option in fMSX-Windows.
+<LI>Fixed <I>"Hit MIDI Drums"</I> option in fMSX-Windows.
+<LI>Now computing MIDI volume by waveform analysis.
+<LI>Corrected MIDI drums volume in AY8910 emulation.
+<LI>Fixed MIDI keyboard click in fMSX-Windows.
+</UL>
 <H2>New in fMSX 4.8</H2>
 <UL>
 <LI>Fixed loading of BASIC-only cartridges (<I>Danger X4</I>, <I>Crazy Bullet</I>, etc).

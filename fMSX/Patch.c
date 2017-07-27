@@ -6,7 +6,7 @@
 /** routines. Note that the disk I/O patches are optional,  **/
 /** as there is a proper WD1793 FDC emulation now.          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

@@ -5,7 +5,7 @@
 /** This file declares functions that simulate joystick and **/
 /** dialpad with the touch screen.                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2008-2014                 **/
+/** Copyright (C) Marat Fayzullin 2008-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -98,7 +98,7 @@ int InitFinJoystick(const Image *Src);
 /** Set finger joystick button(s) to given location. When   **/
 /** Img=0, create wireframe buttons. When Mask=0, set the   **/
 /** directional buttons image and location. When Mask ORed  **/
-/** withBTN_INVISIBLE, create invisible buttons. Returns    **/
+/** with BTN_INVISIBLE, create invisible buttons. Returns   **/
 /** the number of virtual buttons set or 0 for none.        **/
 /*************************************************************/
 int SetFinButton(unsigned int Mask,const Image *Src,int X,int Y,int W,int H);
