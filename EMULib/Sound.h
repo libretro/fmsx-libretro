@@ -6,7 +6,7 @@
 /** functions needed to log soundtrack into a MIDI file.    **/
 /** See Sound.c and the sound drivers for the code.         **/ 
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -99,6 +99,13 @@ void SetSound(int Channel,int NewType);
 /** or reset this bit to turn the channel on or off.        **/ 
 /*************************************************************/
 void SetChannels(int Volume,int Switch);
+
+/** SetNoise() ***********************************************/
+/** Initialize random noise generator to the given Seed and **/
+/** then take random output from OUTBit and XOR it with     **/
+/** XORBit.                                                 **/
+/*************************************************************/
+void SetNoise(int Seed,int OUTBit,int XORBit);
 
 /** SetWave() ************************************************/
 /** Set waveform for a given channel. The channel will be   **/

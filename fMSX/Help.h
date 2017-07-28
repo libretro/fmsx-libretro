@@ -5,7 +5,7 @@
 /** This file contains help information printed out by the  **/
 /** main() routine when started with option "-help".        **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -16,6 +16,10 @@ static const char *HelpText[] =
   "Usage: fmsx [-option1 [-option2...]] [filename1] [filename2]",
   "[filename1] = name of file to load as cartridge A",
   "[filename2] = name of file to load as cartridge B",
+#if defined(ZLIB)
+  "  This program will transparently uncompress singular GZIPped",
+  "  and PKZIPped files.",
+#endif
   "[-option]   =",
   "  -verbose <level>    - Select debugging messages [1]",
   "                         0 - Silent       1 - Startup messages",
@@ -66,8 +70,13 @@ static const char *HelpText[] =
 #if defined(MSDOS) || defined(UNIX) || defined(MAEMO)
   "  -sync <frequency>   - Sync screen updates to <frequency> [60]",
   "  -nosync             - Do not sync screen updates",
-  "  -tv/-notv           - Simulate/Don't simulate scanlines [-notv]",
-  "  -soft/-nosoft       - Scale display, with softening [-nosoft]",
+  "  -tv/-lcd/-raster    - Simulate TV scanlines or LCD raster [off]",
+  "  -soft/-eagle        - Scale display with 2xSaI or EAGLE [off]",
+  "  -epx/-scale2x       - Scale display with EPX or Scale2X [off]",
+  "  -cmy/-rgb           - Simulate CMY/RGB pixel raster [off]",
+  "  -mono/-sepia        - Simulate monochrome or sepia CRT [off]",
+  "  -green/-amber       - Simulate green or amber CRT [off]",
+  "  -4x3                - Force 4:3 television screen ratio [off]",
 #endif /* MSDOS || UNIX || MAEMO */
 
 #if defined(UNIX) || defined(MAEMO)
@@ -75,6 +84,9 @@ static const char *HelpText[] =
 #endif /* UNIX || MAEMO */
 
 #if defined(UNIX)
+#ifdef MITSHM
+  "  -shm/-noshm         - Use MIT SHM extensions for X [-shm]",
+#endif
   "  -scale <factor>     - Scale window by <factor> [2]",
 #endif /* UNIX */
 
@@ -100,14 +112,15 @@ static const char *HelpText[] =
   "  [PGDOWN]        - COUNTRY",
   "  [F6]            - Load emulation from .STA file",
   "  [F7]            - Save emulation state to .STA file",
-  "  [F8]            - Invoke built-in configuration menu",
-  "  [CONTROL]+[F8]  - Toggle scanlines on/off",
-  "  [ALT]+[F8]      - Toggle screen softening on/off",
+  "  [F8]            - Rewind emulation back in time",
   "  [F9]            - Fast-forward emulation",
-#if defined(DEBUG)
-  "  [F10]           - Go into the built-in debugger",
-#endif
+  "  [F10]           - Invoke built-in configuration menu",
   "  [F11]           - Reset hardware",
   "  [F12]           - Quit emulation",
+  "  [CONTROL]+[F8]  - Toggle scanlines on/off",
+  "  [ALT]+[F8]      - Toggle screen softening on/off",
+#if defined(DEBUG)
+  "  [CONTROL]+[F10] - Go into the built-in debugger",
+#endif
   0
 };

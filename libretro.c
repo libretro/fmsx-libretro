@@ -249,7 +249,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
-   info->library_version = "4.9" GIT_VERSION;
+   info->library_version = "5.0" GIT_VERSION;
    info->need_fullpath = true;
    info->block_extract = false;
    info->valid_extensions = "rom|mx1|mx2|dsk|cas";
@@ -449,11 +449,11 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned a, bool b, const char * c) {}
 
-void PutImage(void)
-{
-   ExitNow = 1;
-
-}
+// void PutImage(void)
+// {
+//    ExitNow = 1;
+//
+// }
 
 static void check_variables(void)
 {
@@ -794,7 +794,7 @@ void retro_run(void)
 
 
    RunZ80(&CPU);
-   RenderAndPlayAudio(SND_RATE / 60);
+   // RenderAndPlayAudio(SND_RATE / 60);
 
    fflush(stdout);
 

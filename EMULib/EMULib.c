@@ -5,7 +5,7 @@
 /** This file contains platform-independent implementation  **/
 /** part of the emulation library.                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -113,9 +113,6 @@ void SetVideo(Image *Img,int X,int Y,int W,int H)
   VideoY   = Y<0? 0:Y>=Img->H? Img->H-1:Y;
   VideoW   = VideoX+W>Img->W? Img->W-VideoX:W;
   VideoH   = VideoY+H>Img->H? Img->H-VideoY:H;
-#ifdef WINDOWS
-  FreeImage(&BigScreen);
-#endif
 }
 
 /** WaitJoystick() *******************************************/
@@ -125,7 +122,27 @@ void SetVideo(Image *Img,int X,int Y,int W,int H)
 /*************************************************************/
 unsigned int WaitJoystick(unsigned int Mask)
 {
-   return 0;
+  unsigned int I;
+
+#if defined(ANDROID)
+  /* Wait for all requested buttons to be released first */
+  while(GetJoystick()&Mask) { ShowVideo();usleep(100000); }
+  /* Wait for any of the buttons to become pressed */
+  do { I=GetJoystick()&Mask;ShowVideo();usleep(100000); } while(!I);
+#elif defined(UNIX) || defined(MAEMO) || defined(NXC2600) || defined(STMP3700) || defined(ANDROID)
+  /* Wait for all requested buttons to be released first */
+  while(GetJoystick()&Mask) usleep(100000);
+  /* Wait for any of the buttons to become pressed */
+  do { I=GetJoystick()&Mask;usleep(100000); } while(!I);
+#else
+  /* Wait for all requested buttons to be released first */
+  while(GetJoystick()&Mask);
+  /* Wait for any of the buttons to become pressed */
+  do I=GetJoystick()&Mask; while(!I);
+#endif
+
+  /* Return pressed buttons */
+  return(I);
 }
 
 /** SetKeyHandler() ******************************************/
@@ -189,4 +206,76 @@ const char *NewFile(const char *Pattern)
 
   if(J==10000) strcpy(Name,"");
   return(Name);
+}
+
+/** ParseEffects() *******************************************/
+/** Parse command line visual effect options, removing them **/
+/** from Args[] and applying to the initial Effects value.  **/
+/*************************************************************/
+unsigned int ParseEffects(char *Args[],unsigned int Effects)
+{
+  static const struct { const char *Name; unsigned int Bit,Mask; } Opts[] =
+  {
+    { "tv",       EFF_TVLINES, EFF_RASTER_ALL },
+    { "notv",    -EFF_TVLINES, EFF_RASTER_ALL }, /* Backward compat only */
+    { "lcd",      EFF_LCDLINES,EFF_RASTER_ALL },
+    { "nolcd",   -EFF_LCDLINES,EFF_RASTER_ALL }, /* Backward compat only */
+    { "raster",   EFF_RASTER,  EFF_RASTER_ALL },
+    { "noraster",-EFF_RASTER,  EFF_RASTER_ALL }, /* Backward compat only */
+    { "cmy",      EFF_CMYMASK, EFF_MASK_ALL   },
+    { "rgb",      EFF_RGBMASK, EFF_MASK_ALL   },
+    { "mono",     EFF_MONO,    EFF_MASK_ALL   },
+    { "sepia",    EFF_SEPIA,   EFF_MASK_ALL   },
+    { "green",    EFF_GREEN,   EFF_MASK_ALL   },
+    { "amber",    EFF_AMBER,   EFF_MASK_ALL   },
+    { "soft",     EFF_2XSAI,   EFF_SOFTEN_ALL },
+    { "epx",      EFF_EPX,     EFF_SOFTEN_ALL },
+    { "eagle",    EFF_EAGLE,   EFF_SOFTEN_ALL },
+    { "scale2x",  EFF_SCALE2X, EFF_SOFTEN_ALL },
+    { "hq4x",     EFF_HQ4X,    EFF_SOFTEN_ALL },
+    { "nearest",  EFF_NEAREST, EFF_SOFTEN_ALL },
+    { "vignette", EFF_VIGNETTE,EFF_VIGNETTE   },
+    { "4x3",      EFF_4X3,     EFF_4X3        },
+//    { "sync",     EFF_SYNC,    0 },
+//    { "nosync",  -EFF_SYNC,    0 },
+    { "saver",    EFF_SAVECPU, 0 },
+    { "nosaver", -EFF_SAVECPU, 0 },
+//    { "scale",    EFF_SCALE,   0 },
+//    { "vsync",    EFF_VSYNC,   0 }
+#if defined(UNIX) && defined(MITSHM)
+    { "shm",      EFF_MITSHM,  0 },
+    { "noshm",   -EFF_MITSHM,  0 },
+#endif
+    { 0,0,0 }
+  };
+
+  char **S,**D;
+  unsigned int NewEffects,J;
+
+  /* For all arguments... */
+  for(S=D=Args,NewEffects=Effects ; *S ; ++S)
+    if(*S[0]!='-') *D++=*S;
+    else
+    {
+      /* Search for the option */
+      for(J=0 ; Opts[J].Name && strcmp(*S+1,Opts[J].Name) ; ++J);
+
+      /* If option not found, it is not ours */
+      if(!Opts[J].Name) *D++=*S;
+      else
+      {
+        /* Clear the masked bits first */
+        NewEffects &= ~Opts[J].Mask;
+    
+        /* Now set or reset required bit(s) */
+        if(Opts[J].Bit>0) NewEffects |= Opts[J].Bit;
+        else              NewEffects &= ~(-Opts[J].Bit);
+      }
+    }
+
+  /* Terminate edited arguments list */
+  *D = *S;
+
+  /* Return modified Effects value */
+  return(NewEffects);
 }

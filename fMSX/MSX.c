@@ -7,7 +7,7 @@
 /** etc. Initialization code and definitions needed for the **/
 /** machine-dependent drivers are also here.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -17,18 +17,31 @@
 #include "Sound.h"
 #include "Floppy.h"
 #include "SHA1.h"
+#include "MCF.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <fcntl.h>
+#include <unistd.h>
 #include <time.h>
 
-#ifdef _WIN32
+#ifdef __BORLANDC__
+#include <dir.h>
+#endif
+
+#ifdef __WATCOMC__
 #include <direct.h>
-#else
-#include <unistd.h>
+#endif
+
+#ifdef ZLIB
+#include <zlib.h>
+#endif
+
+#ifdef ANDROID
+#include "MemFS.h"
+#define puts   LOGI
+#define printf LOGI
 #endif
 
 #define PRINTOK           if(Verbose) puts("OK")
@@ -44,7 +57,7 @@
 #endif
 
 /** User-defined parameters for fMSX *************************/
-int  Mode        = MSX_MSX2|MSX_NTSC|MSX_GUESSA|MSX_GUESSB;
+int  Mode        = MSX_MSX2|MSX_NTSC|MSX_MSXDOS2|MSX_GUESSA|MSX_GUESSB;
 byte Verbose     = 1;              /* Debug msgs ON/OFF      */
 byte UPeriod     = 75;             /* % of frames to draw    */
 int  VPeriod     = CPU_VPERIOD;    /* CPU cycles per VBlank  */
@@ -77,7 +90,7 @@ byte PSL[4],SSL[4];                /* Lists of current slots */
 byte PSLReg,SSLReg[4];   /* Storage for A8h port and (FFFFh) */
 
 /** Memory blocks to free in TrashMSX() **********************/
-const byte *Chunks[MAXCHUNKS];     /* Memory blocks to free  */
+void *Chunks[MAXCHUNKS];           /* Memory blocks to free  */
 int NChunks;                       /* Number of memory blcks */
 
 /** Working directory names **********************************/
@@ -159,7 +172,7 @@ byte *SprGen,*SprTab;              /* VDP tables (sprites)   */
 int  ChrGenM,ChrTabM,ColTabM;      /* VDP masks (screen)     */
 int  SprTabM;                      /* VDP masks (sprites)    */
 word VAddr;                        /* VRAM address in VDP    */
-byte VKey,PKey,WKey;               /* Status keys for VDP    */
+byte VKey,PKey;                    /* Status keys for VDP    */
 byte FGColor,BGColor;              /* Colors                 */
 byte XFGColor,XBGColor;            /* Second set of colors   */
 byte ScrMode;                      /* Current screen mode    */
@@ -170,6 +183,15 @@ byte VDPData;                      /* VDP data buffer        */
 byte PLatch;                       /* Palette buffer         */
 byte ALatch;                       /* Address buffer         */
 int  Palette[16];                  /* Current palette        */
+
+/** Cheat entries ********************************************/
+int MCFCount     = 0;              /* Size of MCFEntries[]   */
+MCFEntry MCFEntries[MAXCHEATS];    /* Entries from .MCF file */
+
+/** Cheat codes **********************************************/
+byte CheatsON    = 0;              /* 1: Cheats are on       */
+int  CheatCount  = 0;              /* # cheats, <=MAXCHEATS  */
+CheatCode CheatCodes[MAXCHEATS];
 
 /** Places in DiskROM to be patched with ED FE C9 ************/
 static const word DiskPatches[] =
@@ -222,8 +244,8 @@ static const struct { byte R2,R3,R4,R5,M2,M3,M4,M5; } MSK[MAXSCREEN+2] =
 };
 
 /** MegaROM Mapper Names *************************************/
-static const char *ROMNames[MAXMAPPERS+1] =
-{
+static const char *ROMNames[MAXMAPPERS+1] = 
+{ 
   "GENERIC/8kB","GENERIC/16kB","KONAMI5/8kB",
   "KONAMI4/8kB","ASCII/8kB","ASCII/16kB",
   "GMASTER2/SRAM","FMPAC/SRAM","UNKNOWN"
@@ -284,15 +306,16 @@ void SSlot(byte V);               /* Switch secondary slots          */
 void VDPOut(byte R,byte V);       /* Write value into a VDP register */
 void Printer(byte V);             /* Send a character to a printer   */
 void PPIOut(byte New,byte Old);   /* Set PPI bits (key click, etc.)  */
-void CheckSprites(void);          /* Check collisions and 5th sprite */
+int  CheckSprites(void);          /* Check for sprite collisions     */
 byte RTCIn(byte R);               /* Read RTC registers              */
 byte SetScreen(void);             /* Change screen mode              */
 word SetIRQ(byte IRQ);            /* Set/Reset IRQ                   */
 word StateID(void);               /* Compute emulation state ID      */
+int  ApplyCheats(void);           /* Apply RAM-based cheats          */
 
 static int hasext(const char *FileName,const char *Ext);
 static byte *GetMemory(int Size); /* Get memory chunk                */
-static void FreeMemory(byte *Ptr);/* Free memory chunk               */
+static void FreeMemory(const void *Ptr); /* Free memory chunk        */
 static void FreeAllMemory(void);  /* Free all memory chunks          */
 
 /** hasext() *************************************************/
@@ -338,18 +361,18 @@ static byte *GetMemory(int Size)
 /** FreeMemory() *********************************************/
 /** Free memory allocated by a previous GetMemory() call.   **/
 /*************************************************************/
-static void FreeMemory(byte *Ptr)
+static void FreeMemory(const void *Ptr)
 {
   int J;
 
   /* Special case: we do not free EmptyRAM! */
-  if(!Ptr||(Ptr==EmptyRAM)) return;
+  if(!Ptr||(Ptr==(void *)EmptyRAM)) return;
 
   for(J=0;(J<NChunks)&&(Ptr!=Chunks[J]);++J);
   if(J<NChunks)
   {
+    free(Chunks[J]);
     for(--NChunks;J<NChunks;++J) Chunks[J]=Chunks[J+1];
-    free(Ptr);
   }
 }
 
@@ -360,7 +383,7 @@ static void FreeAllMemory(void)
 {
   int J;
 
-  for(J=0;J<NChunks;++J) free((void *)Chunks[J]);
+  for(J=0;J<NChunks;++J) free(Chunks[J]);
   NChunks=0;
 }
 
@@ -394,18 +417,18 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /*** STARTUP CODE starts here: ***/
 
   T=(int *)"\01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-#ifdef MSB_FIRST
-  if(*T==1)
+#ifdef LSB_FIRST
+  if(*T!=1)
   {
-    printf("********* This machine is little-endian. **********\n");
-    printf("Take #define MSB_FIRST out and compile fMSX again.\n");
+    printf("********** This machine is high-endian. **********\n");
+    printf("Take #define LSB_FIRST out and compile fMSX again.\n");
     return(0);
   }
 #else
-  if(*T!=1)
+  if(*T==1)
   {
-    printf("********** This machine is big-endian. **********\n");
-    printf("Insert #define MSB_FIRST and compile fMSX again.\n");
+    printf("********* This machine is low-endian. **********\n");
+    printf("Insert #define LSB_FIRST and compile fMSX again.\n");
     return(0);
   }
 #endif
@@ -421,6 +444,9 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   FMPACKey    = 0x0000;
   ExitNow     = 0;
   NChunks     = 0;
+  CheatsON    = 0;
+  CheatCount  = 0;
+  MCFCount    = 0;
 
   /* Zero cartridge related data */
   for(J=0;J<MAXSLOTS;++J)
@@ -430,7 +456,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     ROMType[J]  = 0;
     SRAMData[J] = 0;
     SRAMName[J] = 0;
-    SaveSRAM[J] = 0;
+    SaveSRAM[J] = 0; 
   }
 
   /* UPeriod has ot be in 1%..100% range */
@@ -448,8 +474,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         MemMap[I][J][K]=EmptyRAM;
 
   /* Save current directory */
-  if(ProgDir)
-    if(WorkDir=getcwd(0,1024)) Chunks[NChunks++]=WorkDir;
+  if(ProgDir&&(WorkDir=getcwd(0,1024))) Chunks[NChunks++]=(void *)WorkDir;
 
   /* Set invalid modes and RAM/VRAM sizes before calling ResetMSX() */
   Mode      = ~NewMode;
@@ -461,7 +486,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(!RAMPages||!VRAMPages) return(0);
 
   /* Change to the program directory */
-  if(ProgDir) chdir(ProgDir);
+  if(ProgDir && chdir(ProgDir))
+  { if(Verbose) printf("Failed changing to '%s' directory!\n",ProgDir); }
 
   /* Try loading font */
   if(FNTName)
@@ -479,11 +505,11 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   else memcpy(RTC,RTCInit,sizeof(RTC));
 
   /* Try loading Kanji alphabet ROM */
-  if(Kanji=LoadROM("KANJI.ROM",0x20000,0))
+  if((Kanji=LoadROM("KANJI.ROM",0x20000,0)))
   { if(Verbose) printf("KANJI.ROM.."); }
 
   /* Try loading RS232 support ROM to slot */
-  if(P=LoadROM("RS232.ROM",0x4000,0))
+  if((P=LoadROM("RS232.ROM",0x4000,0)))
   {
     if(Verbose) printf("RS232.ROM..");
     MemMap[3][3][2]=P;
@@ -497,7 +523,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   /* If MSX2 or better and DiskROM present...  */
   /* ...try loading MSXDOS2 cartridge into 3:0 */
-  if(!MODEL(MSX_MSX1)&&(MemMap[3][1][2]!=EmptyRAM)&&!ROMData[2])
+  if(!MODEL(MSX_MSX1)&&OPTION(MSX_MSXDOS2)&&(MemMap[3][1][2]!=EmptyRAM)&&!ROMData[2])
     if(LoadCart("MSXDOS2.ROM",2,MAP_GEN16))
       SetMegaROM(2,0,1,ROMMask[J]-1,ROMMask[J]);
 
@@ -521,7 +547,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   }
 
   /* We are now back to working directory */
-  if(WorkDir) chdir(WorkDir);
+  if(WorkDir && chdir(WorkDir))
+  { if(Verbose) printf("Failed changing to '%s' directory!\n",WorkDir); }
 
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
@@ -554,7 +581,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   {
     FDD[J].Verbose=Verbose&0x04;
     if(ChangeDisk(J,DSKName[J]))
-      if(Verbose) printf("Inserting %s into drive %c\n",DSKName[J],J+'A');
+      if(Verbose) printf("Inserting %s into drive %c\n",DSKName[J],J+'A');  
   }
 
   /* Initialize sound logging */
@@ -589,7 +616,8 @@ void TrashMSX(void)
   int J;
 
   /* CMOS.ROM is saved in the program directory */
-  if(ProgDir) chdir(ProgDir);
+  if(ProgDir && chdir(ProgDir))
+  { if(Verbose) printf("Failed changing to '%s' directory!\n",ProgDir); }
 
   /* Save CMOS RAM, if present */
   if(SaveCMOS)
@@ -605,7 +633,8 @@ void TrashMSX(void)
   }
 
   /* Change back to working directory */
-  if(WorkDir) chdir(WorkDir);
+  if(WorkDir && chdir(WorkDir))
+  { if(Verbose) printf("Failed changing to '%s' directory!\n",WorkDir); }
 
   /* Shut down sound logging */
   TrashMIDI();
@@ -618,7 +647,7 @@ void TrashMSX(void)
 
   /* Close tape */
   ChangeTape(0);
-
+  
   /* Close all IO streams */
   if(ComOStream&&(ComOStream!=stdout)) fclose(ComOStream);
   if(ComIStream&&(ComIStream!=stdin))  fclose(ComIStream);
@@ -670,7 +699,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_MODEL)
   {
     /* Change to the program directory */
-    if(ProgDir) chdir(ProgDir);
+    if(ProgDir && chdir(ProgDir))
+    { if(Verbose) printf("  Failed changing to '%s' directory!\n",ProgDir); }
 
     switch(NewMode&MSX_MODEL)
     {
@@ -699,7 +729,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         if(Verbose) printf("  Opening MSX2EXT.ROM...");
         P2=LoadROM("MSX2EXT.ROM",0x4000,0);
         PRINTRESULT(P2);
-        if(!P1||!P2)
+        if(!P1||!P2) 
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
           FreeMemory(P1);
@@ -725,7 +755,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         if(Verbose) printf("  Opening MSX2PEXT.ROM...");
         P2=LoadROM("MSX2PEXT.ROM",0x4000,0);
         PRINTRESULT(P2);
-        if(!P1||!P2)
+        if(!P1||!P2) 
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
           FreeMemory(P1);
@@ -752,7 +782,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     }
 
     /* Change to the working directory */
-    if(WorkDir) chdir(WorkDir);
+    if(WorkDir && chdir(WorkDir))
+    { if(Verbose) printf("Failed changing to '%s' directory!\n",WorkDir); }
   }
 
   /* If hardware model changed ok, patch freshly loaded BIOS */
@@ -773,7 +804,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_PATCHBDOS)
   {
     /* Change to the program directory */
-    if(ProgDir) chdir(ProgDir);
+    if(ProgDir && chdir(ProgDir))
+    { if(Verbose) printf("  Failed changing to '%s' directory!\n",ProgDir); }
 
     /* Try loading DiskROM */
     if(Verbose) printf("  Opening DISK.ROM...");
@@ -781,7 +813,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     PRINTRESULT(P1);
 
     /* Change to the working directory */
-    if(WorkDir) chdir(WorkDir);
+    if(WorkDir && chdir(WorkDir))
+    { if(Verbose) printf("  Failed changing to '%s' directory!\n",WorkDir); }
 
     /* If failed loading DiskROM, ignore the new PATCHBDOS bit */
     if(!P1) NewMode=(NewMode&~MSX_PATCHBDOS)|(Mode&MSX_PATCHBDOS);
@@ -837,7 +870,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(NewRAMPages!=RAMPages)
   {
     if(Verbose) printf("Allocating %dkB for RAM...",NewRAMPages*16);
-    if(P1=GetMemory(NewRAMPages*0x4000))
+    if((P1=GetMemory(NewRAMPages*0x4000)))
     {
       memset(P1,NORAM,NewRAMPages*0x4000);
       FreeMemory(RAMData);
@@ -852,7 +885,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(NewVRAMPages!=VRAMPages)
   {
     if(Verbose) printf("Allocating %dkB for VRAM...",NewVRAMPages*16);
-    if(P1=GetMemory(NewVRAMPages*0x4000))
+    if((P1=GetMemory(NewVRAMPages*0x4000)))
     {
       memset(P1,0x00,NewVRAMPages*0x4000);
       FreeMemory(VRAM);
@@ -944,7 +977,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   VPAGE=VRAM;                           /* VRAM page        */
   FGColor=BGColor=XFGColor=XBGColor=0;  /* VDP colors       */
   ScrMode=0;                            /* Screen mode      */
-  VKey=PKey=1;WKey=0;                   /* VDP keys         */
+  VKey=PKey=1;                          /* VDP keys         */
   VAddr=0x0000;                         /* VRAM access addr */
   ScanLine=0;                           /* Current scanline */
   VDPData=NORAM;                        /* VDP data buffer  */
@@ -1106,7 +1139,7 @@ case 0x99: /* VDP status registers */
   /* Read an appropriate status register */
   Port=VDPStatus[VDP[15]];
   /* Reset VAddr latch sequencer */
-// @@@ This breaks Sir Lancelot on ColecoVision, so it must be wrong!
+// @@@ This breaks Sir Lancelot on ColecoVision, so it must be wrong! 
 //  VKey=1;
   /* Update status register's contents */
   switch(VDP[15])
@@ -1208,7 +1241,7 @@ case 0x7C: WrCtrl2413(&OPLL,Value);return;        /* OPLL Register# */
 case 0x7D: WrData2413(&OPLL,Value);return;        /* OPLL Data      */
 case 0x91: Printer(Value);return;                 /* Printer Data   */
 case 0xA0: WrCtrl8910(&PSG,Value);return;         /* PSG Register#  */
-case 0xB4: RTCReg=Value&0x0F;return;              /* RTC Register#  */
+case 0xB4: RTCReg=Value&0x0F;return;              /* RTC Register#  */ 
 
 case 0xD8: /* Upper bits of Kanji ROM address */
   KanLetter=(KanLetter&0x1F800)|((int)(Value&0x3F)<<5);
@@ -1234,21 +1267,10 @@ case 0x87:
 
 case 0x98: /* VDP Data */
   VKey=1;
-  if(WKey)
-  {
-    /* VDP set for writing */
-    VDPData=VPAGE[VAddr]=Value;
-    VAddr=(VAddr+1)&0x3FFF;
-  }
-  else
-  {
-    /* VDP set for reading */
-    VDPData=VPAGE[VAddr];
-    VAddr=(VAddr+1)&0x3FFF;
-    VPAGE[VAddr]=Value;
-  }
+  VDPData=VPAGE[VAddr]=Value;
+  VAddr=(VAddr+1)&0x3FFF;
   /* If VAddr rolled over, modify VRAM page# */
-  if(!VAddr&&(ScrMode>3))
+  if(!VAddr&&(ScrMode>3)) 
   {
     VDP[14]=(VDP[14]+1)&(VRAMPages-1);
     VPAGE=VRAM+((int)VDP[14]<<14);
@@ -1270,10 +1292,8 @@ case 0x99: /* VDP Address Latch */
       case 0x40:
         /* Set the VRAM access address */
         VAddr=(((word)Value<<8)+ALatch)&0x3FFF;
-        /* WKey=1 when VDP set for writing into VRAM */
-        WKey=Value&0x40;
         /* When set for reading, perform first read */
-        if(!WKey)
+        if(!(Value&0x40))
         {
           VDPData=VPAGE[VAddr];
           VAddr=(VAddr+1)&0x3FFF;
@@ -1348,7 +1368,7 @@ case 0xAB: /* PPI control register */
   if(PPI.Rout[2]!=IOReg) { PPIOut(PPI.Rout[2],IOReg);IOReg=PPI.Rout[2]; }
   /* If primary slot state has changed... */
   if(PPI.Rout[0]!=PSLReg) PSlot(PPI.Rout[0]);
-  /* Done */
+  /* Done */  
   return;
 
 case 0xB5: /* RTC Data */
@@ -1432,35 +1452,35 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
   /* SCC: enable/disable for no cart */
   if(!ROMData[I]&&(A==0x9000)) SCCOn[I]=(V==0x3F)? 1:0;
 
-  /* SCC: types 0, 2, or no cart */
-  if(((A&0xFF00)==0x9800)&&SCCOn[I])
+  /* If writing to SCC... */
+  if(SCCOn[I]&&((A&0xDF00)==0x9800))
   {
     /* Compute SCC register number */
     J=A&0x00FF;
 
-    /* When no MegaROM present, we allow the program */
-    /* to write into SCC wave buffer using EmptyRAM  */
-    /* as a scratch pad.                             */
-    if(!ROMData[I]&&(J<0x80)) EmptyRAM[0x1800+J]=V;
+    /* If using SCC+... */
+    if(A&0x2000)
+    {
+      /* When no MegaROM present, we allow the program */
+      /* to write into SCC wave buffer using EmptyRAM  */
+      /* as a scratch pad.                             */
+      if(!ROMData[I]&&(J<0xA0)) EmptyRAM[0x1800+J]=V;
+   
+      /* Output data to SCC chip */
+      WriteSCCP(&SCChip,J,V);
+    }
+    else
+    {
+      /* When no MegaROM present, we allow the program */
+      /* to write into SCC wave buffer using EmptyRAM  */
+      /* as a scratch pad.                             */
+      if(!ROMData[I]&&(J<0x80)) EmptyRAM[0x1800+J]=V;
+   
+      /* Output data to SCC chip */
+      WriteSCC(&SCChip,J,V);
+    }
 
-    /* Output data to SCC chip */
-    WriteSCC(&SCChip,J,V);
-    return;
-  }
-
-  /* SCC+: types 0, 2, or no cart */
-  if(((A&0xFF00)==0xB800)&&SCCOn[I])
-  {
-    /* Compute SCC register number */
-    J=A&0x00FF;
-
-    /* When no MegaROM present, we allow the program */
-    /* to write into SCC wave buffer using EmptyRAM  */
-    /* as a scratch pad.                             */
-    if(!ROMData[I]&&(J<0xA0)) EmptyRAM[0x1800+J]=V;
-
-    /* Output data to SCC chip */
-    WriteSCCP(&SCChip,J,V);
+    /* Done writing to SCC */   
     return;
   }
 
@@ -1497,6 +1517,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         RAM[J+3]=MemMap[PS][SS][J+3]=RAM[J+2]+0x2000;
         ROMMapper[I][J]=V;
+        ROMMapper[I][J+1]=V|1;
       }
       if(Verbose&0x08)
         printf("ROM-MAPPER %c: 16kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V>>1,PS,SS,J*0x2000+0x4000);
@@ -1579,8 +1600,11 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
       break;
 
     case MAP_ASCII16: /*** ASCII 16kB cartridges ***/
+      /* NOTE: Vauxall writes garbage to to 7xxxh */
+      /* NOTE: Darwin writes valid data to 6x00h (ASCII8 mapper) */
+      /* NOTE: Androgynus writes valid data to 77FFh */
       /* If switching pages... */
-      if((A>=0x6000)&&(A<0x8000))
+      if((A>=0x6000)&&(A<0x8000)&&((V<=ROMMask[I]+1)||!(A&0x0FFF)))
       {
         J=(A&0x1000)>>11;
         /* If selecting SRAM... */
@@ -1606,6 +1630,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
           MemMap[PS][SS][J+2]=P;
           MemMap[PS][SS][J+3]=P+0x2000;
           ROMMapper[I][J]=V;
+          ROMMapper[I][J+1]=V|1;
           /* Only update memory when cartridge's slot selected */
           if((PSL[(J>>1)+1]==PS)&&(SSL[(J>>1)+1]==SS))
           {
@@ -1679,6 +1704,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         case 0x7FF7: /* ROM page select */
           V=(V<<1)&ROMMask[I];
           ROMMapper[I][0]=V;
+          ROMMapper[I][1]=V|1;
           /* 4000h-5FFFh contains SRAM when correct FMPACKey supplied */
           if(FMPACKey!=FMPAC_MAGIC)
           {
@@ -1716,7 +1742,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
       break;
   }
 
-  /* No MegaROM mapper or there is an incorrect write */
+  /* No MegaROM mapper or there is an incorrect write */     
   if(Verbose&0x08) printf("MEMORY: Bad write (%d:%d:%04Xh) = %02Xh\n",PS,SS,A,V);
 }
 
@@ -1727,7 +1753,7 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
 void PSlot(register byte V)
 {
   register byte J,I;
-
+  
   if(PSLReg!=V)
     for(PSLReg=V,J=0;J<4;++J,V>>=2)
     {
@@ -1860,10 +1886,10 @@ void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3)
 /** Write value into a given VDP register.                  **/
 /*************************************************************/
 void VDPOut(register byte R,register byte V)
-{
+{ 
   register byte J;
 
-  switch(R)
+  switch(R)  
   {
     case  0: /* Reset HBlank interrupt if disabled */
              if((VDPStatus[1]&0x01)&&!(V&0x10))
@@ -1914,7 +1940,7 @@ void VDPOut(register byte R,register byte V)
 
   /* Write value into a register */
   VDP[R]=V;
-}
+} 
 
 /** Printer() ************************************************/
 /** Send a character to the printer.                        **/
@@ -1987,7 +2013,7 @@ byte RTCIn(register byte R)
         case 11: J=(TM.tm_year-80)%10;break;
         case 12: J=((TM.tm_year-80)/10)%10;break;
         default: J=0x0F;break;
-      }
+      } 
     }
 
   /* Four upper bits are always high */
@@ -2129,22 +2155,39 @@ word LoopZ80(Z80 *R)
       else RefreshLine12(ScanLine);
   }
 
-  /* Keyboard, sound, and other stuff always runs at line 192    */
-  /* This way, it can't be shut off by overscan tricks (Maarten) */
-  if(ScanLine==192)
+  /* Every few scanlines, update sound */
+  if(!(ScanLine&0x07))
   {
-    /* Check sprites and set Collision, 5Sprites, 5thSprite bits */
-    if(!SpritesOFF&&ScrMode&&(ScrMode<MAXSCREEN+1)) CheckSprites();
+    /* Compute number of microseconds */
+    J = (int)(1000000L*(CPU_HPERIOD<<3)/CPU_CLOCK);
 
-    /* Count MIDI ticks and update AY8910 state */
-    J=1000*VPeriod/CPU_CLOCK;
-    MIDITicks(J);
+    /* Update AY8910 state */
     Loop8910(&PSG,J);
 
     /* Flush changes to the sound channels */
     Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
     SyncSCC(&SCChip,SCC_FLUSH);
     Sync2413(&OPLL,YM2413_FLUSH);
+
+    /* Render and play all sound now */
+    PlayAllSound(J);
+  }
+
+  /* Keyboard, sound, and other stuff always runs at line 192    */
+  /* This way, it can't be shut off by overscan tricks (Maarten) */
+  if(ScanLine==192)
+  {
+    /* Clear 5thSprite fields (wrong place to do it?) */
+    VDPStatus[0]=(VDPStatus[0]&~0x40)|0x1F;
+
+    /* Check sprites and set Collision bit */
+    if(!(VDPStatus[0]&0x20)&&CheckSprites()) VDPStatus[0]|=0x20;
+
+    /* Count MIDI ticks */
+    MIDITicks(1000*VPeriod/CPU_CLOCK);
+
+    /* Apply RAM-based cheats */
+    if(CheatsON&&CheatCount) ApplyCheats();
 
     /* Check joystick */
     JoyState=Joystick();
@@ -2212,27 +2255,31 @@ word LoopZ80(Z80 *R)
 }
 
 /** CheckSprites() *******************************************/
-/** Check for sprite collisions and 5th/9th sprite in a     **/
-/** row.                                                    **/
+/** Check for sprite collisions.                            **/
 /*************************************************************/
-void CheckSprites(void)
+int CheckSprites(void)
 {
-  register word LS,LD;
-  register byte DH,DV,*PS,*PD,*T;
-  byte I,J,N,M,*S,*D;
+  unsigned int I,J,LS,LD;
+  byte DH,DV,*S,*D,*PS,*PD,*T;
 
-  /* Clear 5Sprites, Collision, and 5thSprite bits */
-  VDPStatus[0]=(VDPStatus[0]&0x9F)|0x1F;
+  /* Must be showing sprites */
+  if(SpritesOFF||!ScrMode||(ScrMode>=MAXSCREEN+1)) return(0);
 
-  for(N=0,S=SprTab;(N<32)&&(S[0]!=208);N++,S+=4);
-  M=SolidColor0;
+  /* Find bottom/top scanlines */
+  DH = ScrMode>3? 216:208;
+  LD = 255-(Sprites16x16? 16:8);
+  LS = ScanLines212? 211:191;
+
+  /* Find valid, displayed sprites */
+  for(I=J=0,S=SprTab;(I<32)&&(S[0]!=DH);++I,S+=4)
+    if((S[0]<LS)||(S[0]>LD)) J|=1<<I;
 
   if(Sprites16x16)
   {
-    for(J=0,S=SprTab;J<N;++J,S+=4)
-      if((S[3]&0x0F)||M)
-        for(I=J+1,D=S+4;I<N;++I,D+=4)
-          if((D[3]&0x0F)||M)
+    for(S=SprTab;J;J>>=1,S+=4)
+      if(J&1)
+        for(I=J>>1,D=S+4;I;I>>=1,D+=4)
+          if(I&1) 
           {
             DV=S[0]-D[0];
             if((DV<16)||(DV>240))
@@ -2246,22 +2293,22 @@ void CheckSprites(void)
                 if(DH>240) { DH=256-DH;T=PS;PS=PD;PD=T; }
                 while(DV<16)
                 {
-                  LS=((word)*PS<<8)+*(PS+16);
-                  LD=((word)*PD<<8)+*(PD+16);
+                  LS=((unsigned int)*PS<<8)+*(PS+16);
+                  LD=((unsigned int)*PD<<8)+*(PD+16);
                   if(LD&(LS>>DH)) break;
-                  else { DV++;PS++;PD++; }
+                  else { ++DV;++PS;++PD; }
                 }
-                if(DV<16) { VDPStatus[0]|=0x20;return; }
+                if(DV<16) return(1);
               }
             }
           }
   }
   else
   {
-    for(J=0,S=SprTab;J<N;++J,S+=4)
-      if((S[3]&0x0F)||M)
-        for(I=J+1,D=S+4;I<N;++I,D+=4)
-          if((D[3]&0x0F)||M)
+    for(S=SprTab;J;J>>=1,S+=4)
+      if(J&1)
+        for(I=J>>1,D=S+4;I;I>>=1,D+=4)
+          if(I&1) 
           {
             DV=S[0]-D[0];
             if((DV<8)||(DV>248))
@@ -2273,12 +2320,15 @@ void CheckSprites(void)
                 PD=SprGen+((int)D[2]<<3);
                 if(DV<8) PD+=DV; else { DV=256-DV;PS+=DV; }
                 if(DH>248) { DH=256-DH;T=PS;PS=PD;PD=T; }
-                while((DV<8)&&!(*PD&(*PS>>DH))) { DV++;PS++;PD++; }
-                if(DV<8) { VDPStatus[0]|=0x20;return; }
+                while((DV<8)&&!(*PD&(*PS>>DH))) { ++DV;++PS;++PD; }
+                if(DV<8) return(1);
               }
             }
           }
   }
+
+  /* No collisions */
+  return(0);
 }
 
 /** StateID() ************************************************/
@@ -2317,7 +2367,7 @@ char *MakeFileName(const char *FileName,const char *Extension)
   if(!Result) return(0);
 
   strcpy(Result,FileName);
-  if(P=strrchr(Result,'.')) strcpy(P,Extension); else strcat(Result,Extension);
+  if((P=strrchr(Result,'.'))) strcpy(P,Extension); else strcat(Result,Extension);
   return(Result);
 }
 
@@ -2423,14 +2473,297 @@ int LoadFile(const char *FileName)
   if(hasext(FileName,".ROM")||hasext(FileName,".MX1")||hasext(FileName,".MX2"))
     return(!!LoadCart(FileName,0,ROMGUESS(0)|ROMTYPE(0)));
 
-  /* Try loading as a font */
-  if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
   /* Try loading as a tape */
   if(hasext(FileName,".CAS")) return(!!ChangeTape(FileName));
+  /* Try loading as a font */
+  if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
+  /* Try loading as palette */
+  if(hasext(FileName,".PAL")) return(!!LoadPAL(FileName));
+  /* Try loading as cheats */
+  if(hasext(FileName,".CHT")) return(!!LoadCHT(FileName));
+  if(hasext(FileName,".MCF")) return(!!LoadMCF(FileName));
 
   /* Unknown file type */
   return(0);
 }
+
+/** SaveCHT() ************************************************/
+/** Save cheats to a given text file. Returns the number of **/
+/** cheats on success, 0 on failure.                        **/
+/*************************************************************/
+int SaveCHT(const char *Name)
+{
+  FILE *F;
+  int J;
+
+  /* Open .CHT text file with cheats */
+  F = fopen(Name,"wb");
+  if(!F) return(0);
+
+  /* Save cheats */
+  for(J=0;J<CheatCount;++J)
+    fprintf(F,"%s\n",CheatCodes[J].Text);
+
+  /* Done */
+  fclose(F);
+  return(CheatCount);
+}
+
+/** ApplyMCFCheat() ******************************************/
+/** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
+/** on success.                                             **/
+/*************************************************************/
+int ApplyMCFCheat(int N)
+{
+  int Status;
+
+  /* Must be a valid MSX-specific entry */
+  if((N<0)||(N>=MCFCount)||(MCFEntries[N].Addr>0xFFFF)||(MCFEntries[N].Size>2))
+    return(0);
+
+  /* Switch cheats off for now and remove all present cheats */
+  Status = Cheats(CHTS_QUERY);
+  Cheats(CHTS_OFF);
+  ResetCheats();
+
+  /* Insert cheat codes from the MCF entry */
+  CheatCodes[0].Addr = MCFEntries[N].Addr;
+  CheatCodes[0].Data = MCFEntries[N].Data;
+  CheatCodes[0].Size = MCFEntries[N].Size;
+  sprintf(
+    (char *)CheatCodes[0].Text,
+    CheatCodes[0].Size>1? "%04X-%04X":"%04X-%02X",
+    CheatCodes[0].Addr,
+    CheatCodes[0].Data
+  );
+
+  /* Have one cheat code now */
+  CheatCount = 1;
+
+  /* Turn cheats back on, if they were on */
+  Cheats(Status);
+
+  /* Done */
+  return(CheatCount);
+}
+
+/** AddCheat() ***********************************************/
+/** Add a new cheat. Returns 0 on failure or the number of  **/
+/** cheats on success.                                      **/
+/*************************************************************/
+int AddCheat(const char *Cheat)
+{
+  static const char *Hex = "0123456789ABCDEF";
+  unsigned int A,D;
+  char *P;
+  int J,N;
+
+  /* Table full: no more cheats */
+  if(CheatCount>=MAXCHEATS) return(0);
+
+  /* Check cheat length and decode */
+  N=strlen(Cheat);
+
+  if(((N==13)||(N==11))&&(Cheat[8]=='-'))
+  {
+    for(J=0,A=0;J<8;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else A=(A<<4)|(P-Hex);
+    }
+    for(J=9,D=0;J<N;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else D=(D<<4)|(P-Hex);
+    }
+  }
+  else if(((N==9)||(N==7))&&(Cheat[4]=='-'))
+  {
+    for(J=0,A=0x0100;J<4;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else A=(A<<4)|(P-Hex);
+    }
+    for(J=5,D=0;J<N;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else D=(D<<4)|(P-Hex);
+    }
+  }
+  else
+  {
+    /* Cannot parse this cheat */
+    return(0);
+  }
+
+  /* Add cheat */
+  strcpy((char *)CheatCodes[CheatCount].Text,Cheat);
+  if(N==13)
+  {
+    CheatCodes[CheatCount].Addr = A;
+    CheatCodes[CheatCount].Data = D&0xFFFF;
+    CheatCodes[CheatCount].Size = 2;
+  }
+  else
+  {
+    CheatCodes[CheatCount].Addr = A;
+    CheatCodes[CheatCount].Data = D&0xFF;
+    CheatCodes[CheatCount].Size = 1;
+  }
+
+  /* Successfully added a cheat! */
+  return(++CheatCount);
+}
+
+/** DelCheat() ***********************************************/
+/** Delete a cheat. Returns 0 on failure, 1 on success.     **/
+/*************************************************************/
+int DelCheat(const char *Cheat)
+{
+  int I,J;
+
+  /* Scan all cheats */
+  for(J=0;J<CheatCount;++J)
+  {
+    /* Match cheat text */
+    for(I=0;Cheat[I]&&CheatCodes[J].Text[I];++I)
+      if(CheatCodes[J].Text[I]!=toupper(Cheat[I])) break;
+    /* If cheat found... */
+    if(!Cheat[I]&&!CheatCodes[J].Text[I])
+    {
+      /* Shift cheats by one */
+      if(--CheatCount!=J)
+        memcpy(&CheatCodes[J],&CheatCodes[J+1],(CheatCount-J)*sizeof(CheatCodes[0]));
+      /* Cheat deleted */
+      return(1);
+    }
+  }
+
+  /* Cheat not found */
+  return(0);
+}
+
+/** ResetCheats() ********************************************/
+/** Remove all cheats.                                      **/
+/*************************************************************/
+void ResetCheats(void) { Cheats(CHTS_OFF);CheatCount=0; }
+
+/** ApplyCheats() ********************************************/
+/** Apply RAM-based cheats. Returns the number of applied   **/
+/** cheats.                                                 **/
+/*************************************************************/
+int ApplyCheats(void)
+{
+  int J,I;
+
+  /* For all current cheats that look like 01AAAAAA-DD/DDDD... */
+  for(J=I=0;J<CheatCount;++J)
+    if((CheatCodes[J].Addr>>24)==0x01)
+    {
+      WrZ80(CheatCodes[J].Addr&0xFFFF,CheatCodes[J].Data&0xFF);
+      if(CheatCodes[J].Size>1)
+        WrZ80((CheatCodes[J].Addr+1)&0xFFFF,CheatCodes[J].Data>>8);
+      ++I;
+    }
+
+  /* Return number of applied cheats */
+  return(I);
+}
+
+/** Cheats() *************************************************/
+/** Toggle cheats on (1), off (0), inverse state (2) or     **/
+/** query (3).                                              **/
+/*************************************************************/
+int Cheats(int Switch)
+{
+  byte *P,*Base;
+  int J,Size;
+
+  switch(Switch)
+  {
+    case CHTS_ON:
+    case CHTS_OFF:    if(Switch==CheatsON) return(CheatsON);
+    case CHTS_TOGGLE: Switch=!CheatsON;break;
+    default:          return(CheatsON);
+  }
+
+  /* Find valid cartridge */
+  for(J=1;(J<=2)&&!ROMData[J];++J);
+
+  /* Must have ROM */
+  if(J>2) return(Switch=CHTS_OFF);
+
+  /* Compute ROM address and size */
+  Base = ROMData[J];
+  Size = ((int)ROMMask[J]+1)<<14;
+
+  /* If toggling cheats... */
+  if(Switch!=CheatsON)
+  {
+    /* If enabling cheats... */
+    if(Switch)
+    {
+      /* Patch ROM with the cheat values */
+      for(J=0;J<CheatCount;++J)
+        if(!(CheatCodes[J].Addr>>24)&&(CheatCodes[J].Addr+CheatCodes[J].Size<=Size))
+        {
+          P = Base + CheatCodes[J].Addr;
+          CheatCodes[J].Orig = P[0];
+          P[0] = CheatCodes[J].Data;
+          if(CheatCodes[J].Size>1)
+          {
+            CheatCodes[J].Orig |= (int)P[1]<<8;
+            P[1] = CheatCodes[J].Data>>8;
+          }
+        }
+    }
+    else
+    {
+      /* Restore original ROM values */
+      for(J=0;J<CheatCount;++J)
+        if(!(CheatCodes[J].Addr>>24)&&(CheatCodes[J].Addr+CheatCodes[J].Size<=Size))
+        {
+          P = Base + CheatCodes[J].Addr;
+          P[0] = CheatCodes[J].Orig;
+          if(CheatCodes[J].Size>1)
+            P[1] = CheatCodes[J].Orig>>8;
+        }
+    }
+
+    /* Done toggling cheats */
+    CheatsON = Switch;
+  }
+
+  /* Done */
+  if(Verbose) printf("Cheats %s\n",CheatsON? "ON":"OFF");
+  return(CheatsON);
+}
+
+#if defined(ANDROID)
+#undef  feof
+#define fopen           mopen
+#define fclose          mclose
+#define fread           mread
+#define fwrite          mwrite
+#define fgets           mgets
+#define fseek           mseek
+#define rewind          mrewind
+#define fgetc           mgetc
+#define ftell           mtell
+#define feof            meof
+#elif defined(ZLIB)
+#undef  feof
+#define fopen(N,M)      (FILE *)gzopen(N,M)
+#define fclose(F)       gzclose((gzFile)(F))
+#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
+#define fwrite(B,L,N,F) gzwrite((gzFile)(F),B,(L)*(N))
+#define fgets(B,L,F)    gzgets((gzFile)(F),B,L)
+#define fseek(F,O,W)    gzseek((gzFile)(F),O,W)
+#define rewind(F)       gzrewind((gzFile)(F))
+#define fgetc(F)        gzgetc((gzFile)(F))
+#define ftell(F)        gztell((gzFile)(F))
+#define feof(F)         gzeof((gzFile)(F))
+#endif
 
 /** GuessROM() ***********************************************/
 /** Guess MegaROM mapper of a ROM.                          **/
@@ -2442,7 +2775,7 @@ int GuessROM(const byte *Buf,int Size)
   FILE *F;
 
   /* Try opening file with CRCs */
-  if(F=fopen("CARTS.CRC","rb"))
+  if((F=fopen("CARTS.CRC","rb")))
   {
     /* Compute ROM's CRC */
     for(J=K=0;J<Size;++J) K+=Buf[J];
@@ -2457,7 +2790,7 @@ int GuessROM(const byte *Buf,int Size)
   }
 
   /* Try opening file with SHA1 sums */
-  if(F=fopen("CARTS.SHA","rb"))
+  if((F=fopen("CARTS.SHA","rb")))
   {
     char S1[41],S2[41];
     SHA1 C;
@@ -2541,7 +2874,7 @@ byte LoadFNT(const char *FileName)
   fread(FontBuf,1,256*8,F);
   /* Done */
   fclose(F);
-  return(1);
+  return(1);  
 }
 
 /** LoadROM() ************************************************/
@@ -2605,22 +2938,50 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
 /*************************************************************/
 int FindState(const char *Name)
 {
-  int Result = 0;
+  int J,I;
+  char *P;
+
+  /* No result yet */
+  J = 0;
 
   /* Remove old state name */
-  FreeMemory((char *)STAName);
+  FreeMemory(STAName);
 
   /* If STAName gets created... */
-  if(STAName=MakeFileName(Name,".sta"))
+  if((STAName=MakeFileName(Name,".sta")))
   {
     /* Try loading state */
     if(Verbose) printf("Loading state from %s...",STAName);
-    Result=LoadSTA(STAName);
-    PRINTRESULT(Result);
+    J=LoadSTA(STAName);
+    PRINTRESULT(J);
+  }
+
+  /* Generate .CHT cheat file name and try loading it */
+  if((P=MakeFileName(Name,".cht")))
+  {
+    I=LoadCHT(P);
+    if(I&&Verbose) printf("Loaded %d cheats from %s\n",I,P);
+    FreeMemory(P);
+  }
+
+  /* Generate .MCF cheat file name and try loading it */
+  if((P=MakeFileName(Name,".mcf")))
+  {
+    I=LoadMCF(P);
+    if(I&&Verbose) printf("Loaded %d cheat entries from %s\n",I,P);
+    FreeMemory(P);
+  }
+
+  /* Generate palette file name and try loading it */
+  if((P=MakeFileName(Name,".pal")))
+  {
+    I=LoadPAL(P);
+    if(I&&Verbose) printf("Loaded palette from %s\n",P);
+    FreeMemory(P);
   }
 
   /* Done */
-  return(Result);
+  return(J);
 }
 
 /** LoadCart() ***********************************************/
@@ -2629,8 +2990,9 @@ int FindState(const char *Name)
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type)
 {
-  int C1,C2,Len,Pages,ROM64;
+  int C1,C2,Len,Pages,ROM64,BASIC;
   byte *P,PS,SS;
+  char *T;
   FILE *F;
 
   /* Slot number must be valid */
@@ -2742,7 +3104,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
       C2=fgetc(F);
     }
 
-  /* If we can't find "AB" signature, drop out */
+  /* If we can't find "AB" signature, drop out */     
   if((C1!='A')||(C2!='B'))
   {
     if(Verbose) puts("  Not a valid cartridge ROM");
@@ -2766,73 +3128,83 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* Assign ROMMask for MegaROMs */
   ROMMask[Slot]=!ROM64&&(Len>4)? (Pages-1):0x00;
   /* Allocate space for the ROM */
-  ROMData[Slot]=GetMemory(Pages<<13);
-  if(!ROMData[Slot]) { PRINTFAILED;return(0); }
+  ROMData[Slot]=P=GetMemory(Pages<<13);
+  if(!P) { PRINTFAILED;return(0); }
 
   /* Try loading ROM */
-  if(!LoadROM(FileName,Len<<13,ROMData[Slot])) { PRINTFAILED;return(0); }
+  if(!LoadROM(FileName,Len<<13,P)) { PRINTFAILED;return(0); }
 
   /* Mirror ROM if it is smaller than 2^n pages */
   if(Len<Pages)
-    memcpy
-    (
-      ROMData[Slot]+Len*0x2000,
-      ROMData[Slot]+(Len-Pages/2)*0x2000,
-      (Pages-Len)*0x2000
-    );
+    memcpy(P+Len*0x2000,P+(Len-Pages/2)*0x2000,(Pages-Len)*0x2000); 
+
+  /* Detect ROMs containing BASIC code */
+  BASIC=(P[0]=='A')&&(P[1]=='B')&&!(P[2]||P[3])&&(P[8]||P[9]);
 
   /* Set memory map depending on the ROM size */
   switch(Len)
   {
     case 1:
       /* 8kB ROMs are mirrored 8 times: 0:0:0:0:0:0:0:0 */
-      MemMap[PS][SS][0]=ROMData[Slot];
-      MemMap[PS][SS][1]=ROMData[Slot];
-      MemMap[PS][SS][2]=ROMData[Slot];
-      MemMap[PS][SS][3]=ROMData[Slot];
-      MemMap[PS][SS][4]=ROMData[Slot];
-      MemMap[PS][SS][5]=ROMData[Slot];
-      MemMap[PS][SS][6]=ROMData[Slot];
-      MemMap[PS][SS][7]=ROMData[Slot];
+      if(!BASIC)
+      {
+        MemMap[PS][SS][0]=P;
+        MemMap[PS][SS][1]=P;
+        MemMap[PS][SS][2]=P;
+        MemMap[PS][SS][3]=P;
+      }
+      MemMap[PS][SS][4]=P;
+      MemMap[PS][SS][5]=P;
+      if(!BASIC)
+      {
+        MemMap[PS][SS][6]=P;
+        MemMap[PS][SS][7]=P;
+      }
       break;
 
     case 2:
       /* 16kB ROMs are mirrored 4 times: 0:1:0:1:0:1:0:1 */
-      MemMap[PS][SS][0]=ROMData[Slot];
-      MemMap[PS][SS][1]=ROMData[Slot]+0x2000;
-      MemMap[PS][SS][2]=ROMData[Slot];
-      MemMap[PS][SS][3]=ROMData[Slot]+0x2000;
-      MemMap[PS][SS][4]=ROMData[Slot];
-      MemMap[PS][SS][5]=ROMData[Slot]+0x2000;
-      MemMap[PS][SS][6]=ROMData[Slot];
-      MemMap[PS][SS][7]=ROMData[Slot]+0x2000;
+      if(!BASIC)
+      {
+        MemMap[PS][SS][0]=P;
+        MemMap[PS][SS][1]=P+0x2000;
+        MemMap[PS][SS][2]=P;
+        MemMap[PS][SS][3]=P+0x2000;
+      }
+      MemMap[PS][SS][4]=P;
+      MemMap[PS][SS][5]=P+0x2000;
+      if(!BASIC)
+      {
+        MemMap[PS][SS][6]=P;
+        MemMap[PS][SS][7]=P+0x2000;
+      }
       break;
 
     case 3:
     case 4:
       /* 24kB and 32kB ROMs are mirrored twice: 0:1:0:1:2:3:2:3 */
-      MemMap[PS][SS][0]=ROMData[Slot];
-      MemMap[PS][SS][1]=ROMData[Slot]+0x2000;
-      MemMap[PS][SS][2]=ROMData[Slot];
-      MemMap[PS][SS][3]=ROMData[Slot]+0x2000;
-      MemMap[PS][SS][4]=ROMData[Slot]+0x4000;
-      MemMap[PS][SS][5]=ROMData[Slot]+0x6000;
-      MemMap[PS][SS][6]=ROMData[Slot]+0x4000;
-      MemMap[PS][SS][7]=ROMData[Slot]+0x6000;
+      MemMap[PS][SS][0]=P;
+      MemMap[PS][SS][1]=P+0x2000;
+      MemMap[PS][SS][2]=P;
+      MemMap[PS][SS][3]=P+0x2000;
+      MemMap[PS][SS][4]=P+0x4000;
+      MemMap[PS][SS][5]=P+0x6000;
+      MemMap[PS][SS][6]=P+0x4000;
+      MemMap[PS][SS][7]=P+0x6000;
       break;
 
     default:
       if(ROM64)
       {
         /* 64kB ROMs are loaded to fill slot: 0:1:2:3:4:5:6:7 */
-        MemMap[PS][SS][0]=ROMData[Slot];
-        MemMap[PS][SS][1]=ROMData[Slot]+0x2000;
-        MemMap[PS][SS][2]=ROMData[Slot]+0x4000;
-        MemMap[PS][SS][3]=ROMData[Slot]+0x6000;
-        MemMap[PS][SS][4]=ROMData[Slot]+0x8000;
-        MemMap[PS][SS][5]=ROMData[Slot]+0xA000;
-        MemMap[PS][SS][6]=ROMData[Slot]+0xC000;
-        MemMap[PS][SS][7]=ROMData[Slot]+0xE000;
+        MemMap[PS][SS][0]=P;
+        MemMap[PS][SS][1]=P+0x2000;
+        MemMap[PS][SS][2]=P+0x4000;
+        MemMap[PS][SS][3]=P+0x6000;
+        MemMap[PS][SS][4]=P+0x8000;
+        MemMap[PS][SS][5]=P+0xA000;
+        MemMap[PS][SS][6]=P+0xC000;
+        MemMap[PS][SS][7]=P+0xE000;
       }
       break;
   }
@@ -2848,7 +3220,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* Guess MegaROM mapper type if not given */
   if((Type>=MAP_GUESS)&&(ROMMask[Slot]+1>4))
   {
-    Type=GuessROM(ROMData[Slot],0x2000*(ROMMask[Slot]+1));
+    Type=GuessROM(P,0x2000*(ROMMask[Slot]+1));
     if(Verbose) printf("guessed %s..",ROMNames[Type]);
     if(Slot<MAXCARTS) SETROMTYPE(Slot,Type);
   }
@@ -2881,14 +3253,14 @@ int LoadCart(const char *FileName,int Slot,int Type)
     }
 
     /* Generate SRAM file name and load SRAM contents */
-    if(SRAMName[Slot]=GetMemory(strlen(FileName)+5))
+    if((SRAMName[Slot]=(char *)GetMemory(strlen(FileName)+5)))
     {
       /* Compose SRAM file name */
-      strcpy(SRAMName[Slot],FileName);
-      P=strrchr(SRAMName[Slot],'.');
-      if(P) strcpy(P,".sav"); else strcat(SRAMName[Slot],".sav");
+      strcpy(SRAMName[Slot],FileName);      
+      T=strrchr(SRAMName[Slot],'.');
+      if(T) strcpy(T,".sav"); else strcat(SRAMName[Slot],".sav");
       /* Try opening file... */
-      if(F=fopen(SRAMName[Slot],"rb"))
+      if((F=fopen(SRAMName[Slot],"rb")))
       {
         /* Read SRAM file */
         Len=fread(SRAMData[Slot],1,0x4000,F);
@@ -2920,7 +3292,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
             break;
         }
       }
-    }
+    } 
   }
 
   /* Done setting up cartridge */
@@ -2934,60 +3306,126 @@ int LoadCart(const char *FileName,int Slot,int Type)
   return(Pages);
 }
 
-#define SaveSTRUCT(Name) \
-  if(Size+sizeof(Name)>MaxSize) return(0); \
-  else { memcpy(Buf+Size,&(Name),sizeof(Name));Size+=sizeof(Name); }
-
-#define SaveARRAY(Name) \
-  if(Size+sizeof(Name)>MaxSize) return(0); \
-  else { memcpy(Buf+Size,(Name),sizeof(Name));Size+=sizeof(Name); }
-
-#define SaveDATA(Name,DataSize) \
-  if(Size+(DataSize)>MaxSize) return(0); \
-  else { memcpy(Buf+Size,(Name),(DataSize));Size+=(DataSize); }
-
-#define LoadSTRUCT(Name) \
-  if(Size+sizeof(Name)>MaxSize) return(0); \
-  else { memcpy(&(Name),Buf+Size,sizeof(Name));Size+=sizeof(Name); }
-
-#define SkipSTRUCT(Name) \
-  if(Size+sizeof(Name)>MaxSize) return(0); \
-  else Size+=sizeof(Name)
-
-#define LoadARRAY(Name) \
-  if(Size+sizeof(Name)>MaxSize) return(0); \
-  else { memcpy((Name),Buf+Size,sizeof(Name));Size+=sizeof(Name); }
-
-#define LoadDATA(Name,DataSize) \
-  if(Size+(DataSize)>MaxSize) return(0); \
-  else { memcpy((Name),Buf+Size,(DataSize));Size+=(DataSize); }
-
-#define SkipDATA(DataSize) \
-  if(Size+(DataSize)>MaxSize) return(0); \
-  else Size+=(DataSize)
-
-/** SaveState() **********************************************/
-/** Save emulation state to a memory buffer. Returns size   **/
-/** on success, 0 on failure.                               **/
+/** LoadCHT() ************************************************/
+/** Load cheats from .CHT file. Cheat format is either      **/
+/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
+/** cheats. Returns the number of cheats on success, 0 on   **/
+/** failure.                                                **/
 /*************************************************************/
-unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
+int LoadCHT(const char *Name)
 {
-  unsigned int State[256],Size;
-  int J,I,K;
+  char Buf[256],S[16];
+  int Status;
+  FILE *F;
 
-  /* No data written yet */
-  Size = 0;
+  /* Open .CHT text file with cheats */
+  F = fopen(Name,"rb");
+  if(!F) return(0);
+
+  /* Switch cheats off for now and remove all present cheats */
+  Status = Cheats(CHTS_QUERY);
+  Cheats(CHTS_OFF);
+  ResetCheats();
+
+  /* Try adding cheats loaded from file */
+  while(!feof(F))
+    if(fgets(Buf,sizeof(Buf),F) && (sscanf(Buf,"%13s",S)==1))
+      AddCheat(S);
+
+  /* Done with the file */
+  fclose(F);
+
+  /* Turn cheats back on, if they were on */
+  Cheats(Status);
+
+  /* Done */
+  return(CheatCount);
+}
+
+/** LoadPAL() ************************************************/
+/** Load new palette from .PAL file. Returns number of      **/
+/** loaded colors on success, 0 on failure.                 **/
+/*************************************************************/
+int LoadPAL(const char *Name)
+{
+  static const char *Hex = "0123456789ABCDEF";
+  char S[256],*P,*T,*H;
+  FILE *F;
+  int J,I;
+
+  if(!(F=fopen(Name,"rb"))) return(0);
+
+  for(J=0;(J<16)&&fgets(S,sizeof(S),F);++J)
+  {
+    /* Skip white space and optional '#' character */
+    for(P=S;*P&&(*P<=' ');++P);
+    if(*P=='#') ++P;
+    /* Parse six hexadecimal digits */
+    for(T=P,I=0;*T&&(H=strchr(Hex,toupper(*T)));++T) I=(I<<4)+(H-Hex);
+    /* If we have got six digits, parse and set color */
+    if(T-P==6) SetColor(J,I>>16,(I>>8)&0xFF,I&0xFF);
+  }
+
+  fclose(F);
+  return(J);
+}
+
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name)
+{
+  MCFCount = LoadFileMCF(Name,MCFEntries,sizeof(MCFEntries)/sizeof(MCFEntries[0]));
+  return(MCFCount);
+}
+
+/** SaveMCF() ************************************************/
+/** Save cheats to .MCF file. Returns number of loaded      **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int SaveMCF(const char *Name)
+{
+  return(MCFCount>0? SaveFileMCF(Name,MCFEntries,MCFCount):0);
+}
+
+#ifdef NEW_STATES
+#include "State.h"
+#else
+
+/** SaveSTA() ************************************************/
+/** Save emulation state to a .STA file.                    **/
+/*************************************************************/
+int SaveSTA(const char *FileName)
+{
+  static byte Header[16] = "STE\032\003\0\0\0\0\0\0\0\0\0\0\0";
+  unsigned int State[256],J,I,K;
+  FILE *F;
+
+  /* Open state file */
+  if(!(F=fopen(FileName,"wb"))) return(0);
+
+  /* Prepare the header */
+  J=StateID();
+  Header[5] = RAMPages;
+  Header[6] = VRAMPages;
+  Header[7] = J&0x00FF;
+  Header[8] = J>>8;
+
+  /* Write out the header */
+  if(fwrite(Header,1,sizeof(Header),F)!=sizeof(Header))
+  { fclose(F);return(0); }
 
   /* Fill out hardware state */
   J=0;
-  memset(State,0,sizeof(State));
   State[J++] = VDPData;
   State[J++] = PLatch;
   State[J++] = ALatch;
   State[J++] = VAddr;
   State[J++] = VKey;
   State[J++] = PKey;
-  State[J++] = WKey;
+  State[J++] = 0;          /* was WKey (deprecated) */
   State[J++] = IRQPending;
   State[J++] = ScanLine;
   State[J++] = RTCReg;
@@ -3006,7 +3444,7 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
     State[J++] = SSL[I];
     State[J++] = EnWrite[I];
     State[J++] = RAMMapper[I];
-  }
+  }  
 
   /* Cartridge setup */
   for(I=0;I<MAXSLOTS;++I)
@@ -3015,47 +3453,89 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
     for(K=0;K<4;++K) State[J++]=ROMMapper[I][K];
   }
 
-  /* Write out data structures */
-  SaveSTRUCT(CPU);
-  SaveSTRUCT(PPI);
-  SaveSTRUCT(VDP);
-  SaveARRAY(VDPStatus);
-  SaveARRAY(Palette);
-  SaveSTRUCT(PSG);
-  SaveSTRUCT(OPLL);
-  SaveSTRUCT(SCChip);
-  SaveARRAY(State);
-  SaveDATA(RAMData,RAMPages*0x4000);
-  SaveDATA(VRAM,VRAMPages*0x4000);
+  /* Write out hardware state */
+  if(fwrite(&CPU,1,sizeof(CPU),F)!=sizeof(CPU))
+  { fclose(F);return(0); }
+  if(fwrite(&PPI,1,sizeof(PPI),F)!=sizeof(PPI))
+  { fclose(F);return(0); }
+  if(fwrite(VDP,1,sizeof(VDP),F)!=sizeof(VDP))
+  { fclose(F);return(0); }
+  if(fwrite(VDPStatus,1,sizeof(VDPStatus),F)!=sizeof(VDPStatus))
+  { fclose(F);return(0); }
+  if(fwrite(Palette,1,sizeof(Palette),F)!=sizeof(Palette))
+  { fclose(F);return(0); }
+  if(fwrite(&PSG,1,sizeof(PSG),F)!=sizeof(PSG))
+  { fclose(F);return(0); }
+  if(fwrite(&OPLL,1,sizeof(OPLL),F)!=sizeof(OPLL))
+  { fclose(F);return(0); }
+  if(fwrite(&SCChip,1,sizeof(SCChip),F)!=sizeof(SCChip))
+  { fclose(F);return(0); }
+  if(fwrite(State,1,sizeof(State),F)!=sizeof(State))
+  { fclose(F);return(0); }
 
-  /* Return amount of data written */
-  return(Size);
+  /* Save memory contents */
+  if(fwrite(RAMData,1,RAMPages*0x4000,F)!=RAMPages*0x4000)
+  { fclose(F);return(0); }
+  if(fwrite(VRAM,1,VRAMPages*0x4000,F)!=VRAMPages*0x4000)
+  { fclose(F);return(0); }
+
+  /* Done */
+  fclose(F);
+  return(1);
 }
 
-/** LoadState() **********************************************/
-/** Load emulation state from a memory buffer. Returns size **/
-/** on success, 0 on failure.                               **/
+/** LoadSTA() ************************************************/
+/** Load emulation state from a .STA file.                  **/
 /*************************************************************/
-unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
+int LoadSTA(const char *FileName)
 {
-  int State[256],J,I,K;
-  unsigned int Size;
+  unsigned int State[256],J,I,K;
+  byte Header[16];
+  FILE *F;
 
-  /* No data read yet */
-  Size = 0;
+  /* Open state file */
+  if(!(F=fopen(FileName,"rb"))) return(0);
 
-  /* Load hardware state */
-  LoadSTRUCT(CPU);
-  LoadSTRUCT(PPI);
-  LoadSTRUCT(VDP);
-  LoadARRAY(VDPStatus);
-  LoadARRAY(Palette);
-  LoadSTRUCT(PSG);
-  LoadSTRUCT(OPLL);
-  LoadSTRUCT(SCChip);
-  LoadARRAY(State);
-  LoadDATA(RAMData,RAMPages*0x4000);
-  LoadDATA(VRAM,VRAMPages*0x4000);
+  /* Read the header */
+  if(fread(Header,1,sizeof(Header),F)!=sizeof(Header))
+  { fclose(F);return(0); }
+
+  /* Verify the header */
+  if(memcmp(Header,"STE\032\003",5))
+  { fclose(F);return(0); }
+  if(Header[7]+Header[8]*256!=StateID())
+  { fclose(F);return(0); }
+  if((Header[5]!=(RAMPages&0xFF))||(Header[6]!=(VRAMPages&0xFF)))
+  { fclose(F);return(0); }
+
+  /* Read the hardware state */
+  if(fread(&CPU,1,sizeof(CPU),F)!=sizeof(CPU))
+  { fclose(F);return(0); }
+  if(fread(&PPI,1,sizeof(PPI),F)!=sizeof(PPI))
+  { fclose(F);return(0); }
+  if(fread(VDP,1,sizeof(VDP),F)!=sizeof(VDP))
+  { fclose(F);return(0); }
+  if(fread(VDPStatus,1,sizeof(VDPStatus),F)!=sizeof(VDPStatus))
+  { fclose(F);return(0); }
+  if(fread(Palette,1,sizeof(Palette),F)!=sizeof(Palette))
+  { fclose(F);return(0); }
+  if(fread(&PSG,1,sizeof(PSG),F)!=sizeof(PSG))
+  { fclose(F);return(0); }
+  if(fread(&OPLL,1,sizeof(OPLL),F)!=sizeof(OPLL))
+  { fclose(F);return(0); }
+  if(fread(&SCChip,1,sizeof(SCChip),F)!=sizeof(SCChip))
+  { fclose(F);return(0); }
+  if(fread(State,1,sizeof(State),F)!=sizeof(State))
+  { fclose(F);return(0); }
+
+  /* Load memory contents */
+  if(fread(RAMData,1,Header[5]*0x4000,F)!=Header[5]*0x4000)
+  { fclose(F);return(0); }
+  if(fread(VRAM,1,Header[6]*0x4000,F)!=Header[6]*0x4000)
+  { fclose(F);return(0); }
+
+  /* Done with the file */
+  fclose(F);
 
   /* Parse hardware state */
   J=0;
@@ -3065,7 +3545,7 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
   VAddr      = State[J++];
   VKey       = State[J++];
   PKey       = State[J++];
-  WKey       = State[J++];
+  J++;                      /* was WKey = State[J++]; */
   IRQPending = State[J++];
   ScanLine   = State[J++];
   RTCReg     = State[J++];
@@ -3084,13 +3564,22 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
     SSL[I]          = State[J++];
     EnWrite[I]      = State[J++];
     RAMMapper[I]    = State[J++];
-  }
+  }  
 
   /* Cartridge setup */
   for(I=0;I<MAXSLOTS;++I)
   {
-    ROMType[I] = State[J++];
+    ROMType[I]      = State[J++];
     for(K=0;K<4;++K) ROMMapper[I][K]=State[J++];
+
+    /* Correction for older states */
+    if(ROMType[I]==MAP_FMPAC)
+      ROMMapper[I][1]=ROMMapper[I][0]|1;
+    else if((ROMType[I]==MAP_ASCII16)||(ROMType[I]==MAP_GEN16))
+    {
+      ROMMapper[I][1]=ROMMapper[I][0]|1;
+      ROMMapper[I][3]=ROMMapper[I][2]|1;
+    }
   }
 
   /* Set RAM mapper pages */
@@ -3136,96 +3625,20 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
   OPLL.PChanged   = (1<<YM2413_CHANNELS)-1;
   OPLL.DChanged   = (1<<YM2413_CHANNELS)-1;
 
-  /* Return amount of data read */
-  return(Size);
-}
-
-/** SaveSTA() ************************************************/
-/** Save emulation state into a .STA file. Returns 1 on     **/
-/** success, 0 on failure.                                  **/
-/*************************************************************/
-int SaveSTA(const char *Name)
-{
-  static byte Header[16] = "STE\032\003\0\0\0\0\0\0\0\0\0\0\0";
-  unsigned int J,Size;
-  byte *Buf;
-  FILE *F;
-
-  /* Fail if no state file */
-  if(!Name) return(0);
-
-  /* Allocate temporary buffer */
-  Buf = malloc(MAX_STASIZE);
-  if(!Buf) return(0);
-
-  /* Try saving state */
-  Size = SaveState(Buf,MAX_STASIZE);
-  if(!Size) { free(Buf);return(0); }
-
-  /* Open new state file */
-  F = fopen(Name,"wb");
-  if(!F) { free(Buf);return(0); }
-
-  /* Prepare the header */
-  J=StateID();
-  Header[5] = RAMPages;
-  Header[6] = VRAMPages;
-  Header[7] = J&0x00FF;
-  Header[8] = J>>8;
-
-  /* Write out the header and the data */
-  if(F && (fwrite(Header,1,16,F)!=16))  { fclose(F);F=0; }
-  if(F && (fwrite(Buf,1,Size,F)!=Size)) { fclose(F);F=0; }
-
-  /* If failed writing state, delete open file */
-  if(F) fclose(F); else unlink(Name);
-
   /* Done */
-  free(Buf);
-  return(!!F);
+  return(1);
 }
 
-/** LoadSTA() ************************************************/
-/** Load emulation state from a .STA file. Returns 1 on     **/
-/** success, 0 on failure.                                  **/
-/*************************************************************/
-int LoadSTA(const char *Name)
-{
-  int Size,OldMode,OldRAMPages,OldVRAMPages;
-  byte Header[16],*Buf;
-  FILE *F;
+#endif /* !NEW_STATES */
 
-  /* Fail if no state file */
-  if(!Name) return(0);
-
-  /* Open saved state file */
-  if(!(F=fopen(Name,"rb"))) return(0);
-
-  /* Read and check the header */
-  if(fread(Header,1,16,F)!=16)           { fclose(F);return(0); }
-  if(memcmp(Header,"STE\032\003",5))     { fclose(F);return(0); }
-  if(Header[7]+Header[8]*256!=StateID()) { fclose(F);return(0); }
-  if((Header[5]!=(RAMPages&0xFF))||(Header[6]!=(VRAMPages&0xFF)))
-  { fclose(F);return(0); }
-
-  /* Allocate temporary buffer */
-  Buf = malloc(MAX_STASIZE);
-  if(!Buf) { fclose(F);return(0); }
-
-  /* Save current configuration */
-  OldMode      = Mode;
-  OldRAMPages  = RAMPages;
-  OldVRAMPages = VRAMPages;
-
-  /* Read state into temporary buffer, then load it */
-  Size = fread(Buf,1,MAX_STASIZE,F);
-  Size = Size>0? LoadState(Buf,Size):0;
-
-  /* If failed loading state, reset hardware */
-  if(!Size) ResetMSX(OldMode,OldRAMPages,OldVRAMPages);
-
-  /* Done */
-  free(Buf);
-  fclose(F);
-  return(!!Size);
-}
+#if defined(ZLIB) || defined(ANDROID)
+#undef fopen
+#undef fclose
+#undef fread
+#undef fwrite
+#undef fgets
+#undef fseek
+#undef ftell
+#undef fgetc
+#undef feof
+#endif

@@ -12,11 +12,11 @@ CC	= gcc
 CPP	= cpp
 MOC	= moc
 SDT2GAS	= perl $(EMULIB)/Tools/sdt2gas.pl
-CFLAGS	= -I. -I.. -I$(EMULIB)
-DEFINES = -DZLIB
-LIBS    = -lz 
+CFLAGS	= -O2 -I. -I.. -I$(EMULIB)
+#DEFINES = -DZLIB
+LIBS    = -lz
 
-# EMULib sound, console, and other utility functions 
+# EMULib sound, console, and other utility functions
 OBJECTS	= $(EMULIB)/EMULib.o $(EMULIB)/Sound.o   \
 	  $(EMULIB)/Image.o  $(EMULIB)/Console.o \
 	  $(EMULIB)/Record.o $(EMULIB)/NetPlay.o \
@@ -41,6 +41,9 @@ CRC32	= $(EMULIB)/CRC32.o
 
 # .IPS file patch library
 IPS	= $(EMULIB)/IPS.o
+
+# .MCF file cheat library
+MCF	= $(EMULIB)/MCF.o
 
 # .INI file access library
 INIFILE	= $(EMULIB)/INIFile.o

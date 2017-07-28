@@ -5,7 +5,7 @@
 /** This file contains runtime menu code for configuring    **/
 /** the emulator. It uses console functions from Console.h. **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -13,6 +13,9 @@
 #include "MSX.h"
 #include "Console.h"
 #include "Sound.h"
+#include "Hunt.h"
+#include "MCF.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,14 +24,22 @@
 #define CLR_BACK2  PIXEL(255,200,150)
 #define CLR_BACK3  PIXEL(150,255,255)
 #define CLR_BACK4  PIXEL(255,255,150)
+#define CLR_BACK5  PIXEL(255,150,255)
 #define CLR_TEXT   PIXEL(0,0,0)
 #define CLR_WHITE  PIXEL(255,255,255)
 #define CLR_ERROR  PIXEL(200,0,0)
+#define CLR_INFO   PIXEL(0,128,0)
 
 static char SndNameBuf[256];
 
 extern byte *MemMap[4][4][8];         /* [PPage][SPage][Adr] */
 extern byte *EmptyRAM;                /* Dummy memory area   */
+
+/** Cheat Structures *****************************************/
+extern int CheatCount;       /* # of cheats in CheatCodes[]  */
+extern int MCFCount;         /* # of entries in MCFEntries[] */
+extern CheatCode CheatCodes[MAXCHEATS];
+extern MCFEntry MCFEntries[MAXCHEATS];
 
 /** MenuMSX() ************************************************/
 /** Invoke a menu system allowing to configure the emulator **/
@@ -37,8 +48,8 @@ extern byte *EmptyRAM;                /* Dummy memory area   */
 void MenuMSX(void)
 {
   const char *P;
-  char S[512];
-  int I,J,K,N;
+  char S[512],*T,*PP;
+  int I,J,K,N,V,M;
 
   /* Display and activate top menu */
   for(J=1;J;)
@@ -53,6 +64,8 @@ void MenuMSX(void)
       "Input devices\n"
       "Cartridge slots\n"
       "Disk drives\n"
+      "Cheats\n"
+      "Search cheats\n"
       "  \n"
       "Log soundtrack    %c\n"
       "Hit MIDI drums    %c\n"
@@ -83,7 +96,7 @@ void MenuMSX(void)
     {
       case 1: /* Load cartridge, disk image, state, or font */
         /* Request file name */
-        P=CONFile(CLR_TEXT,CLR_BACK3,".rom\0.rom.gz\0.mx1\0.mx1.gz\0.mx2\0.mx2.gz\0.dsk\0.dsk.gz\0.sta\0.sta.gz\0.cas\0.fnt\0.fnt.gz\0");
+        P=CONFile(CLR_TEXT,CLR_BACK3,".rom\0.rom.gz\0.mx1\0.mx1.gz\0.mx2\0.mx2.gz\0.dsk\0.dsk.gz\0.sta\0.sta.gz\0.cas\0.fnt\0.fnt.gz\0.cht\0.pal\0");
         /* Try loading file, show error on failure */
         if(P&&!LoadSTA(P)&&!LoadFile(P))
           CONMsg(-1,-1,-1,-1,CLR_BACK,CLR_ERROR,"Error","Cannot load file.\0\0");
@@ -376,38 +389,277 @@ void MenuMSX(void)
         J=0;
         break;
 
-      case 9: /* Log MIDI soundtrack */
+      case 8: /* Cheats */
+        /* Allocate buffer for cheats */
+        PP=malloc(MAXCHEATS*2*16+64);
+        if(!PP) break;
+        /* Save cheat setting and turn cheats off */
+        K=Cheats(CHTS_QUERY);
+        Cheats(CHTS_OFF);
+        /* Menu loop */
+        for(I=1;I;)
+        {
+          /* Compose menu */
+          sprintf(PP,
+            "Cheat Codes\n"
+            "Enabled     %c\n"
+            "New cheat\n"
+            "Done\n"
+            " \n",
+            K? CON_CHECK:' '
+          );
+          T=PP+strlen(PP);
+          for(J=0;J<CheatCount;++J)
+          { strcpy(T,(const char *)CheatCodes[J].Text);T+=strlen(T);*T++='\n'; }
+          *T='\0';
+
+          /* Replace all EOLNs with zeroes */
+          for(J=0;PP[J];J++) if(PP[J]=='\n') PP[J]='\0';
+          /* Run menu */
+          I=CONMenu(-1,-1,16,24,CLR_TEXT,CLR_BACK4,PP,I);
+          /* Handle menu selection */
+          switch(I)
+          {
+            case 1:
+              K=!K;
+              break;
+            case 2:
+              T=CONInput(-1,-1,CLR_TEXT,CLR_BACK2,"New cheat:",S,14);
+              if(T) AddCheat(T);
+              break;
+            case 3:
+              I=0;
+              break;
+            default:
+              /* No cheats above this line */
+              if(I<5) break;
+              /* Find cheat */
+              for(T=PP,J=0;*T&&(J<I);++J) T+=strlen(T)+1;
+              /* Delete cheat */
+              if(T) DelCheat(T);
+              break;
+          }
+        }
+        /* Put cheat settings into effect */
+        if(K) Cheats(CHTS_ON);
+        /* Done */
+        free(PP);
+        J=0;
+        break;
+
+      case 9: /* Hunt for cheat codes */
+        /* Until user quits the menu... */
+        for(I=1;I;)
+        {
+          /* Compose menu */
+          sprintf(S,
+            "Cheat Hunter\n"
+            "Clear all watches\n"
+            "Add a new watch\n"
+            "Scan watches\n"
+            "See cheat codes\n"
+            "  \n"
+            "Done\n"
+          );
+
+          /* Replace all EOLNs with zeroes */
+          for(J=0;S[J];J++) if(S[J]=='\n') S[J]='\0';
+
+          /* Run menu */
+          I=CONMenu(-1,-1,-1,-1,CLR_TEXT,CLR_BACK5,S,I);
+
+          /* Handle menu selection */
+          switch(I)
+          {
+            case 1: InitHUNT();break;
+            case 6: I=0;break;
+
+            case 2:
+              /* Ask for search value in 0..65535 range */
+              for(K=-1;(K<0)&&(P=CONInput(-1,-1,CLR_TEXT,CLR_BACK4,"Watch Value",S,6|CON_DEC));)
+              {
+                K = strtoul(P,0,10);
+                K = K<0x10000? K:-1;
+              }
+
+              /* If cancelled, drop out */
+              if(!P) { I=0;break; }
+
+              /* Ask for search options */
+              for(I=1,V=K,M=0;I;)
+              {
+                /* Force 16bit mode for large values */
+                if((K>=0x100)||(V>=0x100)) M|=HUNT_16BIT;
+
+                sprintf(S,
+                  "Search for %d\n"
+                  "New value %5d\n"
+                  "  \n"
+                  "8bit value    %c\n"
+                  "16bit value   %c\n"
+                  "  \n"
+                  "Constant      %c\n"
+                  "Changes by +1 %c\n"
+                  "Changes by -1 %c\n"
+                  "Changes by +N %c\n"
+                  "Changes by -N %c\n"
+                  "  \n"
+                  "Search now\n",
+                  K,V,
+                  !(M&HUNT_16BIT)? CON_CHECK:' ',
+                  M&HUNT_16BIT?    CON_CHECK:' ',
+                  (M&HUNT_MASK_CHANGE)==HUNT_CONSTANT?  CON_CHECK:' ',
+                  (M&HUNT_MASK_CHANGE)==HUNT_PLUSONE?   CON_CHECK:' ',
+                  (M&HUNT_MASK_CHANGE)==HUNT_MINUSONE?  CON_CHECK:' ',
+                  (M&HUNT_MASK_CHANGE)==HUNT_PLUSMANY?  CON_CHECK:' ',
+                  (M&HUNT_MASK_CHANGE)==HUNT_MINUSMANY? CON_CHECK:' '
+                );
+
+                /* Replace all EOLNs with zeroes */
+                for(J=0;S[J];J++) if(S[J]=='\n') S[J]='\0';
+
+                /* Run menu */
+                I=CONMenu(-1,-1,-1,-1,CLR_TEXT,CLR_BACK2,S,I);
+
+                /* Change options */
+                switch(I)
+                {
+                  case 1:
+                    /* Ask for replacement value in 0..65535 range */
+                    P  = CONInput(-1,-1,CLR_TEXT,CLR_BACK4,"New Value",S,6|CON_DEC);
+                    I  = P? strtoul(P,0,10):-1;
+                    V = (I>=0)&&(I<0x10000)? I:V;
+                    I  = 1;
+                    break;
+                  case 3:  M&=~HUNT_16BIT;break;
+                  case 4:  M|=HUNT_16BIT;break;
+                  case 6:  M=(M&~HUNT_MASK_CHANGE)|HUNT_CONSTANT;break;
+                  case 7:  M=(M&~HUNT_MASK_CHANGE)|HUNT_PLUSONE;break;
+                  case 8:  M=(M&~HUNT_MASK_CHANGE)|HUNT_MINUSONE;break;
+                  case 9:  M=(M&~HUNT_MASK_CHANGE)|HUNT_PLUSMANY;break;
+                  case 10: M=(M&~HUNT_MASK_CHANGE)|HUNT_MINUSMANY;break;
+                  case 12:
+                    /* Search for value RAM */
+                    J = AddHUNT(0xC000,0x4000,K,V,M);
+                    I = 0;
+                    /* Show number of found locations */
+                    sprintf(S,"Found %d locations.\n",J);
+                    for(J=0;S[J];J++) if(S[J]=='\n') S[J]='\0';
+                    CONMsg(-1,-1,-1,-1,CLR_WHITE,CLR_INFO,"Initial Search",S);
+                    break;
+                }
+              }
+              I=0;
+              break;
+
+            case 3: ScanHUNT();
+            /* Fall through */
+            case 4: /* Show current cheats */
+              /* Find current number of locations, limit it to 32 */
+              K = TotalHUNT();
+              K = K<32? K:32;
+
+              /* If no locations, show a warning */
+              if(!K)
+              {
+                CONMsg(-1,-1,-1,-1,CLR_WHITE,CLR_INFO,"Empty","No cheats found.\0\0");
+                I=0;
+                break;
+              }
+
+              /* Show cheat selection dialog */
+              for(I=1,M=0;I;)
+              {
+                /* Compose dialog */
+                sprintf(S,"Found %d Cheats\n",K);
+                for(J=0;(J<K)&&(strlen(S)<sizeof(S)-64);++J)
+                {
+                  if(!(PP=(char *)HUNT2Cheat(J,HUNT_MSX))) break;
+                  if(strlen(PP)>9) { PP[8]=CON_DOTS;PP[9]='\0'; }
+                  sprintf(S+strlen(S),"%-9s %c\n",PP,M&(1<<J)? CON_CHECK:' ');
+                }
+                strcat(S,"  \nAdd cheats\n");
+     
+                /* Number of shown locations */
+                K=J;
+     
+                /* Replace all EOLNs with zeroes */
+                for(J=0;S[J];J++) if(S[J]=='\n') S[J]='\0';
+     
+                /* Run menu */
+                I=CONMenu(-1,-1,-1,16,CLR_TEXT,CLR_BACK2,S,I);
+     
+                /* Toggle checkmarks */
+                if((I>=1)&&(I<=K)) M^=1<<(I-1);
+                else if(I)
+                {
+                  /* If there are cheats to add, drop out */
+                  if(!M)
+                  {
+                    CONMsg(-1,-1,-1,-1,CLR_WHITE,CLR_INFO,"Empty","No cheats chosen.\0\0");
+                    I=0;
+                    break;
+                  }
+
+                  /* Disable and clear current cheats */
+                  ResetCheats();
+
+                  /* Add found cheats */
+                  for(J=0;J<K;++J)
+                    if((M&(1<<J))&&(P=(char *)HUNT2Cheat(J,HUNT_MSX)))
+                      for(T=0;P;P=T)
+                      {
+                        T=strchr(P,';');
+                        if(T) *T++='\0';
+                        AddCheat(P);
+                      }
+
+                  /* Activate new cheats */
+                  Cheats(CHTS_ON);
+                  I=0;
+                }
+              }
+
+              /* Done with the menu */
+              I=0;
+              break;
+          }
+        }
+        J=0;
+        break;
+
+      case 11: /* Log MIDI soundtrack */
         MIDILogging(MIDI_TOGGLE);
         break;
-      case 10: /* Hit MIDI drums for noise */
+      case 12: /* Hit MIDI drums for noise */
         Mode^=MSX_DRUMS;
         break;
-      case 12: /* Use fixed font */
+      case 14: /* Use fixed font */
         Mode^=MSX_FIXEDFONT;
         break;
-      case 13: /* Show all sprites */
+      case 15: /* Show all sprites */
         Mode^=MSX_ALLSPRITE;
         break;
-      case 14: /* Patch DiskROM routines */
+      case 16: /* Patch DiskROM routines */
         ResetMSX(Mode^MSX_PATCHBDOS,RAMPages,VRAMPages);
         break;
-      case 16: /* POKE &hFFFF,&hAA */
+      case 18: /* POKE &hFFFF,&hAA */
         WrZ80(0xFFFF,0xAA);
         J=0;
         break;
-      case 17: /* Rewind */
+      case 19: /* Rewind */
         RewindTape();
         J=0;
         break;
-      case 18: /* Reset */
+      case 20: /* Reset */
         ResetMSX(Mode,RAMPages,VRAMPages);
         J=0;
         break;
-      case 19: /* Quit */
+      case 21: /* Quit */
         ExitNow=1;
         J=0;
         break;
-      case 21: /* Done */
+      case 23: /* Done */
         J=0;
         break;
     }

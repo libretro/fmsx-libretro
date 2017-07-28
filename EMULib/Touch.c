@@ -7,7 +7,7 @@
 /** the platform-dependent functions that know where to get **/
 /** pen coordinates from and where to draw pen cues to.     **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2008-2014                 **/
+/** Copyright (C) Marat Fayzullin 2008-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -119,7 +119,7 @@ static struct
   int Bit;
   Image Img;
   int W,H,X,Y;
-  int Invisible;
+  unsigned int Flags;
 } Buttons[] =
 {
   {  4, {0}, 0,0,0,0,0 }, // FIRE-A
@@ -365,8 +365,8 @@ int InitFinJoystick(const Image *Src)
     Buttons[J].W = DefButtons[J].W;
     Buttons[J].H = DefButtons[J].H;
 
-    /* Button now visible */
-    Buttons[J].Invisible = 0;
+    /* Button now visible and enabled */
+    Buttons[J].Flags = 0;
   }
 
   /* Return number of buttons initialized */
@@ -377,21 +377,20 @@ int InitFinJoystick(const Image *Src)
 /** Set finger joystick button(s) to given location. When   **/
 /** Img=0, create wireframe buttons. When Mask=0, set the   **/
 /** directional buttons image and location. When Mask ORed  **/
-/** withBTN_INVISIBLE, create invisible buttons. Returns    **/
+/** with BTN_INVISIBLE, create invisible buttons. Returns   **/
 /** the number of virtual buttons set or 0 for none.        **/
 /*************************************************************/
 int SetFinButton(unsigned int Mask,const Image *Img,int X,int Y,int W,int H)
 {
-  int I,J,Result,Invisible;
+  unsigned int Flags;
+  int I,J,Result;
 
-  /* Special Mask bit: make button invisible */
-  if(!(Mask&BTN_INVISIBLE)) Invisible=0;
-  else
-  {
-    Invisible = 1;
-    Img       = 0;
-    Mask     &= ~BTN_INVISIBLE;
-  }
+  /* Special Mask bits: make button invisible or disable it */
+  Flags = Mask&BTN_INVISIBLE;
+  Mask  = Mask&~BTN_INVISIBLE;
+
+  /* No image for invisible buttons */
+  if(Flags&BTN_INVISIBLE) Img=0;
 
   /* When Mask=0, we are assigning the arrow buttons */
   if(!Mask) Mask=0x80000000;
@@ -405,7 +404,7 @@ int SetFinButton(unsigned int Mask,const Image *Img,int X,int Y,int W,int H)
           if(Img) CropImage(&Buttons[I].Img,Img,0,0,W,H);
           else    FreeImage(&Buttons[I].Img);
 
-          Buttons[I].Invisible = Invisible;
+          Buttons[I].Flags = Flags;
           Buttons[I].X = X;
           Buttons[I].Y = Y;
           Buttons[I].W = W;
@@ -771,11 +770,11 @@ int DrawFinJoystick(Image *Dst,int DX,int DY,int DW,int DH,int TextColor)
     Y0 = Buttons[J].Y + (Buttons[J].Y<0? Dst->H:0) - DY;
     X1 = X0 + Buttons[J].W;
     Y1 = Y0 + Buttons[J].H;
+    NeedLabel = Buttons[J].W && Buttons[J].H;
     NeedFrame = 0;
-    NeedLabel = 1;
 
     /* If need to draw something... */
-    if(!Buttons[J].Invisible)
+    if(!(Buttons[J].Flags&BTN_INVISIBLE) && NeedLabel)
     {
       /* If "dirty" rectangle given... */
       if(DW && DH)
@@ -815,6 +814,7 @@ int DrawFinJoystick(Image *Dst,int DX,int DY,int DW,int DH,int TextColor)
         DrawHLine(&Dirty,X0,X1-1,Y1-I,TextColor);
       }
     }
+
     /* If need to draw label and the label exists... */
     if(NeedLabel && (Buttons[J].Bit>=0) && PenCues[Buttons[J].Bit])
       PrintXY2(
@@ -836,11 +836,16 @@ int DrawFinJoystick(Image *Dst,int DX,int DY,int DW,int DH,int TextColor)
 /*************************************************************/
 unsigned int RenderVideo(Image *OutImg,Image *CueImg,int Effects,int PenKey,int FrameRate)
 {
-  unsigned int DW,DH,SW,SH,X,Y,W,H;
+  unsigned int DW,DH,SW,SH,X,Y,W,H,J;
   Image TmpImg;
 
   /* Safety check */
   if(!VideoImg || !VideoImg->Data) return(0);
+
+#ifdef USE_GLES2
+  // When using GLES2 shaders, do not apply software effects
+  if(Effects&EFF_GLES) Effects&=~(EFF_RASTER_ALL|EFF_MASK_ALL);
+#endif
 
   if(Effects&EFF_DIRECT)
   {
@@ -873,23 +878,35 @@ unsigned int RenderVideo(Image *OutImg,Image *CueImg,int Effects,int PenKey,int 
   {
     DW = W/H;
     DH = H/W;
-    SW = W*(DH>0? DH:1);
+    SW = (Effects&EFF_4X3? 4*H/3:W)*(DH>0? DH:1);
     SH = H*(DW>0? DW:1);
     DW = SW*OutImg->H/SH;
     DH = SH*OutImg->W/SW;
     if(DW>OutImg->W) DW=OutImg->W; else DH=OutImg->H;
   }
 
+  /* Get current interpolation setting */
+  J = Effects&EFF_SOFTEN_ALL;
+
   /* If destination image has not been given... */
   if(OutImg==&TmpImg)
   {
     /* We do not copy or scale */
   }
-  /* EFF_SOFTEN: Soften image using 2xSAI-like algorithm */
-  else if(Effects&EFF_SOFTEN)
+  /* EFF_SOFTEN_ALL: Soften image using pixel interpolation */
+  else if(J && (J!=EFF_NEAREST))
   {
     CropImage(&TmpImg,OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);
-    SoftenImage(&TmpImg,VideoImg,X,Y,W,H);
+    switch(J)
+    {
+      case EFF_2XSAI:   SoftenImage(&TmpImg,VideoImg,X,Y,W,H);break;
+      case EFF_EPX:     SoftenEPX(&TmpImg,VideoImg,X,Y,W,H);break;
+      case EFF_EAGLE:   SoftenEAGLE(&TmpImg,VideoImg,X,Y,W,H);break;
+      case EFF_SCALE2X: SoftenSCALE2X(&TmpImg,VideoImg,X,Y,W,H);break;
+      case EFF_NEAREST: ScaleImage(&TmpImg,VideoImg,X,Y,W,H);break;
+      case EFF_HQ4X:
+      default:          SoftenImage(&TmpImg,VideoImg,X,Y,W,H);break;
+    }
   }
   /* EFF_SCALE: Scale image to the screen size */
   else if(Effects&EFF_SCALE)
@@ -921,18 +938,35 @@ unsigned int RenderVideo(Image *OutImg,Image *CueImg,int Effects,int PenKey,int 
     DH = H;
   }
 
-  /* EFF_TVLINES/EFF_LCDLINES: Apply "scanlines" effect  */
-  X = Effects&(EFF_TVLINES|EFF_LCDLINES);
-  if(X)
+  /* EFF_MASK_ALL: Apply color component masks */
+  switch(Effects&EFF_MASK_ALL)
   {
-    /* Make sure DW is a multiple of 8 pixels for optimization */
-    DW&=~7;
-    if(X==EFF_TVLINES)
-      TelevizeImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);
-    else if(X==EFF_LCDLINES)
-      LcdizeImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);
-    else
-      RasterizeImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);
+    case EFF_CMYMASK: CMYizeImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+    case EFF_RGBMASK: RGBizeImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+    case EFF_MONO:    MonoImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+    case EFF_GREEN:   GreenImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+    case EFF_AMBER:   AmberImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+    case EFF_SEPIA:   SepiaImage(OutImg,(OutImg->W-DW)>>1,(OutImg->H-DH)>>1,DW,DH);break;
+  }
+
+  /* EFF_RASTER_ALL: Apply "scanlines" effect  */
+  if((J=Effects&EFF_RASTER_ALL))
+  {
+    /* Make sure width is a multiple of 8/16 pixels for optimization */
+#if !defined(ARM_CPU)
+    Y = J==EFF_TVLINES? DW:(DW&~1);
+#elif defined(BPP32) || defined(BPP24)
+    Y = DW&~7;
+#else
+    Y = DW&~15;
+#endif
+
+    switch(J)
+    {
+      case EFF_TVLINES:  TelevizeImage(OutImg,(OutImg->W-Y)>>1,(OutImg->H-DH)>>1,Y,DH);break;
+      case EFF_LCDLINES: LcdizeImage(OutImg,(OutImg->W-Y)>>1,(OutImg->H-DH)>>1,Y,DH);break;
+      case EFF_RASTER:   RasterizeImage(OutImg,(OutImg->W-Y)>>1,(OutImg->H-DH)>>1,Y,DH);break;
+    }
   }
 
   /* If drawing any touch input cues... */

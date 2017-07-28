@@ -5,7 +5,7 @@ include ../../EMULib/Rules.Unix
 DEFINES+= -DFMSX -DCONDEBUG -DDEBUG -DNEW_STATES \
 	  -DNO_WAVE_INTERPOLATION
 CFLAGS += -I$(LIBZ80)
-OBJECTS+= $(SHA1) $(FLOPPY) $(FDIDISK) $(HUNT) \
+OBJECTS+= $(SHA1) $(FLOPPY) $(FDIDISK) $(MCF) $(HUNT) \
 	  $(Z80) $(I8255) $(YM2413) $(AY8910) $(SCC) $(WD1793) \
 	  ../fMSX.o ../MSX.o ../V9938.o ../I8251.o ../Patch.o \
 	  ../Menu.o Unix.o

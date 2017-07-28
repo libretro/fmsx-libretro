@@ -6,7 +6,7 @@
 /** controller produced by Western Digital. See WD1793.c    **/
 /** for implementation.                                     **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -90,6 +90,7 @@ typedef struct
   byte LastS;       /* Last STEP direction */
   byte IRQ;         /* 0x80: IRQ pending, 0x40: DRQ pending */
   byte Wait;        /* Expiration counter */
+  byte Cmd;         /* Last command */
 
   int  WRLength;    /* Data left to write */
   int  RDLength;    /* Data left to read */

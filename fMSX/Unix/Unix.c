@@ -39,7 +39,7 @@ int SndSwitch;             /* Mask of enabled sound channels */
 int SndVolume;             /* Master volume for audio        */
 int OldScrMode;            /* fMSX "ScrMode" variable storage*/
 
-const char *Title     = "fMSX Unix 4.9";  /* Program version */
+const char *Title     = "fMSX 5.0";       /* Program version */
 
 Image NormScreen;          /* Main screen image              */
 Image WideScreen;          /* Wide screen image              */
@@ -169,6 +169,15 @@ void PutImage(void)
   ShowVideo();
 }
 
+/** PlayAllSound() *******************************************/
+/** Render and play given number of microseconds of sound.  **/
+/*************************************************************/
+void PlayAllSound(int uSec)
+{
+  /* @@@ Twice the argument to avoid skipping */
+  RenderAndPlayAudio(2*uSec*UseSound/1000000);
+}
+
 /** Joystick() ***********************************************/
 /** Query positions of two joystick connected to ports 0/1. **/
 /** Returns 0.0.B2.A2.R2.L2.D2.U2.0.0.B1.A1.R1.L1.D1.U1.    **/
@@ -177,9 +186,6 @@ unsigned int Joystick(void)
 {
   byte RemoteKeyState[20];
   unsigned int J,I;
-
-  /* Render audio (two frames to avoid skipping) */
-  RenderAndPlayAudio(UseSound/30);
 
   /* Get joystick state, minus the fire buttons */
   I = BTN_LEFT|BTN_RIGHT|BTN_UP|BTN_DOWN;

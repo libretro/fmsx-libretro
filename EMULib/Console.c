@@ -5,7 +5,7 @@
 /** This file contains platform-independent implementation  **/
 /** for the EMULib-based console.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -396,13 +396,13 @@ static const char *nth(const char *S,int N)
   return(S);  
 }
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__WATCOMC__)
 static int stricmp(const char *S1,const char *S2)
 {
   while(*S1&&(toupper(*S1)==toupper(*S2))) { ++S1;++S2; }
   return(toupper(*S1)-toupper(*S2));
 }
-#endif /* !_MSC_VER */
+#endif /* !_MSC_VER & !__WATCOMC__ */
 
 static int smartcpy(char *D,const char *S,int N)
 {
@@ -1011,7 +1011,7 @@ const char *CONFile(pixel FGColor,pixel BGColor,const char *Ext)
       {
         case CON_FOLDER:
           /* Folder selected, enter it */
-          chdir(P+1);
+          if(chdir(P+1)) { /* Something went wrong */ }
           break;
         case CON_FILE:
           /* File selected, return it */

@@ -6,7 +6,7 @@
 /** disk images in various formats. The internal format is  **/
 /** always .FDI. See FDIDisk.h for declarations.            **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2007-2014                 **/
+/** Copyright (C) Marat Fayzullin 2007-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -15,12 +15,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef _WIN32
-#include <direct.h>
-#else
 #include <unistd.h>
-#endif
 #include <ctype.h>
+
+#ifdef ZLIB
+#include <zlib.h>
+#endif
 
 #define IMAGE_SIZE(Fmt) \
   (Formats[Fmt].Sides*Formats[Fmt].Tracks*    \
@@ -177,6 +177,18 @@ byte *NewFDI(FDIDisk *D,int Sides,int Tracks,int Sectors,int SecSize)
   return(FDI_DATA(P));
 }
 
+#ifdef ZLIB
+#define fopen(N,M)      (FILE *)gzopen(N,M)
+#define fclose(F)       gzclose((gzFile)(F))
+#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
+#define fwrite(B,L,N,F) gzwrite((gzFile)(F),B,(L)*(N))
+#define fgets(B,L,F)    gzgets((gzFile)(F),B,L)
+#define fseek(F,O,W)    gzseek((gzFile)(F),O,W)
+#define rewind(F)       gzrewind((gzFile)(F))
+#define fgetc(F)        gzgetc((gzFile)(F))
+#define ftell(F)        gztell((gzFile)(F))
+#endif
+
 /** LoadFDI() ************************************************/
 /** Load a disk image from a given file, in a given format  **/
 /** (see FMT_* #defines). Guess format from the file name   **/
@@ -229,8 +241,12 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
 
   /* Open file and find its size */
   if(!(F=fopen(FileName,"rb"))) return(0);
+#ifdef ZLIB
+  for(J=0;(I=fread(Buf,1,sizeof(Buf),F));J+=I);
+#else
   if(fseek(F,0,SEEK_END)<0) { fclose(F);return(0); }
   if((J=ftell(F))<=0)       { fclose(F);return(0); }
+#endif
   rewind(F);
 
   switch(Format)
@@ -476,7 +492,7 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
       /* Build disk information */
       memset(P+16,0,I-16);
       memcpy(P+0x08E2,TRDDiskInfo,sizeof(TRDDiskInfo));
-      strncpy(P+0x08F5,"SPECCY",8);
+      strncpy((char *)P+0x08F5,"SPECCY",8);
       K        = D->Sectors+N;
       J        = D->Sectors*D->Tracks*D->Sides-K;
       P[0x8E1] = K%D->Sectors;  /* First free sector */
@@ -518,6 +534,16 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
   D->Format = Format;
   return(Format);
 }
+
+#ifdef ZLIB
+#undef fopen
+#undef fclose
+#undef fread
+#undef fwrite
+#undef fseek
+#undef ftell
+#undef rewind
+#endif
 
 /** SaveFDI() ************************************************/
 /** Save a disk image to a given file, in a given format    **/
