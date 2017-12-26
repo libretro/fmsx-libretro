@@ -154,6 +154,7 @@ else ifeq ($(platform), vita)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DVITA
    STATIC_LINKING = 1
+   CFLAGS += -fno-short-enums -fno-optimize-sibling-calls
 
    # CTR(3DS)
 else ifeq ($(platform), ctr)

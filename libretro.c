@@ -32,6 +32,7 @@ static uint16_t XPal0;
 #define XBuf image_buffer
 #define WBuf image_buffer
 #include "CommonMux.h"
+#include "Missing.h"
 
 uint8_t XKeyState[20];
 #define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
