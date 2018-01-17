@@ -215,6 +215,9 @@ endif
    PLATFORM_DEFINES += -DARM
 else ifeq ($(platform), emscripten)
    TARGET := $(TARGET_NAME)_libretro_$(platform).bc
+   CC = emcc
+   CXX = em++
+   STATIC_LINKING = 1
 # Windows MSVC 2010 x64
 else ifeq ($(platform), windows_msvc2010_x64)
 	CC  = cl.exe
@@ -335,7 +338,7 @@ OBJECTS := $(SOURCES_C:.c=.o)
 INCDIRS := $(INCFLAGS) $(INCFLAGS_PLATFORM) $(EXTRA_INCLUDES)
 CFLAGS +=
 
-OBJOUT   = -o
+OBJOUT   = -o 
 LINKOUT  = -o 
 
 ifneq (,$(findstring msvc,$(platform)))
