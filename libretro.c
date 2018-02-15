@@ -180,10 +180,10 @@ keymap_t keymap[] =
    { RETROK_x,          'x' },
    { RETROK_y,          'y' },
    { RETROK_z,          'z' },
-   { RETROK_UNKNOWN,    '{' },
-   { RETROK_UNKNOWN,    '|' },
-   { RETROK_UNKNOWN,    '}' },
-   { RETROK_UNKNOWN,    '~' },
+   { RETROK_LEFTBRACE,  '{' },
+   { RETROK_BAR,        '|' },
+   { RETROK_RIGHTBRACE, '}' },
+   { RETROK_TILDE,      '~' },
 /* { RETROK_DELETE,   0x7F }, DEL? */
    { RETROK_KP8,        KBD_NUMPAD8  },
    { RETROK_KP9,        KBD_NUMPAD9  }
