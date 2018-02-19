@@ -301,7 +301,6 @@ TARGET := $(TARGET_NAME)_libretro_xdk1.lib
 CC  = CL.exe
 CXX  = CL.exe
 LD   = lib.exe
-AR   = lib.exe
 
 export INCLUDE := $(XDK)/xbox/include
 export LIB := $(XDK)/xbox/lib
