@@ -1,9 +1,15 @@
+LIBRETRO_COMM_DIR  = $(CORE_DIR)/libretro-common
+
 INCFLAGS := \
 	-I$(CORE_DIR) \
-	-I$(CORE_DIR)/libretro-common/include \
+	-I$(LIBRETRO_COMM_DIR)/include \
 	-I$(EMULIB) \
 	-I$(LIBZ80) \
 	-I$(FMSXDIR)
+
+ifneq (,$(findstring msvc2003,$(platform)))
+INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
+endif
 
 COREDEFINES := -DUNIX -DFMSX -DBPS16 -DBPP16
 
