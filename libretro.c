@@ -10,7 +10,7 @@
 #include "EMULib.h"
 #include "Sound.h"
 
-static uint fps;
+static unsigned fps;
 static uint16_t* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
