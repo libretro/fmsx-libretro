@@ -10,6 +10,7 @@
 #include "EMULib.h"
 #include "Sound.h"
 
+static uint fps;
 static uint16_t* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
@@ -263,7 +264,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width = 640 ;
    info->geometry.max_height = 480 ;
    info->geometry.aspect_ratio = 0;
-   info->timing.fps = 60.0;
+   info->timing.fps = fps;
    info->timing.sample_rate = SND_RATE;
 }
 
@@ -420,10 +421,14 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 
+static void update_fps(void) {
+   fps = (Mode & MSX_PAL) ? 50 : 60;
+}
 
 void retro_reset(void)
 {
    ResetMSX(Mode,RAMPages,VRAMPages);
+   update_fps();
 }
 
 size_t retro_serialize_size(void)
@@ -567,6 +572,8 @@ static void check_variables(void)
    {
       VRAMPages = ModeVRAM;
    }
+
+   update_fps();
 }
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -649,6 +656,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
+   update_fps();
    printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
    return true;
 }
@@ -795,7 +803,7 @@ void retro_run(void)
 
 
    RunZ80(&CPU);
-   RenderAndPlayAudio(SND_RATE / 60);
+   RenderAndPlayAudio(SND_RATE / fps);
 
    fflush(stdout);
 
