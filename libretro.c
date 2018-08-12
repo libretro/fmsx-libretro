@@ -19,6 +19,8 @@ static uint16_t XPal[80];
 static uint16_t BPal[256];
 static uint16_t XPal0;
 
+extern byte *RAMData;
+extern int RAMPages ;
 
 #define SND_RATE 48000
 
@@ -735,11 +737,16 @@ unsigned retro_get_region(void)
 
 void *retro_get_memory_data(unsigned id)
 {
+   if ( id == RETRO_MEMORY_SYSTEM_RAM )
+      return RAMData;
+
    return NULL;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
+   if ( id == RETRO_MEMORY_SYSTEM_RAM )
+      return RAMPages*0x4000;
    return 0;
 }
 
