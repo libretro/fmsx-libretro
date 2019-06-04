@@ -472,8 +472,8 @@ else ifneq (,$(findstring windows_msvc2017,$(platform)))
 else
 
    TARGET := $(TARGET_NAME)_libretro.dll
-   CC = gcc
-   CC_AS = gcc
+   CC ?= gcc
+   CC_AS ?= gcc
    SHARED := -shared -static-libgcc -static-libstdc++ -Wl,-no-undefined -Wl,-version-script=link.T
 endif
 
