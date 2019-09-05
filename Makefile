@@ -242,6 +242,13 @@ else ifeq ($(platform), wii)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
     STATIC_LINKING = 1
+else ifeq ($(platform), wiiu)
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+   CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+   AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
+   PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   STATIC_LINKING = 1
 	
 # Nintendo Switch (libnx)
 else ifeq ($(platform), libnx)
@@ -483,8 +490,8 @@ else ifneq (,$(findstring windows_msvc2017,$(platform)))
 else
 
    TARGET := $(TARGET_NAME)_libretro.dll
-   CC = gcc
-   CC_AS = gcc
+   CC ?= gcc
+   CC_AS ?= gcc
    SHARED := -shared -static-libgcc -static-libstdc++ -Wl,-no-undefined -Wl,-version-script=link.T
 endif
 

@@ -7,14 +7,14 @@ LIB68K	= $(BASEDIR)/M68000
 LIBGBZ	= $(BASEDIR)/GBZ80
 PRIVATE	= $(BASEDIR)/Private
 
-CXX	= g++
-CC	= gcc
-CPP	= cpp
-MOC	= moc
-SDT2GAS	= perl $(EMULIB)/Tools/sdt2gas.pl
-CFLAGS	= -I. -I.. -I$(EMULIB)
-DEFINES = -DZLIB
-LIBS    = -lz 
+CXX	?= g++
+CC	?= gcc
+CPP	?= cpp
+MOC	?= moc
+SDT2GAS	?= perl $(EMULIB)/Tools/sdt2gas.pl
+CFLAGS	+= -I. -I.. -I$(EMULIB)
+DEFINES += -DZLIB
+LIBS    += -lz 
 
 # EMULib sound, console, and other utility functions 
 OBJECTS	= $(EMULIB)/EMULib.o $(EMULIB)/Sound.o   \
