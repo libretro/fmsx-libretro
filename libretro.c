@@ -48,6 +48,8 @@ static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 
+static bool libretro_supports_bitmasks = false;
+
 static retro_perf_tick_t max_frame_ticks = 0;
 
 static unsigned port0_device;
@@ -280,11 +282,16 @@ void retro_init(void)
       log_cb = log.log;
    else
       log_cb = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
 }
 
 void retro_deinit(void)
 {
    log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
+
+   libretro_supports_bitmasks = false;
 }
 
 static void set_input_descriptors(void)
@@ -756,13 +763,26 @@ size_t retro_get_memory_size(unsigned id)
 #endif
 void retro_run(void)
 {
-   int i;
+   int i,j;
    bool updated = false;
+   int16_t joypad_bits[2];
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
 
    input_poll_cb();
+
+   for (j = 0; j < 2; j++)
+   {
+      if (libretro_supports_bitmasks)
+         joypad_bits[j] = input_state_cb(j, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      else
+      {
+         joypad_bits[j] = 0;
+         for (i = 0; i < (RETRO_DEVICE_ID_JOYPAD_R3+1); i++)
+            joypad_bits[j] |= input_state_cb(j, RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+      }
+   }
 
    for (i=0; i < 130; i++)
       KBD_RES(i);
@@ -773,25 +793,25 @@ void retro_run(void)
    {
    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0):
       for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
-         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu0_map[i].retro))
+         if (joypad_bits[0] & (1 << keybemu0_map[i].retro))
             JOY_SET(keybemu0_map[i].fmsx, 0);
       for (; i < sizeof(keybemu0_map) / sizeof(keymap_t); i++)
-         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu0_map[i].retro))
+         if (joypad_bits[0] & (1 << keybemu0_map[i].retro))
             KBD_SET(keybemu0_map[i].fmsx);
       break;
 
    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
       for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
-         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu1_map[i].retro))
+         if (joypad_bits[0] & (1 << keybemu1_map[i].retro))
             JOY_SET(keybemu1_map[i].fmsx, 0);
       for (; i < sizeof(keybemu1_map) / sizeof(keymap_t); i++)
-         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, keybemu1_map[i].retro))
+         if (joypad_bits[0] & (1 << keybemu1_map[i].retro))
             KBD_SET(keybemu1_map[i].fmsx);
       break;
 
    case RETRO_DEVICE_JOYPAD:
       for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
-         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
+         if (joypad_bits[0] & (1 << joymap[i].retro))
             JOY_SET(joymap[i].fmsx, 0);
       break;
 
@@ -804,7 +824,7 @@ void retro_run(void)
 
    for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
    {
-      if (input_state_cb(1, RETRO_DEVICE_JOYPAD, 0, joymap[i].retro))
+      if (joypad_bits[1] & (1 << joymap[i].retro))
          JOY_SET(joymap[i].fmsx, 1);
    }
 
