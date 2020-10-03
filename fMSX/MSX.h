@@ -23,7 +23,7 @@
 #include "I8251.h"          /* Intel 8251 UART emulation     */
 #include "WD1793.h"         /* WD1793 FDC emulation          */
 
-#include <stdio.h>
+#include <stdint.h>
 
 /** INLINE ***************************************************/
 /** C99 standard has "inline", but older compilers've used  **/
