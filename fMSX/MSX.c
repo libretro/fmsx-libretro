@@ -2550,6 +2550,7 @@ byte LoadFNT(const char *FileName)
 /*************************************************************/
 byte *LoadROM(const char *Name,int Size,byte *Buf)
 {
+   char path[512];
   FILE *F;
   byte *P;
   int J;
@@ -2557,23 +2558,20 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
   /* Can't give address without size! */
   if(Buf&&!Size) return(0);
 
-#if defined( VITA ) || defined( __CELLOS_LV2__ )
-
-  char path[512];
-  if(!(F=fopen(Name,"rb"))){
-    strcpy(path,ProgDir);
-    strcat(path,"/");
-    strcat(path,Name);
-    /* Open file */
-    if(!(F=fopen(path,"rb")))
-      return(0);
+#if defined( VITA )
+  if(!(F=fopen(Name,"rb")))
+  {
+     strcpy(path,ProgDir);
+     strcat(path,"/");
+     strcat(path,Name);
+     /* Open file */
+     if(!(F=fopen(path,"rb")))
+        return(0);
   }
-
 #else
-
   /* Open file */
-  if(!(F=fopen(Name,"rb"))) return(0);
-
+  if(!(F=fopen(Name,"rb")))
+     return(0);
 #endif
 
   /* Determine data size, if wasn't given */

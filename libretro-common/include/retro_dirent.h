@@ -54,10 +54,6 @@
 #  include <unistd.h>
 #endif
 
-#ifdef __CELLOS_LV2__
-#include <cell/cell_fs.h>
-#endif
-
 RETRO_BEGIN_DECLS
 
 struct RDIR
@@ -70,10 +66,6 @@ struct RDIR
 #elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;
-#elif defined(__CELLOS_LV2__)
-   CellFsErrno error;
-   int directory;
-   CellFsDirent entry;
 #else
    DIR *directory;
    const struct dirent *entry;
