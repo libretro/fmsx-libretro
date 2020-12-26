@@ -387,6 +387,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
 
+  char cwd[1024];
+
   int *T,I,J,K;
   byte *P;
   word A;
@@ -449,8 +451,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   /* Save current directory */
   if(ProgDir)
-    if(WorkDir=getcwd(0,1024)) Chunks[NChunks++]=WorkDir;
-
+    if(WorkDir=getcwd(cwd, sizeof(cwd))) Chunks[NChunks++]=WorkDir;
+    
   /* Set invalid modes and RAM/VRAM sizes before calling ResetMSX() */
   Mode      = ~NewMode;
   RAMPages  = 0;
