@@ -28,6 +28,8 @@ extern int RAMPages ;
 #define HEIGHT 228
 #ifdef PSP
 #define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
+#elif defined(PS2)
+#define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<10)|((31*(G)/255)<<5)|(31*(R)/255))
 #else
 #define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
 #endif

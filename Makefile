@@ -169,6 +169,16 @@ else ifeq ($(platform), classic_armv7_a7)
 	endif
 #######################################
 
+# PS2
+else ifeq ($(platform), ps2)
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+   CC = ee-gcc$(EXE_EXT)
+   CC_AS = ee-gcc$(EXE_EXT)
+   AR = ee-ar$(EXE_EXT)
+   PLATFORM_DEFINES := -DPS2
+   CFLAGS += -G0
+   STATIC_LINKING = 1
+
 # PSP 1
 else ifeq ($(platform), psp1)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
