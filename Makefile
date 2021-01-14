@@ -172,9 +172,9 @@ else ifeq ($(platform), classic_armv7_a7)
 # PS2
 else ifeq ($(platform), ps2)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
-   CC = ee-gcc$(EXE_EXT)
-   CC_AS = ee-gcc$(EXE_EXT)
-   AR = ee-ar$(EXE_EXT)
+   CC = mips64r5900el-ps2-elf-gcc$(EXE_EXT)
+   CC_AS = mips64r5900el-ps2-elf-gcc$(EXE_EXT)
+   AR = mips64r5900el-ps2-elf-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DPS2
    CFLAGS += -G0
    STATIC_LINKING = 1
