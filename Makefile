@@ -58,7 +58,6 @@ else ifeq ($(platform), linux-portable)
 	LDFLAGS += -nostdlib
 else ifneq (,$(findstring rpi,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.so
-   LDFLAGS += -shared -Wl,--version-script=libretro/link.T
    fpic = -fPIC
    SHARED := -shared -Wl,-version-script=link.T -Wl,-no-undefined
 else ifeq ($(platform), osx)
