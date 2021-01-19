@@ -6,7 +6,7 @@
 /** produced by General Instruments, Yamaha, etc. See       **/
 /** AY8910.c for the actual code.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -32,20 +32,25 @@ typedef unsigned char byte;
 /** AY8910 ***************************************************/
 /** This data structure stores AY8910 state.                **/
 /*************************************************************/
+#pragma pack(4)
 typedef struct
 {
   byte R[16];                  /* PSG registers contents     */
+
+  /* THESE VALUES ARE NOT USED BUT KEPT FOR BACKWARD COMPATIBILITY */
   int Freq[AY8910_CHANNELS];   /* Frequencies (0 for off)    */
   int Volume[AY8910_CHANNELS]; /* Volumes (0..255)           */
-  int Clock;                   /* Base clock used by PSG     */
+
+  int Clock;                   /* Base clock rate (Fin/16)   */
   int First;                   /* First used Sound() channel */
   byte Changed;                /* Bitmap of changed channels */
   byte Sync;                   /* AY8910_SYNC/AY8910_ASYNC   */
   byte Latch;                  /* Latch for the register num */
-  int EPeriod;                 /* Envelope step in msecs     */
+  int EPeriod;                 /* Envelope step in microsecs */
   int ECount;                  /* Envelope step counter      */
   int EPhase;                  /* Envelope phase             */
 } AY8910;
+#pragma pack()
 
 /** Reset8910() **********************************************/
 /** Reset the sound chip and use sound channels from the    **/
@@ -86,10 +91,10 @@ void Sync8910(register AY8910 *D,register byte Sync);
 
 /** Loop8910() ***********************************************/
 /** Call this function periodically to update volume        **/
-/** envelopes. Use mS to pass the time since the last call  **/
-/** of Loop8910() in milliseconds.                          **/
+/** envelopes. Use uSec to pass the time since the last     **/
+/** call of Loop8910() in microseconds.                     **/
 /*************************************************************/
-void Loop8910(register AY8910 *D,int mS);
+void Loop8910(register AY8910 *D,int uSec);
 
 #ifdef __cplusplus
 }

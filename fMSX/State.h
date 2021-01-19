@@ -5,7 +5,7 @@
 /** This file contains routines to save and load emulation  **/
 /** state.                                                  **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     The contents of this file are property of Marat     **/
 /**     Fayzullin and should only be used as agreed with    **/
 /**     him. The file is confidential. Absolutely no        **/
@@ -286,7 +286,6 @@ int LoadSTA(const char *Name)
 
   /* Fail if no state file */
   if(!Name) return(0);
-
   /* Open saved state file */
   if(!(F=fopen(Name,"rb"))) return(0);
 

@@ -1,3 +1,15 @@
+/** EMULib Emulation Library *********************************/
+/**                                                         **/
+/**                          IPS.h                          **/
+/**                                                         **/
+/** This file contains declarations for the .IPS patch file **/
+/** support. See IPS.c for implementation.                  **/
+/**                                                         **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
+/**     You are not allowed to distribute this software     **/
+/**     commercially. Please, notify me, if you make any    **/
+/**     changes to this file.                               **/
+/*************************************************************/
 #ifndef IPS_H
 #define IPS_H
 

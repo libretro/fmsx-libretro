@@ -6,7 +6,7 @@
 /** depths (BPP8,BPP16,BPP32). It is used automatically     **/
 /** when none of BPP* values are defined.                   **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2008-2014                 **/
+/** Copyright (C) Marat Fayzullin 2008-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

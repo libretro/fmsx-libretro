@@ -5,7 +5,7 @@
 /** This file implements mechanism for searching possible   **/
 /** cheats inside running game data. Also see Hunt.h.       **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2013-2016                 **/
+/** Copyright (C) Marat Fayzullin 2013-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

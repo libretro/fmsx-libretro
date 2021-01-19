@@ -6,7 +6,7 @@
 /** produced by Yamaha (also see OPL2, OPL3, OPL4 chips).   **/
 /** See YM2413.h for declarations.                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -56,6 +56,7 @@ static const byte Drums2413[5] =
 /** Synth2413() **********************************************/
 /** Synthesizer parameters corresponding to OPLL patches.   **/
 /*************************************************************/
+#if 0
 static const byte Synth2413[19*16] =
 {
   0x49,0x4c,0x4c,0x32,0x00,0x00,0x00,0x00,
@@ -97,6 +98,7 @@ static const byte Synth2413[19*16] =
   0x25,0x11,0x00,0x00,0xf8,0xfa,0xf8,0x55,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
+#endif
 
 /** Reset2413() **********************************************/
 /** Reset the sound chip and use sound channels from the    **/
@@ -122,7 +124,7 @@ void Reset2413(register YM2413 *D,int First)
   D->Sync     = YM2413_ASYNC;
   D->Changed  = (1<<YM2413_CHANNELS)-1;
   D->PChanged = (1<<YM2413_CHANNELS)-1;
-  D->DChanged = (1<<YM2413_CHANNELS)-1;
+  D->DChanged = 0x1F;
   D->Latch    = 0;
 }
 

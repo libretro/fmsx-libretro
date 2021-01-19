@@ -14,5 +14,6 @@ typedef struct
 void ResetSHA1(SHA1 *State);
 int ComputeSHA1(SHA1 *State);
 int InputSHA1(SHA1 *State,const unsigned char *Data,unsigned int Size);
+const char *OutputSHA1(SHA1 *State,char *Output,unsigned int Size);
 
 #endif /* SHA1_H */

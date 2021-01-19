@@ -5,7 +5,7 @@
 /** This file contains generic main() procedure statrting   **/
 /** the emulation.                                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -25,9 +25,8 @@ static const char *Options[]=
   "verbose","skip","pal","ntsc","help",
   "printer","serial","diska","diskb","tape","font","logsnd","state",
   "ram","vram","rom","auto","noauto","msx1","msx2","msx2+","joy",
-  "home","simbdos","wd1793","sound","nosound","trap",
-  "sync","nosync","tv","notv","soft","nosoft","saver","nosaver",
-  "shm","noshm","scale","static","nostatic","vsync","480","200",
+  "home","simbdos","wd1793","sound","nosound","trap","sync","nosync",
+  "scale","static","nostatic","vsync","480","200",
   0
 };
 
@@ -38,8 +37,8 @@ extern int   UseEffects; /* EFF_* bits, ORed (UNIX/MAEMO/MSDOS) */
 extern int   UseStatic;  /* Use static colors (#ifdef MSDOS)    */
 extern int   FullScreen; /* Use 640x480 screen (#ifdef MSDOS)   */
 extern int   SyncFreq;   /* Sync scr updates (UNIX/MAEMO/MSDOS) */
-extern int   ARGC;       /* argc/argv from main (#ifdef UNIX)   */
-extern char **ARGV;
+int   ARGC;       /* argc/argv from main (#ifdef UNIX)   */
+char **ARGV;
 
 /** Zero-terminated arrays of disk names for each drive ******/
 extern const char *Disks[2][MAXDISKS+1];
@@ -53,6 +52,7 @@ int main(int argc,char *argv[])
 {
   int CartCount,TypeCount;
   int JoyCount,DiskCount[2];
+  char *P;
   int N,J;
 
 #ifdef DEBUG
@@ -83,7 +83,12 @@ int main(int argc,char *argv[])
   Disks[0][0]=DSKName[0];
   Disks[1][0]=DSKName[1];
 
-  for(N=1;N<argc;N++)
+#if defined(UNIX) || defined(MAEMO) || defined(MSDOS)
+  /* Extract visual effects arguments */
+  UseEffects = ParseEffects(argv,UseEffects);
+#endif
+
+  for(N=1;(N<argc)&&argv[N];N++)
     if(*argv[N]!='-')
     {
       if(CartCount<MAXCARTS) ROMName[CartCount++]=argv[N];
@@ -112,7 +117,7 @@ int main(int argc,char *argv[])
         case 2:  Mode=(Mode&~MSX_VIDEO)|MSX_PAL;break;
         case 3:  Mode=(Mode&~MSX_VIDEO)|MSX_NTSC;break;
 	case 4:  printf
-                 ("%s by Marat Fayzullin (C)1994-2014\n",Title);
+                 ("%s by Marat Fayzullin (C)1994-2020\n",Title);
                  for(J=0;HelpText[J];J++) puts(HelpText[J]);
                  return(0);
         case 5:  N++;
@@ -234,30 +239,21 @@ int main(int argc,char *argv[])
                  else printf("%s: No sync frequency supplied\n",argv[0]);
                  break;
         case 29: SyncFreq=0;break;
-        case 30: UseEffects|=EFF_TVLINES;break;
-        case 31: UseEffects&=~EFF_TVLINES;break;
-        case 32: UseEffects|=EFF_SOFTEN;break;
-        case 33: UseEffects&=~EFF_SOFTEN;break;
 #endif /* MSDOS || UNIX || MAEMO */
 
-#if defined(UNIX) || defined(MAEMO)
-        case 34: UseEffects|=EFF_SAVECPU;break;
-        case 35: UseEffects&=~EFF_SAVECPU;break;
-#endif /* UNIX || MAEMO */
-
 #if defined(UNIX)
-        case 38: N++;
+        case 30: N++;
                  if(N<argc) UseZoom=atoi(argv[N]);
                  else printf("%s: No scaling factor supplied\n",argv[0]);
                  break;
 #endif /* UNIX */
 
 #if defined(MSDOS)
-        case 39: UseStatic=1;break;
-        case 40: UseStatic=0;break;
-        case 41: SyncFreq=-1;break;
-        case 42: FullScreen=1;break;
-        case 43: FullScreen=0;break;
+        case 31: UseStatic=1;break;
+        case 32: UseStatic=0;break;
+        case 33: SyncFreq=-1;break;
+        case 34: FullScreen=1;break;
+        case 35: FullScreen=0;break;
 #endif /* MSDOS */
 
         default: printf("%s: Wrong option '%s'\n",argv[0],argv[N]);

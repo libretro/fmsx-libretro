@@ -9,11 +9,13 @@ static void ProcessSHA1(SHA1 *State)
   unsigned int A,B,C,D,E,T,W[80];
   int J;
 
+  if(State->Ptr<sizeof(State->Buf)) return;
+
   for(J=0;J<64;J+=4)
     W[J>>2] =
-      (((int)State->Buf[J])<<24)
-    | (((int)State->Buf[J+1])<<16)
-    | (((int)State->Buf[J+2])<<8)
+      (((unsigned int)State->Buf[J])<<24)
+    | (((unsigned int)State->Buf[J+1])<<16)
+    | (((unsigned int)State->Buf[J+2])<<8)
     | State->Buf[J+3];
 
   for(J=16;J<80;++J)
@@ -68,6 +70,7 @@ static void ProcessSHA1(SHA1 *State)
     A = T;
   }
 
+
   State->Msg[0] = (State->Msg[0] + A) & 0xFFFFFFFF;
   State->Msg[1] = (State->Msg[1] + B) & 0xFFFFFFFF;
   State->Msg[2] = (State->Msg[2] + C) & 0xFFFFFFFF;
@@ -95,33 +98,40 @@ void ResetSHA1(SHA1 *State)
 int ComputeSHA1(SHA1 *State)
 {
   if(State->Error) return(0);
+  if(State->Done)  return(1);
 
   //
   // Padding digest to required number of bits
   //
 
+  // Make sure buffer is not full
+  ProcessSHA1(State);
+
+  // Add 0x80
   State->Buf[State->Ptr++] = 0x80;
 
-  if(State->Ptr>56)
+  // If not enough space for message length...
+  if(State->Ptr>sizeof(State->Buf)-8)
   {
+    // Pad with zeros
     while(State->Ptr<sizeof(State->Buf))
       State->Buf[State->Ptr++] = 0;
-
     ProcessSHA1(State);
   }
 
-  while(State->Ptr<56)
+  // Pad with more zeros, leaving 8 octets at the end
+  while(State->Ptr<sizeof(State->Buf)-8)
     State->Buf[State->Ptr++] = 0;
 
   // Store the message length as the last 8 octets
-  State->Buf[56] = (State->LenH>>24) & 0xFF;
-  State->Buf[57] = (State->LenH>>16) & 0xFF;
-  State->Buf[58] = (State->LenH>>8)  & 0xFF;
-  State->Buf[59] = (State->LenH)     & 0xFF;
-  State->Buf[60] = (State->LenL>>24) & 0xFF;
-  State->Buf[61] = (State->LenL>>16) & 0xFF;
-  State->Buf[62] = (State->LenL>>8)  & 0xFF;
-  State->Buf[63] = (State->LenL)     & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenH>>24) & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenH>>16) & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenH>>8)  & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenH)     & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenL>>24) & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenL>>16) & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenL>>8)  & 0xFF;
+  State->Buf[State->Ptr++] = (State->LenL)     & 0xFF;
 
   ProcessSHA1(State);
 
@@ -132,17 +142,24 @@ int ComputeSHA1(SHA1 *State)
 
 int InputSHA1(SHA1 *State,const unsigned char *Data,unsigned int Size)
 {
+  unsigned int J;
+
   if(State->Done || State->Error)
   {
     State->Error = 1;
     return(0);
   }
 
+  // Make sure buffer is not full
+  ProcessSHA1(State);
+
+  // No data, nothing to process
   if(!Size) return(1);
 
-  while(!State->Error && Size--)
+  // Push input data into the buffer
+  for(J=0 ; !State->Error && (J<Size) ; ++J)
   {
-    State->Buf[State->Ptr++] = *Data++ & 0xFF;
+    State->Buf[State->Ptr++] = Data[J];
     State->LenL = (State->LenL+8) & 0xFFFFFFFF;
 
     if(!State->LenL)
@@ -155,8 +172,23 @@ int InputSHA1(SHA1 *State,const unsigned char *Data,unsigned int Size)
       }
     }
 
-    if(State->Ptr==sizeof(State->Buf)) ProcessSHA1(State);
+    if(State->Ptr>=sizeof(State->Buf)) ProcessSHA1(State);
   }
 
   return(1);
 }
+
+const char *OutputSHA1(SHA1 *State,char *Output,unsigned int Size)
+{
+  const char *Hex = "0123456789abcdef";
+  unsigned int J;
+
+  if(!State->Done || State->Error || (Size<41)) return(0);
+
+  for(J=0 ; J<40 ; ++J)
+    Output[J] = Hex[(State->Msg[J>>3]>>((~J&7)<<2))&15];
+
+  Output[J] = '\0';
+  return(Output);
+}
+

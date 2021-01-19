@@ -7,8 +7,9 @@ ifneq ($(GIT_VERSION)," unknown")
 	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
-DEBUG     = 0
-PATCH_Z80 = 0
+DEBUG     = 1
+PATCH_Z80 = 1
+LITTLE_ENDIAN = 1
 LIBS =
 
 ifeq ($(platform),)
@@ -143,6 +144,7 @@ else ifeq ($(platform), psl1ght)
    CC_AS = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
    AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
    PLATFORM_DEFINES := -D__PSL1GHT__ -DMSB_FIRST
+   LITTLE_ENDIAN = 0
     STATIC_LINKING = 1
     
 # Classic Platforms ####################
@@ -234,6 +236,7 @@ else ifeq ($(platform), ngc)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_DOL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   LITTLE_ENDIAN = 0
     STATIC_LINKING = 1
 else ifeq ($(platform), wii)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
@@ -241,6 +244,7 @@ else ifeq ($(platform), wii)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   LITTLE_ENDIAN = 0
     STATIC_LINKING = 1
 else ifeq ($(platform), wiiu)
    TARGET := $(TARGET_NAME)_libretro_$(platform).a
@@ -248,6 +252,7 @@ else ifeq ($(platform), wiiu)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   LITTLE_ENDIAN = 0
    STATIC_LINKING = 1
 	
 # Nintendo Switch (libnx)
@@ -551,6 +556,10 @@ ifneq (,$(findstring msvc,$(platform)))
 	LD = link.exe
 else
 	LD = $(CC)
+endif
+
+ifeq ($(LITTLE_ENDIAN), 1)
+PLATFORM_DEFINES += -DLSB_FIRST
 endif
 
 %.o: %.c

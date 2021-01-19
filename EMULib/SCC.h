@@ -5,7 +5,7 @@
 /** This file contains definitions and declarations for     **/
 /** routines in SCC.c.                                      **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -28,6 +28,7 @@ typedef unsigned char byte;
 /** SCC ******************************************************/
 /** This data structure stores SCC state.                   **/
 /*************************************************************/
+#pragma pack(4)
 typedef struct
 {
   byte R[256];                /* SCC register contents       */
@@ -38,6 +39,7 @@ typedef struct
   byte WChanged;              /* Bitmap of changed waveforms */
   byte Sync;                  /* SCC_SYNC/SCC_ASYNC          */
 } SCC;
+#pragma pack()
 
 /** ResetSCC() ***********************************************/
 /** Reset the sound chip and use sound channels from the    **/

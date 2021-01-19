@@ -5,7 +5,7 @@
 /** This file contains implementation for the ED table of   **/
 /** Z80 commands. It is included from Z80.c.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -262,7 +262,7 @@ case CPIR:
   R->AF.B.l =
     N_FLAG|(R->AF.B.l&C_FLAG)|ZSTable[J.B.l]|
     ((R->AF.B.h^I^J.B.l)&H_FLAG)|(R->BC.W? P_FLAG:0);
-  break;
+  break;  
 
 case CPD:
   I=RdZ80(R->HL.W--);

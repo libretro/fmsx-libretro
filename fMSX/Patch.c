@@ -6,7 +6,7 @@
 /** routines. Note that the disk I/O patches are optional,  **/
 /** as there is a proper WD1793 FDC emulation now.          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -35,16 +35,12 @@ byte DiskPresent(byte ID)
 /*************************************************************/
 byte DiskRead(byte ID,byte *Buf,int N)
 {
-  int Side,Track,Sector;
   byte *P;
 
   if(ID<MAXDRIVES)
   {
-    /* Compute side,track,sector and get data pointer */
-    Sector = N%FDD[ID].Sectors;
-    Track  = N/FDD[ID].Sectors/FDD[ID].Sides;
-    Side   = (N/FDD[ID].Sectors)%FDD[ID].Sides;
-    P      = SeekFDI(&FDD[ID],Side,Track,Side,Track,Sector+1);
+    /* Get data pointer to requested sector */
+    P = LinearFDI(&FDD[ID],N);
     /* If seek operation succeeded, read sector */
     if(P) memcpy(Buf,P,FDD[ID].SecSize);
     /* Done */
@@ -60,16 +56,12 @@ byte DiskRead(byte ID,byte *Buf,int N)
 /*************************************************************/
 byte DiskWrite(byte ID,const byte *Buf,int N)
 {
-  int Side,Track,Sector;
   byte *P;
 
   if(ID<MAXDRIVES)
   {
-    /* Compute side,track,sector and get data pointer */
-    Sector = N%FDD[ID].Sectors;
-    Track  = N/FDD[ID].Sectors/FDD[ID].Sides;
-    Side   = (N/FDD[ID].Sectors)%FDD[ID].Sides;
-    P      = SeekFDI(&FDD[ID],Side,Track,Side,Track,Sector+1);
+    /* Get data pointer to requested sector */
+    P = LinearFDI(&FDD[ID],N);
     /* If seek operation succeeded, write sector */
     if(P) memcpy(P,Buf,FDD[ID].SecSize);
     /* Done */

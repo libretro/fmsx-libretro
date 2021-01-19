@@ -6,7 +6,7 @@
 /** produced by Yamaha (also see OPL2, OPL3, OPL4 chips).   **/
 /** See YM2413.h for the code.                              **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -34,6 +34,7 @@ typedef unsigned char byte;
 /** YM2413 ***************************************************/
 /** This data structure stores OPLL state.                  **/
 /*************************************************************/
+#pragma pack(4)
 typedef struct
 {
   byte R[64];                  /* OPLL register contents     */
@@ -46,6 +47,7 @@ typedef struct
   byte Sync;                   /* YM2413_SYNC/YM2413_ASYNC   */
   byte Latch;                  /* Latch for the register num */
 } YM2413;
+#pragma pack()
 
 /** Reset2413() **********************************************/
 /** Reset the sound chip and use sound channels from the    **/

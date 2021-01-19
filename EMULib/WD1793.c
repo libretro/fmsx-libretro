@@ -6,13 +6,14 @@
 /** controller produced by Western Digital. See WD1793.h    **/
 /** for declarations.                                       **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
 /*************************************************************/
 #include "WD1793.h"
 #include <stdio.h>
+#include <string.h>
 
 /** Reset1793() **********************************************/
 /** Reset WD1793. When Disks=WD1793_INIT, also initialize   **/
@@ -35,18 +36,45 @@ void Reset1793(register WD1793 *D,FDIDisk *Disks,register byte Eject)
   D->WRLength = 0;
   D->RDLength = 0;
   D->Wait     = 0;
+  D->Cmd      = 0xD0;
+  D->Rsrvd2   = 0;
 
   /* For all drives... */
   for(J=0;J<4;++J)
   {
     /* Reset drive-dependent state */
-    D->Disk[J]  = Disks? &Disks[J]:0;
-    D->Track[J] = 0;
+    D->Disk[J]   = Disks? &Disks[J]:0;
+    D->Track[J]  = 0;
+    D->Rsrvd1[J] = 0;
     /* Initialize disk structure, if requested */
     if((Eject==WD1793_INIT)&&D->Disk[J])  InitFDI(D->Disk[J]);
     /* Eject disk image, if requested */
     if((Eject==WD1793_EJECT)&&D->Disk[J]) EjectFDI(D->Disk[J]);
   }
+}
+
+/** Save1793() ***********************************************/
+/** Save WD1793 state to a given buffer of given maximal    **/
+/** size. Returns number of bytes saved or 0 on failure.    **/
+/*************************************************************/
+unsigned int Save1793(const register WD1793 *D,byte *Buf,unsigned int Size)
+{
+  unsigned int N = (const byte *)&(D->Ptr) - (const byte *)D;
+  if(N>Size) return(0);
+  memcpy(Buf,D,N);
+  return(N);
+}
+
+/** Load1793() ***********************************************/
+/** Load WD1793 state from a given buffer of given maximal  **/
+/** size. Returns number of bytes loaded or 0 on failure.   **/
+/*************************************************************/
+unsigned int Load1793(register WD1793 *D,byte *Buf,unsigned int Size)
+{
+  unsigned int N = (const byte *)&(D->Ptr) - (const byte *)D;
+  if(N>Size) return(0);
+  memcpy(D,Buf,N);
+  return(N);
 }
 
 /** Read1793() ***********************************************/
@@ -61,8 +89,16 @@ byte Read1793(register WD1793 *D,register byte A)
       A=D->R[0];
       /* If no disk present, set F_NOTREADY */
       if(!D->Disk[D->Drive]||!D->Disk[D->Drive]->Data) A|=F_NOTREADY;
-      /* When reading status, clear all bits but F_BUSY and F_NOTREADY */
-      D->R[0]&=F_BUSY|F_NOTREADY;
+      if((D->Cmd<0x80)||(D->Cmd==0xD0))
+      {
+        /* Keep flipping F_INDEX bit as the disk rotates (Sam Coupe) */
+        D->R[0]=(D->R[0]^F_INDEX)&(F_INDEX|F_BUSY|F_NOTREADY|F_READONLY|F_TRACK0);
+      }
+      else
+      {
+        /* When reading status, clear all bits but F_BUSY and F_NOTREADY */
+        D->R[0]&=F_BUSY|F_NOTREADY|F_READONLY|F_DRQ;
+      }
       return(A);
     case WD1793_TRACK:
     case WD1793_SECTOR:
@@ -130,9 +166,10 @@ byte Write1793(register WD1793 *D,register byte A,register byte V)
         if(D->Verbose) printf("WD1793: FORCE-INTERRUPT (%02Xh)\n",V);
         /* Reset any executing command */
         D->RDLength=D->WRLength=0;
+        D->Cmd=0xD0;
         /* Either reset BUSY flag or reset all flags if BUSY=0 */
         if(D->R[0]&F_BUSY) D->R[0]&=~F_BUSY;
-        else               D->R[0]=D->Track[D->Drive]? 0:F_TRACK0;
+        else               D->R[0]=(D->Track[D->Drive]? 0:F_TRACK0)|F_INDEX;
         /* Cause immediate interrupt if requested */
         if(V&C_IRQ) D->IRQ=WD1793_IRQ;
         /* Done */
@@ -142,6 +179,7 @@ byte Write1793(register WD1793 *D,register byte A,register byte V)
       if(D->R[0]&F_BUSY) break;
       /* Reset status register */
       D->R[0]=0x00;
+      D->Cmd=V;
       /* Depending on the command... */
       switch(V&0xF0)
       {

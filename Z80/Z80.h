@@ -5,7 +5,7 @@
 /** This file contains declarations relevant to emulation   **/
 /** of Z80 CPU.                                             **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -19,6 +19,8 @@ extern "C" {
 
                                /* Compilation options:       */
 /* #define DEBUG */            /* Compile debugging version  */
+/* #define LSB_FIRST */        /* Compile for low-endian CPU */
+/* #define MSB_FIRST */        /* Compile for hi-endian CPU  */
 
                                /* LoopZ80() may return:      */
 #define INT_RST00   0x00C7     /* RST 00h                    */
@@ -65,15 +67,15 @@ typedef unsigned short word;
 typedef signed char offset;
 
 /** Structured Datatypes *************************************/
-/** NOTICE: #define MSB_FIRST for machines where most       **/
+/** NOTICE: #define LSB_FIRST for machines where least      **/
 /**         signifcant byte goes first.                     **/
 /*************************************************************/
 typedef union
 {
-#ifdef MSB_FIRST
-  struct { byte h,l; } B;
-#else
+#ifdef LSB_FIRST
   struct { byte l,h; } B;
+#else
+  struct { byte h,l; } B;
 #endif
   word W;
 } pair;
@@ -93,7 +95,7 @@ typedef struct
   byte TrapBadOps;    /* Set to 1 to warn of illegal opcodes */
   word Trap;          /* Set Trap to address to trace from   */
   byte Trace;         /* Set Trace=1 to start tracing        */
-  void *User;         /* Arbitrary user data (ID,RAM*,etc.)  */
+  unsigned int User;  /* Arbitrary user data (ID,RAM*,etc.)  */
 } Z80;
 
 /** ResetZ80() ***********************************************/
@@ -148,11 +150,7 @@ byte InZ80(register word Port);
 /** such as disk and tape access. Replace it with an empty  **/
 /** macro for no patching.                                  **/
 /************************************ TO BE WRITTEN BY USER **/
-#ifdef PATCH_Z80
 void PatchZ80(register Z80 *R);
-#else
-#define PatchZ80(R)
-#endif
 
 /** DebugZ80() ***********************************************/
 /** This function should exist if DEBUG is #defined. When   **/

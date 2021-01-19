@@ -5,7 +5,7 @@
 /** This file declares functions to operate on 720kB        **/
 /** floppy disk images. See Floppy.c for implementation.    **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2004-2014                 **/
+/** Copyright (C) Marat Fayzullin 2004-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -27,7 +27,7 @@ typedef unsigned char byte;
 /** Create disk image in Dsk or allocate memory when Dsk=0. **/
 /** Returns pointer to the disk image or 0 on failure.      **/
 /*************************************************************/
-byte *DSKCreate(byte *Dsk);
+byte *DSKCreate(byte *Dsk,const char *Label);
 
 /** DSKFile() ************************************************/
 /** Create file with a given name, return file ID or 0 on   **/
@@ -65,7 +65,7 @@ int DSKDelete(byte *Dsk,int ID);
 /** functions return pointer to disk contents on success or **/
 /** 0 on failure.                                           **/
 /*************************************************************/
-byte *DSKLoad(const char *Name,byte *Dsk);
+byte *DSKLoad(const char *Name,byte *Dsk,const char *Label);
 const byte *DSKSave(const char *Name,const byte *Dsk);
 
 #endif /* FLOPPY_H */
