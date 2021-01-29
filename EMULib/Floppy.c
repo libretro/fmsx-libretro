@@ -382,14 +382,14 @@ byte *DSKLoad(const char *Name,byte *Dsk)
 
     /* Scan, read, store files */
     while(retro_readdir(D))
-      if(Path=malloc(strlen(Name)+strlen(retro_dirent_get_name(D))+5))
+      if((Path = malloc(strlen(Name)+strlen(retro_dirent_get_name(D))+5)))
       {
         const char *name = retro_dirent_get_name(D);
         /* Compose full input file name */
-        strcpy(Path,Name);
-        I=strlen(Path);
+        strcpy((char*)Path,Name);
+        I=strlen((const char*)Path);
         if(Path[I-1]!='/') Path[I++]='/';
-        strcpy(Path+I, name);
+        strcpy((char*)Path+I, name);
 
         /* Compose 8.3 file name */
         for(J=0;(J<8)&& name[J]&&(name[J]!='.');J++)
@@ -403,17 +403,17 @@ byte *DSKLoad(const char *Name,byte *Dsk)
         FN[I]='\0';
 
         /* Open input file */
-        if(!stat(Path,&FS)&&S_ISREG(FS.st_mode)&&FS.st_size)
-          if(F=fopen(Path,"rb"))
+        if(!stat((const char*)Path,&FS)&&S_ISREG(FS.st_mode)&&FS.st_size)
+          if((F = fopen((const char*)Path,"rb")))
           {
             /* Allocate input buffer */
-            if(Buf=malloc(FS.st_size))
+            if((Buf = malloc(FS.st_size)))
             {
               /* Read file into the buffer */
               if(fread(Buf,1,FS.st_size,F)==FS.st_size)
               {
                 /* Create and write floppy file */
-                if(I=DSKFile(Dsk1,FN))
+                if((I = DSKFile(Dsk1,(const char*)FN)))
                   if(DSKWrite(Dsk1,I,Buf,FS.st_size)!=FS.st_size)
                     DSKDelete(Dsk1,I);
               }
@@ -460,8 +460,8 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
     /* Compose path name */
     Path=malloc(strlen(Name)+20);
     if(!Path) return(0);
-    strcpy(Path,Name);
-    I=strlen(Path);
+    strcpy((char*)Path,Name);
+    I=strlen((const char*)Path);
     if(Path[I-1]!='/') Path[I++]='/';
 
     /* Scan, read, dump files */
@@ -477,10 +477,10 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
         *P='\0';
 
         /* Read and dump file */
-        if(P=malloc(DSKFileSize(Dsk,J)))
+        if((P = malloc(DSKFileSize(Dsk,J))))
         {
-          if(K=DSKRead(Dsk,J,P,DSKFileSize(Dsk,J)))
-            if(F=fopen(Path,"wb")) { fwrite(P,1,K,F);fclose(F); }      
+          if((K = DSKRead(Dsk,J,P,DSKFileSize(Dsk,J))))
+            if((F = fopen((const char*)Path,"wb"))) { fwrite(P,1,K,F);fclose(F); }      
           free(P);
         }
       }

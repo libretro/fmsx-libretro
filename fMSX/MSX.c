@@ -451,7 +451,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   /* Save current directory */
   if(ProgDir)
-    if(WorkDir=getcwd(cwd, sizeof(cwd))) Chunks[NChunks++]=WorkDir;
+    if((WorkDir = getcwd(cwd, sizeof(cwd)))) Chunks[NChunks++]=WorkDir;
     
   /* Set invalid modes and RAM/VRAM sizes before calling ResetMSX() */
   Mode      = ~NewMode;
@@ -481,11 +481,11 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   else memcpy(RTC,RTCInit,sizeof(RTC));
 
   /* Try loading Kanji alphabet ROM */
-  if(Kanji=LoadROM("KANJI.ROM",0x20000,0))
+  if((Kanji = LoadROM("KANJI.ROM",0x20000,0)))
   { if(Verbose) printf("KANJI.ROM.."); }
 
   /* Try loading RS232 support ROM to slot */
-  if(P=LoadROM("RS232.ROM",0x4000,0))
+  if((P = LoadROM("RS232.ROM",0x4000,0)))
   {
     if(Verbose) printf("RS232.ROM..");
     MemMap[3][3][2]=P;
@@ -538,7 +538,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   else
   {
     if(Verbose) printf("Redirecting serial I/O to %s...",ComName);
-    if(!(ComOStream=ComIStream=fopen(ComName,"r+b")))
+    if(!(ComOStream = ComIStream = fopen(ComName,"r+b")))
     { ComIStream=stdin;ComOStream=stdout; }
     PRINTRESULT(ComOStream!=stdout);
   }
@@ -597,7 +597,7 @@ void TrashMSX(void)
   if(SaveCMOS)
   {
     if(Verbose) printf("Writing CMOS.ROM...");
-    if(!(F=fopen("CMOS.ROM","wb"))) SaveCMOS=0;
+    if(!(F = fopen("CMOS.ROM","wb"))) SaveCMOS=0;
     else
     {
       if(fwrite(RTC,1,sizeof(RTC),F)!=sizeof(RTC)) SaveCMOS=0;
@@ -839,7 +839,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(NewRAMPages!=RAMPages)
   {
     if(Verbose) printf("Allocating %dkB for RAM...",NewRAMPages*16);
-    if(P1=GetMemory(NewRAMPages*0x4000))
+    if((P1 = GetMemory(NewRAMPages*0x4000)))
     {
       memset(P1,NORAM,NewRAMPages*0x4000);
       FreeMemory(RAMData);
@@ -854,7 +854,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(NewVRAMPages!=VRAMPages)
   {
     if(Verbose) printf("Allocating %dkB for VRAM...",NewVRAMPages*16);
-    if(P1=GetMemory(NewVRAMPages*0x4000))
+    if((P1 = GetMemory(NewVRAMPages*0x4000)))
     {
       memset(P1,0x00,NewVRAMPages*0x4000);
       FreeMemory(VRAM);
@@ -2319,7 +2319,7 @@ char *MakeFileName(const char *FileName,const char *Extension)
   if(!Result) return(0);
 
   strcpy(Result,FileName);
-  if(P=strrchr(Result,'.')) strcpy(P,Extension); else strcat(Result,Extension);
+  if((P = strrchr(Result,'.'))) strcpy(P,Extension); else strcat(Result,Extension);
   return(Result);
 }
 
@@ -2444,7 +2444,7 @@ int GuessROM(const byte *Buf,int Size)
   FILE *F;
 
   /* Try opening file with CRCs */
-  if(F=fopen("CARTS.CRC","rb"))
+  if((F = fopen("CARTS.CRC","rb")))
   {
     /* Compute ROM's CRC */
     for(J=K=0;J<Size;++J) K+=Buf[J];
@@ -2459,7 +2459,7 @@ int GuessROM(const byte *Buf,int Size)
   }
 
   /* Try opening file with SHA1 sums */
-  if(F=fopen("CARTS.SHA","rb"))
+  if((F = fopen("CARTS.SHA","rb")))
   {
     char S1[41],S2[41];
     SHA1 C;
@@ -2624,10 +2624,10 @@ int FindState(const char *Name)
   int Result = 0;
 
   /* Remove old state name */
-  FreeMemory((char *)STAName);
+  FreeMemory((byte *)STAName);
 
   /* If STAName gets created... */
-  if(STAName=MakeFileName(Name,".sta"))
+  if((STAName = MakeFileName(Name,".sta")))
   {
     /* Try loading state */
     if(Verbose) printf("Loading state from %s...",STAName);
@@ -2881,7 +2881,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
   {
     /* Free previous SRAM resources */
     FreeMemory(SRAMData[Slot]);
-    FreeMemory(SRAMName[Slot]);
+    FreeMemory((byte*)SRAMName[Slot]);
 
     /* Get SRAM memory */
     SRAMData[Slot]=GetMemory(0x4000);
@@ -2897,14 +2897,14 @@ int LoadCart(const char *FileName,int Slot,int Type)
     }
 
     /* Generate SRAM file name and load SRAM contents */
-    if(SRAMName[Slot]=GetMemory(strlen(FileName)+5))
+    if((SRAMName[Slot] = GetMemory(strlen(FileName)+5)))
     {
       /* Compose SRAM file name */
       strcpy(SRAMName[Slot],FileName);
-      P=strrchr(SRAMName[Slot],'.');
-      if(P) strcpy(P,".sav"); else strcat(SRAMName[Slot],".sav");
+      P = (byte*)(const char*)strrchr(SRAMName[Slot],'.');
+      if(P) strcpy((char*)P,".sav"); else strcat(SRAMName[Slot],".sav");
       /* Try opening file... */
-      if(F=fopen(SRAMName[Slot],"rb"))
+      if((F = fopen(SRAMName[Slot],"rb")))
       {
         /* Read SRAM file */
         Len=fread(SRAMData[Slot],1,0x4000,F);

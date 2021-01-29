@@ -476,7 +476,7 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
       /* Build disk information */
       memset(P+16,0,I-16);
       memcpy(P+0x08E2,TRDDiskInfo,sizeof(TRDDiskInfo));
-      strncpy(P+0x08F5,"SPECCY",8);
+      strncpy((char*)P+0x08F5,"SPECCY",8);
       K        = D->Sectors+N;
       J        = D->Sectors*D->Tracks*D->Sides-K;
       P[0x8E1] = K%D->Sectors;  /* First free sector */
