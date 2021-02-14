@@ -506,6 +506,16 @@ else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
+ifneq (,$(findstring msvc,$(platform)))
+ifeq ($(DEBUG), 1)
+   CFLAGS   += -MTd
+   CXXFLAGS += -MTd
+else
+   CFLAGS   += -MT
+   CXXFLAGS += -MT
+endif
+endif
+
 DEFINES += -D__LIBRETRO__ $(PLATFORM_DEFINES)
 
 CFLAGS   += $(fpic) $(DEFINES)

@@ -36,6 +36,11 @@
 #define FDI_SECSIZE(S)    (SecSizes[(S)[3]<=4? (S)[3]:4])
 #define FDI_SECTOR(P,T,S) (FDI_TRACK(P,T)+(S)[5]+((int)((S)[6])<<8))
 
+#ifdef _MSC_VER
+#undef unlink
+#define unlink _unlink
+#endif
+
 static const struct { int Sides,Tracks,Sectors,SecSize; } Formats[] =
 {
   { 2,80,16,256 }, /* Dummy format */
@@ -544,13 +549,21 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
   {
     case FMT_FDI:
       if(fwrite(D->Data,1,D->DataSize,F)!=D->DataSize)
-      { fclose(F);unlink(FileName);return(0); }
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       break;
 
     case FMT_IMG:
       /* Check the number of tracks and sides */
       if((FDI_TRACKS(D->Data)!=Formats[Format].Tracks)||(FDI_SIDES(D->Data)!=Formats[Format].Sides))
-      { fclose(F);unlink(FileName);return(0); }
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Scan through all sides,tracks,sectors */
       L=Formats[Format].SecSize;
       for(I=0;I<Formats[Format].Sides;++I)
@@ -562,7 +575,12 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
             if(!P||(fwrite(P,1,C,F)!=C)) break;
           }
       /* If failed to write all sectors, clean up */
-      if(I<Formats[Format].Sides) { fclose(F);unlink(FileName);return(0); }
+      if(I<Formats[Format].Sides)
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       break;
 
     case FMT_TRD:
@@ -570,7 +588,11 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
     case FMT_SF7000:
       /* Check the number of tracks and sides */
       if((FDI_TRACKS(D->Data)!=Formats[Format].Tracks)||(FDI_SIDES(D->Data)!=Formats[Format].Sides))
-      { fclose(F);unlink(FileName);return(0); }
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
     case FMT_DSK:
       /* Scan through all tracks */
       J = FDI_SIDES(D->Data)*FDI_TRACKS(D->Data);
@@ -587,7 +609,11 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
             K = K>L? L:K;
             L-= K;
             if(fwrite(FDI_SECTOR(D->Data,P,T),1,K,F)!=K)
-            { fclose(F);unlink(FileName);return(0); }
+            {
+               fclose(F);
+               unlink(FileName);
+               return(0);
+            }
           }
         /* Fill remaining track length with zeros */
         if(L>0) fseek(F,L,SEEK_CUR);
@@ -604,16 +630,31 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
        ||(D->Sectors!=Formats[Format].Sectors)
        ||(D->SecSize!=Formats[Format].SecSize)
        ||(T[0x8E3]!=0x16)
-      ) { fclose(F);unlink(FileName);return(0); }
+      )
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Write header */
       strcpy((char *)S,"SINCLAIR");
       S[8]=T[0x8E4];
-      if(fwrite(S,1,9,F)!=9) { fclose(F);unlink(FileName);return(0); }
+      if(fwrite(S,1,9,F)!=9)
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       for(C=I=0;I<9;++I) C+=S[I];
       /* Write directory entries */
       for(J=0,P=T;J<T[0x8E4];++J,P+=16)
       {
-        if(fwrite(P,1,14,F)!=14) { fclose(F);unlink(FileName);return(0); }
+        if(fwrite(P,1,14,F)!=14)
+        {
+           fclose(F);
+           unlink(FileName);
+           return(0);
+        }
         for(I=0;I<14;++I) C+=P[I];
       }
       /* Write files */
@@ -624,7 +665,11 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
         I = P[13]*D->SecSize;
         /* Write data */
         if(fwrite(T+K,1,I,F)!=I)
-        { fclose(F);unlink(FileName);return(0); }
+        {
+           fclose(F);
+           unlink(FileName);
+           return(0);
+        }
         /* Compute checksum */
         for(L=K,I+=K;L<I;++L) C+=T[L];
       }
@@ -633,7 +678,12 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
       S[1] = (C>>8)&0xFF;
       S[2] = (C>>16)&0xFF;
       S[3] = (C>>24)&0xFF;
-      if(fwrite(S,1,4,F)!=4) { fclose(F);unlink(FileName);return(0); }
+      if(fwrite(S,1,4,F)!=4)
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Done */
       break;
 
@@ -646,11 +696,21 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
        ||(D->Sectors!=Formats[Format].Sectors)
        ||(D->SecSize!=Formats[Format].SecSize)
        ||(T[0x8E3]!=0x16)
-      ) { fclose(F);unlink(FileName);return(0); }
+      )
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Look for the first file */
       for(J=0,P=T;(J<T[0x8E4])&&!P[0];++J,P+=16);
       /* If not found, drop out */
-      if(J>=T[0x8E4]) { fclose(F);unlink(FileName);return(0); }      
+      if(J>=T[0x8E4])
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Copy header */
       memcpy(S,P,14);
       /* Get single file address and size */
@@ -663,9 +723,19 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
       S[15] = C&0xFF;
       S[16] = (C>>8)&0xFF;
       /* Write header */
-      if(fwrite(S,1,17,F)!=17) { fclose(F);unlink(FileName);return(0); }
+      if(fwrite(S,1,17,F)!=17)
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Write file data */
-      if(fwrite(P,1,I,F)!=I) { fclose(F);unlink(FileName);return(0); }
+      if(fwrite(P,1,I,F)!=I)
+      {
+         fclose(F);
+         unlink(FileName);
+         return(0);
+      }
       /* Done */
       break;
 

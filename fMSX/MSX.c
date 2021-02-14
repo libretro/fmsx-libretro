@@ -43,6 +43,15 @@
 #define chdir(path) ChangeDir(path)
 #endif
 
+#ifdef _MSC_VER
+#undef chdir
+#undef getcwd
+#undef unlink
+#define chdir _chdir
+#define getcwd _getcwd
+#define unlink _unlink
+#endif
+
 /** User-defined parameters for fMSX *************************/
 int  Mode        = MSX_MSX2|MSX_NTSC|MSX_GUESSA|MSX_GUESSB;
 byte Verbose     = 1;              /* Debug msgs ON/OFF      */
