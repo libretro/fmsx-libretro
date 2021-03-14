@@ -80,6 +80,7 @@ else ifneq (,$(findstring ios,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+   MINVERSION :=
 
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
@@ -92,14 +93,11 @@ endif
 	endif
    CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
-   CC += -miphoneos-version-min=8.0
-   CC_AS += -miphoneos-version-min=8.0
-   PLATFORM_DEFINES := -miphoneos-version-min=8.0
+   MINVERSION = -miphoneos-version-min=8.0
 else
-   CC += -miphoneos-version-min=5.0
-   CC_AS += -miphoneos-version-min=5.0
-   PLATFORM_DEFINES := -miphoneos-version-min=5.0
+   MINVERSION = -miphoneos-version-min=5.0
 endif
+   PLATFORM_DEFINES := $(MINVERSION)
 
 # tvOS
 else ifeq ($(platform), tvos-arm64)
@@ -110,6 +108,9 @@ else ifeq ($(platform), tvos-arm64)
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk appletvos Path)
 endif
+
+   CC = cc -arch arm64 -isysroot $(IOSSDK)
+   CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
 
 else ifeq ($(platform), theos_ios)
 	# Theos iOS
