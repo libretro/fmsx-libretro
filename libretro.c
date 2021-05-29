@@ -703,7 +703,7 @@ unsigned int WriteAudio(sample *Data,unsigned int Length)
    }
 
 
-   return audio_batch_cb((const int16_t*)audio_buf, Length);
+   return audio_batch_cb(audio_buf, Length);
 }
 
 unsigned int Joystick(void)
@@ -717,7 +717,6 @@ void Keyboard(void)
 
 unsigned int Mouse(byte N)
 {
-   return 0;
 }
 
 unsigned int GetJoystick(void)

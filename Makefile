@@ -70,17 +70,10 @@ else ifeq ($(platform), osx)
 ifeq ($(OSX_LT_MAVERICKS),"YES")
    fpic += -mmacosx-version-min=10.5
 endif
-   ifeq ($(CROSS_COMPILE),1)
-		TARGET_RULE   = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
-		CFLAGS   += $(TARGET_RULE)
-		CPPFLAGS += $(TARGET_RULE)
-		CXXFLAGS += $(TARGET_RULE)
-		LDFLAGS  += $(TARGET_RULE)
-   endif
-
-	CFLAGS  += $(ARCHFLAGS)
-	CXXFLAGS  += $(ARCHFLAGS)
-	LDFLAGS += $(ARCHFLAGS)
+ifndef ($(NOUNIVERSAL))
+   CFLAGS += $(ARCHFLAGS)
+   LDFLAGS += $(ARCHFLAGS)
+endif
 
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
@@ -88,7 +81,6 @@ else ifneq (,$(findstring ios,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
-   MINVERSION :=
 
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
@@ -101,11 +93,14 @@ endif
 	endif
    CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
-   MINVERSION = -miphoneos-version-min=8.0
+   CC += -miphoneos-version-min=8.0
+   CC_AS += -miphoneos-version-min=8.0
+   PLATFORM_DEFINES := -miphoneos-version-min=8.0
 else
-   MINVERSION = -miphoneos-version-min=5.0
+   CC += -miphoneos-version-min=5.0
+   CC_AS += -miphoneos-version-min=5.0
+   PLATFORM_DEFINES := -miphoneos-version-min=5.0
 endif
-   PLATFORM_DEFINES := $(MINVERSION)
 
 # tvOS
 else ifeq ($(platform), tvos-arm64)
@@ -116,9 +111,6 @@ else ifeq ($(platform), tvos-arm64)
 ifeq ($(IOSSDK),)
    IOSSDK := $(shell xcodebuild -version -sdk appletvos Path)
 endif
-
-   CC = cc -arch arm64 -isysroot $(IOSSDK)
-   CC_AS = perl ./tools/gas-preprocessor.pl $(CC)
 
 else ifeq ($(platform), theos_ios)
 	# Theos iOS
@@ -304,23 +296,19 @@ PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
 LIB := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/lib/amd64")
 INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/include")
 
-WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
-WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
+WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
+WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
 
 WindowsSdkDirInc := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
 WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
 
-WindowsSDKIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include")
-WindowsSDKGlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\gl")
-WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib\x64")
 
-INCFLAGS_PLATFORM = -I"$(WindowsSDKIncludeDir)"
-export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
+export INCLUDE := $(INCLUDE)
+export LIB := $(LIB);$(WindowsSdkDir)
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
-
 # Windows MSVC 2010 x86
 else ifeq ($(platform), windows_msvc2010_x86)
 	CC  = cl.exe
@@ -331,18 +319,16 @@ PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
 LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/lib")
 INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/include")
 
-WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
-WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
+WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib
+WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib
 
-WindowsSDKIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include")
-WindowsSDKGlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\gl")
-WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib")
+WindowsSdkDirInc := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
+WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
 
-HAVE_CDROM = 1
-INCFLAGS_PLATFORM = -I"$(WindowsSDKIncludeDir)"
 
-export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
+export INCLUDE := $(INCLUDE)
+export LIB := $(LIB);$(WindowsSdkDir)
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
@@ -358,17 +344,10 @@ INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/include")
 LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/lib")
 BIN := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin")
 
-WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\MicrosoftSDK\InstalledSDKs\8F9E5EF3-A9A5-491B-A889-C58EFFECE8B3" -v "Install Dir" | grep -o '[A-Z]:\\.*')
+WindowsSdkDir := $(INETSDK)
 
-WindowsSDKIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include")
-WindowsSDKAtlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\atl")
-WindowsSDKCrtIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\crt")
-WindowsSDKGlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\gl")
-WindowsSDKMfcIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\mfc")
-WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib")
-
-export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKAtlIncludeDir);$(WindowsSDKCrtIncludeDir);$(WindowsSDKGlIncludeDir);$(WindowsSDKMfcIncludeDir);libretro-common/include/compat/msvc
-export LIB := $(LIB);$(WindowsSDKLibDir)
+export INCLUDE := $(INCLUDE);$(INETSDK)/Include;libretro-common/include/compat/msvc
+export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
@@ -517,16 +496,6 @@ ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else
 	CFLAGS += -O2 -DNDEBUG
-endif
-
-ifneq (,$(findstring msvc,$(platform)))
-ifeq ($(DEBUG), 1)
-   CFLAGS   += -MTd
-   CXXFLAGS += -MTd
-else
-   CFLAGS   += -MT
-   CXXFLAGS += -MT
-endif
 endif
 
 DEFINES += -D__LIBRETRO__ $(PLATFORM_DEFINES)

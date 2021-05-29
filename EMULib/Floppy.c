@@ -5,7 +5,7 @@
 /** This file implements functions to operate on 720kB      **/
 /** floppy disk images. See Floppy.h for declarations.      **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2004-2014                 **/
+/** Copyright (C) Marat Fayzullin 2004-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -17,13 +17,15 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32)
-    // Copied from linux libc sys/stat.h:
-    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#if defined(UIQ) || defined(S60) || defined(UNIX) || defined(MAEMO) || defined(MEEGO) || defined(ANDROID)
+#include <dirent.h>
+#else
+#include <direct.h>
 #endif
 
-#include <retro_dirent.h>
+#ifdef ZLIB
+#include <zlib.h>
+#endif
 
 #define DSK_RESERVED_SECS 0
 #define DSK_FATS_PER_DISK 2
@@ -82,7 +84,7 @@ static int FindFreeCluster(const byte *Dsk,int Start)
 /** Create disk image in Dsk or allocate memory when Dsk=0. **/
 /** Returns pointer to the disk image or 0 on failure.      **/
 /*************************************************************/
-byte *DSKCreate(byte *Dsk)
+byte *DSKCreate(byte *Dsk,const char *Label)
 {
   byte *FAT,*DIR,*DAT;
 
@@ -105,7 +107,8 @@ byte *DSKCreate(byte *Dsk)
   Dsk[0x00] = 0xC9;
   Dsk[0x01] = 0xC9;
   Dsk[0x02] = 0xC9;
-  memcpy(Dsk+3,"MSX-DISK",8);
+  memset(Dsk+3,0x00,8);
+  if(Label) strncpy((char *)(Dsk+3),Label,8);
   Dsk[0x0B] = DSK_SECTOR_SIZE&0xFF; 
   Dsk[0x0C] = (DSK_SECTOR_SIZE>>8)&0xFF;
   Dsk[0x0D] = DSK_SECS_PER_CLTR;
@@ -177,13 +180,13 @@ int DSKFile(byte *Dsk,const char *FileName)
 /*************************************************************/
 const char *DSKFileName(const byte *Dsk,int ID)
 {
-  const unsigned char *Name;
+  const char *Name;
 
   /* Can't have ID that is out of bounds */
   if((ID<1)||(ID>DSK_DIR_SIZE)) return(0);
   /* Return file name */
-  Name=DIRENTRY(Dsk,ID-1);
-  return(!Name[0]||(Name[0]==0xE5)? 0:Name);
+  Name=(const char *)DIRENTRY(Dsk,ID-1);
+  return(!Name[0]||(Name[0]==(char)0xE5)? 0:Name);
 }
 
 /** DSKFileSize() ********************************************/
@@ -361,59 +364,60 @@ int DSKDelete(byte *Dsk,int ID)
 /** functions return pointer to disk contents on success or **/
 /** 0 on failure.                                           **/
 /*************************************************************/
-byte *DSKLoad(const char *Name,byte *Dsk)
+byte *DSKLoad(const char *Name,byte *Dsk,const char *Label)
 {
-  byte *Dsk1,*Buf,FN[32],*Path;
+  byte *Dsk1,*Buf;
+  char *Path,FN[32];
   struct stat FS;
+  struct dirent *DE;
   FILE *F;
-  struct RDIR *D;
+  DIR *D;
   int J,I;
 
   /* Create disk image */
-  Dsk1=DSKCreate(Dsk);
+  Dsk1=DSKCreate(Dsk,Label);
   if(!Dsk1) return(0);
 
   /* If <Name> is a directory... */
   if(!stat(Name,&FS)&&S_ISDIR(FS.st_mode))
   {
     /* Open directory */
-    D = retro_opendir(Name);
+    D=opendir(Name);
     if(!D) { if(!Dsk) free(Dsk1);return(0); }
 
     /* Scan, read, store files */
-    while(retro_readdir(D))
-      if((Path = malloc(strlen(Name)+strlen(retro_dirent_get_name(D))+5)))
+    while((DE=readdir(D)))
+      if((Path=malloc(strlen(Name)+strlen(DE->d_name)+5)))
       {
-        const char *name = retro_dirent_get_name(D);
         /* Compose full input file name */
-        strcpy((char*)Path,Name);
-        I=strlen((const char*)Path);
+        strcpy(Path,Name);
+        I=strlen(Path);
         if(Path[I-1]!='/') Path[I++]='/';
-        strcpy((char*)Path+I, name);
+        strcpy(Path+I,DE->d_name);
 
         /* Compose 8.3 file name */
-        for(J=0;(J<8)&& name[J]&&(name[J]!='.');J++)
-          FN[J]=toupper(name[J]);
+        for(J=0;(J<8)&&DE->d_name[J]&&(DE->d_name[J]!='.');J++)
+          FN[J]=toupper(DE->d_name[J]);
         for(I=J;I<8;I++) FN[I]=' ';
-        for(;name[J]&&(name[J]!='.');J++);
-        if(name[J]) J++;
-        for(;(I<11) && name[J];I++,J++)
-          FN[I]=toupper(name[J]);
+        for(;DE->d_name[J]&&(DE->d_name[J]!='.');J++);
+        if(DE->d_name[J]) J++;
+        for(;(I<11)&&DE->d_name[J];I++,J++)
+          FN[I]=toupper(DE->d_name[J]);
         for(;I<11;I++) FN[I]=' ';
         FN[I]='\0';
 
         /* Open input file */
-        if(!stat((const char*)Path,&FS)&&S_ISREG(FS.st_mode)&&FS.st_size)
-          if((F = fopen((const char*)Path,"rb")))
+        if(!stat(Path,&FS)&&S_ISREG(FS.st_mode)&&FS.st_size)
+          if((F=fopen(Path,"rb")))
           {
             /* Allocate input buffer */
-            if((Buf = malloc(FS.st_size)))
+            if((Buf=malloc(FS.st_size)))
             {
               /* Read file into the buffer */
               if(fread(Buf,1,FS.st_size,F)==FS.st_size)
               {
                 /* Create and write floppy file */
-                if((I = DSKFile(Dsk1,(const char*)FN)))
+                if((I=DSKFile(Dsk1,FN)))
                   if(DSKWrite(Dsk1,I,Buf,FS.st_size)!=FS.st_size)
                     DSKDelete(Dsk1,I);
               }
@@ -429,9 +433,15 @@ byte *DSKLoad(const char *Name,byte *Dsk)
       }
 
     /* Done processing directory */
-    retro_closedir(D);
+    closedir(D);
     return(Dsk1);
   }
+
+#ifdef ZLIB
+#define fopen(N,M)      (FILE *)gzopen(N,M)
+#define fclose(F)       gzclose((gzFile)(F))
+#define fread(B,L,N,F)  gzread((gzFile)(F),B,(L)*(N))
+#endif
 
   /* Assume <Name> to be a disk image file */
   F=fopen(Name,"rb");
@@ -444,12 +454,18 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   /* Done */
   fclose(F);
   return(Dsk1);
+
+#ifdef ZLIB
+#undef fopen
+#undef fclose
+#undef fread
+#endif
 }
 
 const byte *DSKSave(const char *Name,const byte *Dsk)
 {
   const char *T;
-  byte *Path,*P;
+  char *Path,*P;
   struct stat FS;
   FILE *F;
   int J,I,K;
@@ -460,8 +476,8 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
     /* Compose path name */
     Path=malloc(strlen(Name)+20);
     if(!Path) return(0);
-    strcpy((char*)Path,Name);
-    I=strlen((const char*)Path);
+    strcpy(Path,Name);
+    I=strlen(Path);
     if(Path[I-1]!='/') Path[I++]='/';
 
     /* Scan, read, dump files */
@@ -477,10 +493,10 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
         *P='\0';
 
         /* Read and dump file */
-        if((P = malloc(DSKFileSize(Dsk,J))))
+        if((P=malloc(DSKFileSize(Dsk,J))))
         {
-          if((K = DSKRead(Dsk,J,P,DSKFileSize(Dsk,J))))
-            if((F = fopen((const char*)Path,"wb"))) { fwrite(P,1,K,F);fclose(F); }      
+          if((K=DSKRead(Dsk,J,(byte *)P,DSKFileSize(Dsk,J))))
+            if((F=fopen(Path,"wb"))) { fwrite(P,1,K,F);fclose(F); }      
           free(P);
         }
       }
@@ -488,6 +504,12 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
     /* Done processing directory */
     return(Dsk);
   }
+
+#ifdef ZLIB
+#define fopen(N,M)      (FILE *)gzopen(N,M)
+#define fclose(F)       gzclose((gzFile)F)
+#define fwrite(B,L,N,F) gzwrite((gzFile)F,(byte *)B,(L)*(N))
+#endif
 
   /* Assume <Name> to be a disk image file */
   F=fopen(Name,"wb");
@@ -500,4 +522,10 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
   /* Done */
   fclose(F);
   return(Dsk);
+
+#ifdef ZLIB
+#undef fopen
+#undef fclose
+#undef fwrite
+#endif
 }

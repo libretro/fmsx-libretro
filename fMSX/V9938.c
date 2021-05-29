@@ -591,10 +591,10 @@ void LmmmEngine(void)
 /** LmcmEngine() *********************************************/
 /** Vram -> CPU                                             **/
 /*************************************************************/
-void LmcmEngine(void)
+void LmcmEngine()
 {
-  if ((VDPStatus[2]&0x80)!=0x80)
-  {
+  if ((VDPStatus[2]&0x80)!=0x80) {
+
     VDPStatus[7]=VDP[44]=VDP_POINT(ScrMode-5, MMC.ASX, MMC.SY);
     VdpOpsCnt-=GetVdpTimingValue(lmmv_timing);
     VDPStatus[2]|=0x80;
