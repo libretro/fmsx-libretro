@@ -285,7 +285,6 @@ const byte Keys[][2] =
 /*************************************************************/
 byte *LoadROM(const char *Name,int Size,byte *Buf);
 int  GuessROM(const byte *Buf,int Size);
-int  FindState(const char *Name);
 void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3);
 void MapROM(word A,byte V);       /* Switch MegaROM banks            */
 void PSlot(byte V);               /* Switch primary slots            */
@@ -2367,14 +2366,10 @@ void ChangePrinter(const char *FileName)
 /*************************************************************/
 byte ChangeDisk(byte N,const char *FileName)
 {
-  int NeedState;
   byte *P;
 
   /* We only have MAXDRIVES drives */
   if(N>=MAXDRIVES) return(0);
-
-  /* Load state when inserting first disk into drive A: */
-  NeedState = FileName && *FileName && !N && !FDD[N].Data;
 
   /* Reset FDC, in case it was running a command */
   Reset1793(&FDC,FDD,WD1793_KEEP);
@@ -2385,8 +2380,6 @@ byte ChangeDisk(byte N,const char *FileName)
   /* If FileName not empty, try loading disk image */
   if(*FileName&&LoadFDI(&FDD[N],FileName,FMT_AUTO))
   {
-    /* If first disk, also try loading state */
-    if(NeedState) FindState(FileName);
     /* Done */
     return(1);
   }
@@ -2621,31 +2614,6 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
   /* Done */
   fclose(F);
   return(P);
-}
-
-/** FindState() **********************************************/
-/** Compute state file name corresponding to given filename **/
-/** and try loading state. Returns 1 on success, 0 on       **/
-/** failure.                                                **/
-/*************************************************************/
-int FindState(const char *Name)
-{
-  int Result = 0;
-
-  /* Remove old state name */
-  FreeMemory((byte *)STAName);
-
-  /* If STAName gets created... */
-  if((STAName = MakeFileName(Name,".sta")))
-  {
-    /* Try loading state */
-    if(Verbose) printf("Loading state from %s...",STAName);
-    Result=LoadSTA(STAName);
-    PRINTRESULT(Result);
-  }
-
-  /* Done */
-  return(Result);
 }
 
 /** LoadCart() ***********************************************/
@@ -2952,9 +2920,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
   ResetMSX(Mode,RAMPages,VRAMPages);
   PRINTOK;
 
-  /* If first used user slot, try loading state */
-  if(!Slot||((Slot==1)&&!ROMData[0])) FindState(FileName);
-
   /* Done loading cartridge */
   return(Pages);
 }
@@ -3163,94 +3128,4 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
 
   /* Return amount of data read */
   return(Size);
-}
-
-/** SaveSTA() ************************************************/
-/** Save emulation state into a .STA file. Returns 1 on     **/
-/** success, 0 on failure.                                  **/
-/*************************************************************/
-int SaveSTA(const char *Name)
-{
-  static byte Header[16] = "STE\032\003\0\0\0\0\0\0\0\0\0\0\0";
-  unsigned int J,Size;
-  byte *Buf;
-  FILE *F;
-
-  /* Fail if no state file */
-  if(!Name) return(0);
-
-  /* Allocate temporary buffer */
-  Buf = malloc(MAX_STASIZE);
-  if(!Buf) return(0);
-
-  /* Try saving state */
-  Size = SaveState(Buf,MAX_STASIZE);
-  if(!Size) { free(Buf);return(0); }
-
-  /* Open new state file */
-  F = fopen(Name,"wb");
-  if(!F) { free(Buf);return(0); }
-
-  /* Prepare the header */
-  J=StateID();
-  Header[5] = RAMPages;
-  Header[6] = VRAMPages;
-  Header[7] = J&0x00FF;
-  Header[8] = J>>8;
-
-  /* Write out the header and the data */
-  if(F && (fwrite(Header,1,16,F)!=16))  { fclose(F);F=0; }
-  if(F && (fwrite(Buf,1,Size,F)!=Size)) { fclose(F);F=0; }
-
-  /* If failed writing state, delete open file */
-  if(F) fclose(F); else unlink(Name);
-
-  /* Done */
-  free(Buf);
-  return(!!F);
-}
-
-/** LoadSTA() ************************************************/
-/** Load emulation state from a .STA file. Returns 1 on     **/
-/** success, 0 on failure.                                  **/
-/*************************************************************/
-int LoadSTA(const char *Name)
-{
-  int Size,OldMode,OldRAMPages,OldVRAMPages;
-  byte Header[16],*Buf;
-  FILE *F;
-
-  /* Fail if no state file */
-  if(!Name) return(0);
-
-  /* Open saved state file */
-  if(!(F=fopen(Name,"rb"))) return(0);
-
-  /* Read and check the header */
-  if(fread(Header,1,16,F)!=16)           { fclose(F);return(0); }
-  if(memcmp(Header,"STE\032\003",5))     { fclose(F);return(0); }
-  if(Header[7]+Header[8]*256!=StateID()) { fclose(F);return(0); }
-  if((Header[5]!=(RAMPages&0xFF))||(Header[6]!=(VRAMPages&0xFF)))
-  { fclose(F);return(0); }
-
-  /* Allocate temporary buffer */
-  Buf = malloc(MAX_STASIZE);
-  if(!Buf) { fclose(F);return(0); }
-
-  /* Save current configuration */
-  OldMode      = Mode;
-  OldRAMPages  = RAMPages;
-  OldVRAMPages = VRAMPages;
-
-  /* Read state into temporary buffer, then load it */
-  Size = fread(Buf,1,MAX_STASIZE,F);
-  Size = Size>0? LoadState(Buf,Size):0;
-
-  /* If failed loading state, reset hardware */
-  if(!Size) ResetMSX(OldMode,OldRAMPages,OldVRAMPages);
-
-  /* Done */
-  free(Buf);
-  fclose(F);
-  return(!!Size);
 }

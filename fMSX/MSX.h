@@ -299,16 +299,6 @@ int LoadFile(const char *FileName);
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type);
 
-/** SaveSTA() ************************************************/
-/** Save emulation state to a .STA file.                    **/
-/*************************************************************/
-int SaveSTA(const char *FileName);
-
-/** LoadSTA() ************************************************/
-/** Load emulation state from a .STA file.                  **/
-/*************************************************************/
-int LoadSTA(const char *FileName);
-
 /** MakeFileName() *******************************************/
 /** Make a copy of the file name, replacing the extension.  **/
 /** Returns allocated new name or 0 on failure.             **/
