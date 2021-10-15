@@ -91,6 +91,17 @@ else ifeq ($(platform), retrofw)
    SHARED := -shared -Wl,-version-script=link.T -Wl,-no-undefined
    CFLAGS += -march=mips32 -mtune=mips32 -mhard-float
    CFLAGS += -fomit-frame-pointer -ffast-math	
+
+# MIYOO
+else ifeq ($(platform), miyoo)
+   TARGET := $(TARGET_NAME)_libretro.so
+   CC = /opt/miyoo/usr/bin/arm-linux-gcc
+   CXX = /opt/miyoo/usr/bin/arm-linux-g++
+   AR = /opt/miyoo/usr/bin/arm-linux-ar
+   fpic := -fPIC
+   SHARED := -shared -Wl,-version-script=link.T -Wl,-no-undefined
+   CFLAGS += -march=armv5te -mtune=arm926ej-s
+   CFLAGS += -fomit-frame-pointer -ffast-math  
    
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
