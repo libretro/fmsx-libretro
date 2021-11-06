@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <streams/file_stream.h>
+
 #include "MSX.h"
 #include "EMULib.h"
 #include "Sound.h"
@@ -265,13 +267,13 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   info->geometry.base_width = image_buffer_width ;
-   info->geometry.base_height = image_buffer_height ;
-   info->geometry.max_width = 640 ;
-   info->geometry.max_height = 480 ;
+   info->geometry.base_width   = image_buffer_width;
+   info->geometry.base_height  = image_buffer_height;
+   info->geometry.max_width    = 640;
+   info->geometry.max_height   = 480;
    info->geometry.aspect_ratio = 0;
-   info->timing.fps = fps;
-   info->timing.sample_rate = SND_RATE;
+   info->timing.fps            = fps;
+   info->timing.sample_rate    = SND_RATE;
 }
 
 void retro_init(void)
