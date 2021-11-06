@@ -19,10 +19,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifdef FMSX
 #include "AY8910.h"
 extern AY8910 PSG;
-#endif
 
 static const char *Mnemonics[256] =
 {
@@ -412,7 +410,6 @@ byte DebugZ80(Z80 *R)
         }
         break;
 
-#ifdef FMSX
       case 'S':
         for(J=0;J<AY8910_CHANNELS;J++)
         {
@@ -422,7 +419,6 @@ byte DebugZ80(Z80 *R)
         }
         printf("Envelope period %dms\n",PSG.EPeriod);
         break;
-#endif /* FMSX */
     }
   }
 

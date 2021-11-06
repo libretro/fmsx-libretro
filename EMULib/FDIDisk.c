@@ -12,7 +12,6 @@
 /**     changes to this file.                               **/
 /*************************************************************/
 #include "FDIDisk.h"
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #ifdef _WIN32

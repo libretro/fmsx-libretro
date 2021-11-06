@@ -945,7 +945,6 @@ byte VDPDraw(byte Op)
       VdpEngine=HmmcEngine;  
       break;
     default:
-      if(Verbose&0x02) printf("V9938: Unrecognized opcode %02Xh\n",Op);
         return(0);
   }
 

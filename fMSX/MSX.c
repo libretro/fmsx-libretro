@@ -1132,9 +1132,6 @@ case 0xA2: /* PSG input port */
   /* PSG[15] resets mouse counters (???) */
   if(PSG.Latch==15)
   {
-    /* @@@ For debugging purposes */
-    /*printf("Reading from PSG[15]\n");*/
-
     /*MCount[0]=MCount[1]=0;*/
     return(PSG.R[15]&0xF0);
   }
@@ -1283,9 +1280,6 @@ case 0xA1: /* PSG Data */
   /* PSG[15] is responsible for joystick/mouse */
   if(PSG.Latch==15)
   {
-    /* @@@ For debugging purposes */
-    /*printf("Writing PSG[15] <- %02Xh\n",Value);*/
-
     /* For mouse, update nibble counter      */
     /* For joystick, set nibble counter to 0 */
     if((Value&0x0C)==0x0C) MCount[1]=0;
@@ -1378,16 +1372,11 @@ case 0xFF: /* Mapper page at C000h */
 /*************************************************************/
 void MapROM(word A,byte V)
 {
-  byte I,J,PS,SS,*P;
-
-/* @@@ For debugging purposes
-printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
-*/
-
-  J  = A>>14;           /* 16kB page number 0-3  */
-  PS = PSL[J];          /* Primary slot number   */
-  SS = SSL[J];          /* Secondary slot number */
-  I  = CartMap[PS][SS]; /* Cartridge number      */
+  byte *P;
+  byte J  = A>>14;           /* 16kB page number 0-3  */
+  byte PS = PSL[J];          /* Primary slot number   */
+  byte SS = SSL[J];          /* Secondary slot number */
+  byte I  = CartMap[PS][SS]; /* Cartridge number      */
 
   /* Drop out if no cartridge in that slot */
   if(I>=MAXSLOTS) return;

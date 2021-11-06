@@ -13,7 +13,6 @@
 /*************************************************************/
 #include "Sound.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #if defined(_WIN32)
