@@ -376,4 +376,10 @@ case DAA:
   break;
 
 default:
+  if(R->TrapBadOps)
+    printf
+    (
+      "[Z80 %lX] Unrecognized instruction: %02X at PC=%04X\n",
+      (long)R->User,OpZ80(R->PC.W-1),R->PC.W-1
+    );
   break;

@@ -13,8 +13,6 @@
 /**     changes to this file.                               **/
 /*************************************************************/
 
-#include <retro_inline.h>
-
 static int FirstLine = 18;     /* First scanline in the XBuf */
 
 static void  Sprites(byte Y,pixel *Line);
@@ -44,7 +42,7 @@ static void ClearLine(pixel *P,pixel C)
 /** Given a color in YJK format, return the corresponding   **/
 /** palette entry.                                          **/
 /*************************************************************/
-static INLINE pixel YJKColor(int Y,int J,int K)
+INLINE pixel YJKColor(int Y,int J,int K)
 {
   int R,G,B;
 		

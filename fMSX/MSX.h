@@ -24,7 +24,16 @@
 #include "WD1793.h"         /* WD1793 FDC emulation          */
 
 #include <stdint.h>
-#include <retro_inline.h>
+
+/** INLINE ***************************************************/
+/** C99 standard has "inline", but older compilers've used  **/
+/** __inline for the same purpose.                          **/
+/*************************************************************/
+#ifdef __C99__
+#define INLINE static inline
+#else
+#define INLINE static __inline
+#endif
 
 #ifdef __cplusplus
 extern "C" {

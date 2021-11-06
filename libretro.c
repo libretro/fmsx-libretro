@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <compat/posix_string.h>
 #include <streams/file_stream.h>
 
 #include "MSX.h"

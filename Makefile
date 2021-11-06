@@ -280,7 +280,7 @@ else ifeq ($(platform), libnx)
    CFLAGS += -O3 -fomit-frame-pointer -ffast-math -I$(DEVKITPRO)/libnx/include/ -fPIE -Wl,--allow-multiple-definition
    CFLAGS += -specs=$(DEVKITPRO)/libnx/switch.specs
    CFLAGS += -D__SWITCH__ -DHAVE_LIBNX
-   CFLAGS += -DARM -D__aarch64__=1 -march=armv8-a -mtune=cortex-a57 -mtp=soft -ffast-math -mcpu=cortex-a57+crc+fp+simd -ffunction-sections
+   CFLAGS += -DARM -D__aarch64__=1 -march=armv8-a -mtune=cortex-a57 -mtp=soft -DINLINE=inline -ffast-math -mcpu=cortex-a57+crc+fp+simd -ffunction-sections
    CFLAGS += -Ifrontend/switch -ftree-vectorize
    STATIC_LINKING=1
 

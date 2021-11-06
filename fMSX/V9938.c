@@ -188,7 +188,7 @@ static int lmmm_timing[8]={ 1160, 1599, 1160, 1172,
 /** VDPVRMP() **********************************************/
 /** Calculate addr of a pixel in vram                       **/
 /*************************************************************/
-static INLINE byte *VDPVRMP(byte M,int X,int Y)
+INLINE byte *VDPVRMP(byte M,int X,int Y)
 {
   switch(M)
   {
@@ -204,7 +204,7 @@ static INLINE byte *VDPVRMP(byte M,int X,int Y)
 /** VDPpoint5() ***********************************************/
 /** Get a pixel on screen 5                                 **/
 /*************************************************************/
-static INLINE byte VDPpoint5(int SX, int SY)
+INLINE byte VDPpoint5(int SX, int SY)
 {
   return (*VDP_VRMP5(SX, SY) >>
           (((~SX)&1)<<2)
@@ -214,7 +214,7 @@ static INLINE byte VDPpoint5(int SX, int SY)
 /** VDPpoint6() ***********************************************/
 /** Get a pixel on screen 6                                 **/
 /*************************************************************/
-static INLINE byte VDPpoint6(int SX, int SY)
+INLINE byte VDPpoint6(int SX, int SY)
 {
   return (*VDP_VRMP6(SX, SY) >>
           (((~SX)&3)<<1)
@@ -224,7 +224,7 @@ static INLINE byte VDPpoint6(int SX, int SY)
 /** VDPpoint7() ***********************************************/
 /** Get a pixel on screen 7                                 **/
 /*************************************************************/
-static INLINE byte VDPpoint7(int SX, int SY)
+INLINE byte VDPpoint7(int SX, int SY)
 {
   return (*VDP_VRMP7(SX, SY) >>
           (((~SX)&1)<<2)
@@ -234,7 +234,7 @@ static INLINE byte VDPpoint7(int SX, int SY)
 /** VDPpoint8() ***********************************************/
 /** Get a pixel on screen 8                                 **/
 /*************************************************************/
-static INLINE byte VDPpoint8(int SX, int SY)
+INLINE byte VDPpoint8(int SX, int SY)
 {
   return *VDP_VRMP8(SX, SY);
 }
@@ -242,7 +242,7 @@ static INLINE byte VDPpoint8(int SX, int SY)
 /** VDPpoint() ************************************************/
 /** Get a pixel on a screen                                 **/
 /*************************************************************/
-static INLINE byte VDPpoint(byte SM, int SX, int SY)
+INLINE byte VDPpoint(byte SM, int SX, int SY)
 {
   switch(SM)
   {
@@ -259,7 +259,7 @@ static INLINE byte VDPpoint(byte SM, int SX, int SY)
 /** Low level function to set a pixel on a screen           **/
 /** Make it inline to make it fast                          **/
 /*************************************************************/
-static INLINE void VDPpsetlowlevel(byte *P, byte CL, byte M, byte OP)
+INLINE void VDPpsetlowlevel(byte *P, byte CL, byte M, byte OP)
 {
   switch (OP)
   {
@@ -279,7 +279,7 @@ static INLINE void VDPpsetlowlevel(byte *P, byte CL, byte M, byte OP)
 /** VDPpset5() ***********************************************/
 /** Set a pixel on screen 5                                 **/
 /*************************************************************/
-static INLINE void VDPpset5(int DX, int DY, byte CL, byte OP)
+INLINE void VDPpset5(int DX, int DY, byte CL, byte OP)
 {
   byte SH = ((~DX)&1)<<2;
 
@@ -290,7 +290,7 @@ static INLINE void VDPpset5(int DX, int DY, byte CL, byte OP)
 /** VDPpset6() ***********************************************/
 /** Set a pixel on screen 6                                 **/
 /*************************************************************/
-static INLINE void VDPpset6(int DX, int DY, byte CL, byte OP)
+INLINE void VDPpset6(int DX, int DY, byte CL, byte OP)
 {
   byte SH = ((~DX)&3)<<1;
 
@@ -301,7 +301,7 @@ static INLINE void VDPpset6(int DX, int DY, byte CL, byte OP)
 /** VDPpset7() ***********************************************/
 /** Set a pixel on screen 7                                 **/
 /*************************************************************/
-static INLINE void VDPpset7(int DX, int DY, byte CL, byte OP)
+INLINE void VDPpset7(int DX, int DY, byte CL, byte OP)
 {
   byte SH = ((~DX)&1)<<2;
 
@@ -312,7 +312,7 @@ static INLINE void VDPpset7(int DX, int DY, byte CL, byte OP)
 /** VDPpset8() ***********************************************/
 /** Set a pixel on screen 8                                 **/
 /*************************************************************/
-static INLINE void VDPpset8(int DX, int DY, byte CL, byte OP)
+INLINE void VDPpset8(int DX, int DY, byte CL, byte OP)
 {
   VDPpsetlowlevel(VDP_VRMP8(DX, DY),
                   CL, 0, OP);
@@ -321,7 +321,7 @@ static INLINE void VDPpset8(int DX, int DY, byte CL, byte OP)
 /** VDPpset() ************************************************/
 /** Set a pixel on a screen                                 **/
 /*************************************************************/
-static INLINE void VDPpset(byte SM, int DX, int DY, byte CL, byte OP)
+INLINE void VDPpset(byte SM, int DX, int DY, byte CL, byte OP)
 {
   switch (SM) {
     case 0: VDPpset5(DX, DY, CL, OP); break;
