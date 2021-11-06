@@ -15,17 +15,7 @@
 
 #include "Z80.h"
 #include "Tables.h"
-#include <stdio.h>
-
-/** INLINE ***************************************************/
-/** C99 standard has "inline", but older compilers used     **/
-/** __inline for the same purpose.                          **/
-/*************************************************************/
-#ifdef __C99__
-#define INLINE static inline
-#else
-#define INLINE static __inline
-#endif
+#include <retro_inline.h>
 
 /** System-Dependent Stuff ***********************************/
 /** This is system-dependent code put here to speed things  **/
@@ -34,7 +24,7 @@
 #ifdef COLEM
 #define FAST_RDOP
 extern byte *ROMPage[];
-INLINE byte OpZ80(word A) { return(ROMPage[A>>13][A&0x1FFF]); }
+static INLINE byte OpZ80(word A) { return(ROMPage[A>>13][A&0x1FFF]); }
 #endif
 
 #ifdef SPECCY
@@ -42,20 +32,20 @@ INLINE byte OpZ80(word A) { return(ROMPage[A>>13][A&0x1FFF]); }
 // @@@ WrZ80() can't be inlined as it contains debugging stuff
 //#define WrZ80 WRZ80
 extern byte *Page[],*ROM;
-INLINE byte RdZ80(word A)        { return(Page[A>>13][A&0x1FFF]); }
-//INLINE void WrZ80(word A,byte V) { if(Page[A>>13]<ROM) Page[A>>13][A&0x1FFF]=V; }
+static INLINE byte RdZ80(word A)        { return(Page[A>>13][A&0x1FFF]); }
+//static INLINE void WrZ80(word A,byte V) { if(Page[A>>13]<ROM) Page[A>>13][A&0x1FFF]=V; }
 #endif
 
 #ifdef MG
 #define RdZ80 RDZ80
 extern byte *Page[];
-INLINE byte RdZ80(word A) { return(Page[A>>13][A&0x1FFF]); }
+static INLINE byte RdZ80(word A) { return(Page[A>>13][A&0x1FFF]); }
 #endif
 
 #ifdef FMSX
 #define FAST_RDOP
 extern byte *RAM[];
-INLINE byte OpZ80(word A) { return(RAM[A>>13][A&0x1FFF]); }
+static INLINE byte OpZ80(word A) { return(RAM[A>>13][A&0x1FFF]); }
 #endif
 
 #ifdef ATI85
@@ -63,8 +53,8 @@ INLINE byte OpZ80(word A) { return(RAM[A>>13][A&0x1FFF]); }
 #define WrZ80 WRZ80
 extern byte *Page[],*ROM;
 extern void (*DoMEM)(word Addr,byte V);
-INLINE byte RdZ80(word A) { return(Page[A>>14][A&0x3FFF]); }
-INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; else DoMEM(A,V); }
+static INLINE byte RdZ80(word A) { return(Page[A>>14][A&0x3FFF]); }
+static INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; else DoMEM(A,V); }
 #endif
 
 /** FAST_RDOP ************************************************/
@@ -353,12 +343,7 @@ static void CodesCB(Z80 *R)
   {
 #include "CodesCB.h"
     default:
-      if(R->TrapBadOps)
-        printf
-        (
-          "[Z80 %lX] Unrecognized instruction: CB %02X at PC=%04X\n",
-          (long)(R->User),OpZ80(R->PC.W-1),R->PC.W-2
-        );
+      break;
   }
 }
 
@@ -377,12 +362,7 @@ static void CodesDDCB(Z80 *R)
   {
 #include "CodesXCB.h"
     default:
-      if(R->TrapBadOps)
-        printf
-        (
-          "[Z80 %lX] Unrecognized instruction: DD CB %02X %02X at PC=%04X\n",
-          (long)(R->User),OpZ80(R->PC.W-2),OpZ80(R->PC.W-1),R->PC.W-4
-        );
+      break;
   }
 #undef XX
 }
@@ -402,12 +382,7 @@ static void CodesFDCB(Z80 *R)
   {
 #include "CodesXCB.h"
     default:
-      if(R->TrapBadOps)
-        printf
-        (
-          "[Z80 %lX] Unrecognized instruction: FD CB %02X %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-2),OpZ80(R->PC.W-1),R->PC.W-4
-        );
+      break;
   }
 #undef XX
 }
@@ -430,12 +405,7 @@ static void CodesED(Z80 *R)
     case PFX_ED:
       R->PC.W--;break;
     default:
-      if(R->TrapBadOps)
-        printf
-        (
-          "[Z80 %lX] Unrecognized instruction: ED %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-1),R->PC.W-2
-        );
+      break;
   }
 }
 
@@ -461,12 +431,7 @@ static void CodesDD(Z80 *R)
     case PFX_CB:
       CodesDDCB(R);break;
     default:
-      if(R->TrapBadOps)
-        printf
-        (
-          "[Z80 %lX] Unrecognized instruction: DD %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-1),R->PC.W-2
-        );
+      break;
   }
 #undef XX
 }
@@ -493,11 +458,7 @@ static void CodesFD(Z80 *R)
     case PFX_CB:
       CodesFDCB(R);break;
     default:
-        printf
-        (
-          "Unrecognized instruction: FD %02X at PC=%04X\n",
-          OpZ80(R->PC.W-1),R->PC.W-2
-        );
+        break;
   }
 #undef XX
 }
