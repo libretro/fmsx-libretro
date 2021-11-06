@@ -619,17 +619,17 @@ bool retro_load_game(const struct retro_game_info *info)
    if (info)
    {
       char *dot = strrchr(info->path, '.');
-      if (dot && ( !strcmp(dot, ".rom") || !strcmp(dot, ".mx1") || !strcmp(dot, ".mx2") ))
+      if (dot && ( !strcasecmp(dot, ".rom") || !strcasecmp(dot, ".mx1") || !strcasecmp(dot, ".mx2") ))
       {
          strcpy(ROMName_buffer[0], info->path);
          ROMName[0]=ROMName_buffer[0];
       }
-      else if (dot && !strcmp(dot, ".dsk"))
+      else if (dot && !strcasecmp(dot, ".dsk"))
       {
          strcpy(DSKName_buffer[0], info->path);
          DSKName[0]=DSKName_buffer[0];
       }
-      else if (dot && !strcmp(dot, ".cas"))
+      else if (dot && !strcasecmp(dot, ".cas"))
       {
          strcpy(CasName_buffer, info->path);
          CasName=CasName_buffer;
