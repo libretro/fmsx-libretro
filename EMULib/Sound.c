@@ -38,16 +38,6 @@ int rfputc(int character, RFILE * stream);
 typedef unsigned char byte;
 typedef unsigned short word;
 
-struct SndDriverStruct SndDriver =
-{
-  (void (*)(int,int))0,
-  (void (*)(int,int))0,
-  (void (*)(int,int))0,
-  (void (*)(int,int,int))0,
-  (void (*)(int,const signed char *,int,int))0,
-  (const signed char *(*)(int))0
-};
-
 static const struct { byte Note;word Wheel; } Freqs[4096] =
 {
 #include "MIDIFreq.h"
@@ -170,9 +160,6 @@ void Sound(int Channel,int Freq,int Volume)
   WaveCH[Channel].Volume = Volume;
   WaveCH[Channel].Freq   = Freq;
 
-  /* Call sound driver if present */
-  if(SndDriver.Sound) (*SndDriver.Sound)(Channel,Freq,Volume);
-
   /* Log sound to MIDI file */
   MIDISound(Channel,Freq,Volume);
 }
@@ -186,9 +173,6 @@ void Drum(int Type,int Force)
 {
   /* Drum force has to be valid */
   Force = Force<0? 0:Force>255? 255:Force;
-
-  /* Call sound driver if present */
-  if(SndDriver.Drum) (*SndDriver.Drum)(Type,Force);
 
   /* Log drum to MIDI file */
   MIDIDrum(Type,Force);
@@ -206,9 +190,6 @@ void SetSound(int Channel,int Type)
   /* Set wave channel type */
   WaveCH[Channel].Type = Type;
 
-  /* Call sound driver if present */
-  if(SndDriver.SetSound) (*SndDriver.SetSound)(Channel,Type);
-
   /* Log instrument change to MIDI file */
   MIDISetSound(Channel,Type);
 }
@@ -222,9 +203,6 @@ void SetChannels(int Volume,int Switch)
 {
   /* Volume has to be valid */
   Volume = Volume<0? 0:Volume>255? 255:Volume;
-
-  /* Call sound driver if present */
-  if(SndDriver.SetChannels) (*SndDriver.SetChannels)(Volume,Switch);
 
   /* Modify wave master settings */ 
   MasterVolume = Volume;
@@ -250,9 +228,6 @@ void SetWave(int Channel,const signed char *Data,int Length,int Rate)
   WaveCH[Channel].Count  = 0;
   WaveCH[Channel].Data   = Data;
 
-  /* Call sound driver if present */
-  if(SndDriver.SetWave) (*SndDriver.SetWave)(Channel,Data,Length,Rate);
-
   /* Log instrument change to MIDI file */
   MIDISetSound(Channel,Rate? -1:SND_MELODIC);
 }
@@ -266,9 +241,6 @@ const signed char *GetWave(int Channel)
 {
   /* Channel has to be valid */
   if((Channel<0)||(Channel>=SND_CHANNELS)) return(0);
-
-  /* If driver present, call it */
-  if(SndDriver.GetWave) return((*SndDriver.GetWave)(Channel));
 
   /* Return current read position */
   return(
@@ -633,7 +605,6 @@ void TrashSound(void)
   SndRate = 0;
 }
 
-#if !defined(NO_AUDIO_PLAYBACK)
 /** RenderAudio() ********************************************/
 /** Render given number of melodic sound samples into an    **/
 /** integer buffer for mixing.                              **/
@@ -839,4 +810,3 @@ unsigned int RenderAndPlayAudio(unsigned int Samples)
   /* Return number of samples rendered */
   return(I);
 }
-#endif /* !NO_AUDIO_PLAYBACK */

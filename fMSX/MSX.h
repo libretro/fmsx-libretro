@@ -257,7 +257,6 @@ extern const char *SndName;           /* Soundtrack log file */
 extern const char *PrnName;           /* Printer redir. file */
 extern const char *CasName;           /* Tape image file     */
 extern const char *ComName;           /* Serial redir. file  */
-extern const char *STAName;           /* State save name     */
 extern const char *FNTName;           /* Font file for text  */ 
 
 extern FDIDisk FDD[4];                /* Floppy disk images  */
@@ -280,12 +279,6 @@ void TrashMSX(void);
 /** modes, possibly not the same as NewMode.                **/
 /*************************************************************/
 int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages);
-
-/** MenuMSX() ************************************************/
-/** Invoke a menu system allowing to configure the emulator **/
-/** and perform several common tasks.                       **/
-/*************************************************************/
-void MenuMSX(void);
 
 /** LoadFile() ***********************************************/
 /** Simple utility function to load cartridge, state, font  **/

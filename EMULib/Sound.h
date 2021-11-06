@@ -150,22 +150,6 @@ void MIDITicks(int N);
 #define SND_CHANNELS MIDI_CHANNELS         /* Default number */
 #endif
 
-/** SndDriver ************************************************/
-/** Each sound driver should fill this structure with       **/
-/** pointers to hardware-dependent handlers. This has to be **/
-/** done inside the InitSound() function.                   **/
-/*************************************************************/
-struct SndDriverStruct
-{
-  void (*SetSound)(int Channel,int NewType);
-  void (*Drum)(int Type,int Force);
-  void (*SetChannels)(int Volume,int Switch);
-  void (*Sound)(int Channel,int NewFreq,int NewVolume);
-  void (*SetWave)(int Channel,const signed char *Data,int Length,int Freq);
-  const signed char *(*GetWave)(int Channel);
-};
-extern struct SndDriverStruct SndDriver;
-
 #ifdef __cplusplus
 }
 #endif

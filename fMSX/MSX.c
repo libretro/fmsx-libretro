@@ -105,9 +105,6 @@ const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
 /** Soundtrack logging ***************************************/
 const char *SndName = "LOG.MID";   /* Sound log file         */
 
-/** Emulation state saving ***********************************/
-const char *STAName = "DEFAULT.STA";/* State file (autogen-d)*/
-
 /** Fixed font used by fMSX **********************************/
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
 byte *FontBuf;                     /* Font for text modes    */
