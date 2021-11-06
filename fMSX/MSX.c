@@ -31,7 +31,6 @@
 #include <unistd.h>
 #endif
 
-#include <file/file_path.h>
 #include <streams/file_stream.h>
 
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
