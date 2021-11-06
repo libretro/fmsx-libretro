@@ -43,31 +43,31 @@ typedef struct
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void ResetSCC(register SCC *D,int First);
+void ResetSCC(SCC *D,int First);
 
 /** ReadSCC() ************************************************/
 /** Call this function to read contents of the generic SCC  **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCC(register SCC *D,register byte R);
+byte ReadSCC(SCC *D,byte R);
 
 /** ReadSCCP() ***********************************************/
 /** Call this function to read contents of the newer SCC+   **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCCP(register SCC *D,register byte R);
+byte ReadSCCP(SCC *D,byte R);
            
 /** WriteSCC() ***********************************************/
 /** Call this function to output a value V into the generic **/
 /** SCC sound chip.                                         **/
 /*************************************************************/
-void WriteSCC(register SCC *D,register byte R,register byte V);
+void WriteSCC(SCC *D,byte R,byte V);
 
 /** WriteSCCP() **********************************************/
 /** Call this function to output a value V into the newer   **/
 /** SCC+ sound chip.                                        **/
 /*************************************************************/
-void WriteSCCP(register SCC *D,register byte R,register byte V);
+void WriteSCCP( SCC *D,byte R,byte V);
 
 /** SyncSCC() ************************************************/
 /** Flush all accumulated changes by issuing Sound() calls  **/
@@ -75,6 +75,6 @@ void WriteSCCP(register SCC *D,register byte R,register byte V);
 /** should be SCC_SYNC/SCC_ASYNC to set/reset sync, or      **/
 /** SCC_FLUSH to leave sync mode as it is.                  **/
 /*************************************************************/
-void SyncSCC(register SCC *D,register byte Sync);
+void SyncSCC(SCC *D,byte Sync);
 
 #endif /* SCC_H */

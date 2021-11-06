@@ -31,9 +31,7 @@
 #include <unistd.h>
 #endif
 
-#define PRINTOK           if(Verbose) puts("OK")
-#define PRINTFAILED       if(Verbose) puts("FAILED")
-#define PRINTRESULT(R)    if(Verbose) puts((R)? "OK":"FAILED")
+#include <streams/file_stream.h>
 
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
 
@@ -303,6 +301,18 @@ static byte *GetMemory(int Size); /* Get memory chunk                */
 static void FreeMemory(byte *Ptr);/* Free memory chunk               */
 static void FreeAllMemory(void);  /* Free all memory chunks          */
 
+/* Forward declarations */
+RFILE* rfopen(const char *path, const char *mode);
+char *rfgets(char *buffer, int maxCount, RFILE* stream);
+int rfclose(RFILE* stream);
+int64_t rfread(void* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int64_t rfseek(RFILE* stream, int64_t offset, int origin);
+int64_t rftell(RFILE* stream);
+int64_t rfwrite(void const* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int rfgetc(RFILE* stream);
+
 /** hasext() *************************************************/
 /** Check if file name has given extension.                 **/
 /*************************************************************/
@@ -404,20 +414,13 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /*** STARTUP CODE starts here: ***/
 
   T=(int *)"\01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+  /* Endian mismatch? */
 #ifdef MSB_FIRST
   if(*T==1)
-  {
-    printf("********* This machine is little-endian. **********\n");
-    printf("Take #define MSB_FIRST out and compile fMSX again.\n");
     return(0);
-  }
 #else
   if(*T!=1)
-  {
-    printf("********** This machine is big-endian. **********\n");
-    printf("Insert #define MSB_FIRST and compile fMSX again.\n");
     return(0);
-  }
 #endif
 
   /* Zero everyting */
@@ -447,8 +450,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   UPeriod=UPeriod<1? 1:UPeriod>100? 100:UPeriod;
 
   /* Allocate 16kB for the empty space (scratch RAM) */
-  if(Verbose) printf("Allocating 16kB for empty space...\n");
-  if(!(EmptyRAM=GetMemory(0x4000))) { PRINTFAILED;return(0); }
+  if(!(EmptyRAM=GetMemory(0x4000)))
+	  return 0;
   memset(EmptyRAM,NORAM,0x4000);
 
   /* Reset memory map to the empty space */
@@ -475,32 +478,22 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   /* Try loading font */
   if(FNTName)
-  {
-    if(Verbose) printf("Loading %s font...",FNTName);
     J=LoadFNT(FNTName);
-    PRINTRESULT(J);
-  }
-
-  if(Verbose) printf("Loading optional ROMs: ");
 
   /* Try loading CMOS memory contents */
-  if(LoadROM("CMOS.ROM",sizeof(RTC),(byte *)RTC))
-  { if(Verbose) printf("CMOS.ROM.."); }
-  else memcpy(RTC,RTCInit,sizeof(RTC));
+  if(LoadROM("CMOS.ROM",sizeof(RTC),(byte *)RTC)) { }
+  else
+     memcpy(RTC,RTCInit,sizeof(RTC));
 
   /* Try loading Kanji alphabet ROM */
-  if((Kanji = LoadROM("KANJI.ROM",0x20000,0)))
-  { if(Verbose) printf("KANJI.ROM.."); }
+  if((Kanji = LoadROM("KANJI.ROM",0x20000,0))) { }
 
   /* Try loading RS232 support ROM to slot */
   if((P = LoadROM("RS232.ROM",0x4000,0)))
   {
-    if(Verbose) printf("RS232.ROM..");
     MemMap[3][3][2]=P;
     MemMap[3][3][3]=P+0x2000;
   }
-
-  PRINTOK;
 
   /* Start loading system cartridges */
   J=MAXCARTS;
@@ -537,23 +530,20 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
 
   /* Open stream for a printer */
-  if(Verbose)
-    printf("Redirecting printer output to %s...OK\n",PrnName? PrnName:"STDOUT");
+  /* Redirecting printer output to ... */
   ChangePrinter(PrnName);
 
   /* Open streams for serial IO */
   if(!ComName) { ComIStream=stdin;ComOStream=stdout; }
   else
   {
-    if(Verbose) printf("Redirecting serial I/O to %s...",ComName);
+    /* Redirecting serial I/O to ... */
     if(!(ComOStream = ComIStream = fopen(ComName,"r+b")))
     { ComIStream=stdin;ComOStream=stdout; }
-    PRINTRESULT(ComOStream!=stdout);
   }
 
   /* Open casette image */
-  if(CasName&&ChangeTape(CasName))
-    if(Verbose) printf("Using %s as a tape\n",CasName);
+  if(CasName && ChangeTape(CasName)) { }
 
   /* Initialize floppy disk controller */
   Reset1793(&FDC,FDD,WD1793_INIT);
@@ -563,30 +553,18 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   for(J=0;J<MAXDRIVES;++J)
   {
     FDD[J].Verbose=Verbose&0x04;
-    if(ChangeDisk(J,DSKName[J]))
-      if(Verbose) printf("Inserting %s into drive %c\n",DSKName[J],J+'A');
+    if(ChangeDisk(J,DSKName[J])) { }
   }
 
   /* Initialize sound logging */
   InitMIDI(SndName);
 
   /* Done with initialization */
-  if(Verbose)
-  {
-    printf("Initializing VDP, FDC, PSG, OPLL, SCC, and CPU...\n");
-    printf("  Attached %s to joystick port A\n",JoyTypes[JOYTYPE(0)]);
-    printf("  Attached %s to joystick port B\n",JoyTypes[JOYTYPE(1)]);
-    printf("  %d CPU cycles per HBlank\n",HPeriod);
-    printf("  %d CPU cycles per VBlank\n",VPeriod);
-    printf("  %d scanlines\n",VPeriod/HPeriod);
-  }
 
   /* Start execution of the code */
-  if(Verbose) printf("RUNNING ROM CODE...\n");
   A=RunZ80(&CPU);
 
   /* Exiting emulation... */
-  if(Verbose) printf("EXITED at PC = %04Xh.\n",A);
   return(1);
 }
 
@@ -595,7 +573,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 /*************************************************************/
 void TrashMSX(void)
 {
-  FILE *F;
+  RFILE *F;
   int J;
 
   /* CMOS.ROM is saved in the program directory */
@@ -604,14 +582,12 @@ void TrashMSX(void)
   /* Save CMOS RAM, if present */
   if(SaveCMOS)
   {
-    if(Verbose) printf("Writing CMOS.ROM...");
-    if(!(F = fopen("CMOS.ROM","wb"))) SaveCMOS=0;
+    if(!(F = rfopen("CMOS.ROM","wb"))) SaveCMOS=0;
     else
     {
-      if(fwrite(RTC,1,sizeof(RTC),F)!=sizeof(RTC)) SaveCMOS=0;
-      fclose(F);
+      if(rfwrite(RTC,1,sizeof(RTC),F)!=sizeof(RTC)) SaveCMOS=0;
+      rfclose(F);
     }
-    PRINTRESULT(SaveCMOS);
   }
 
   /* Change back to working directory */
@@ -685,9 +661,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     switch(NewMode&MSX_MODEL)
     {
       case MSX_MSX1:
-        if(Verbose) printf("  Opening MSX.ROM...");
         P1=LoadROM("MSX.ROM",0x8000,0);
-        PRINTRESULT(P1);
         if(!P1) NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
         else
         {
@@ -703,12 +677,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         break;
 
       case MSX_MSX2:
-        if(Verbose) printf("  Opening MSX2.ROM...");
         P1=LoadROM("MSX2.ROM",0x8000,0);
-        PRINTRESULT(P1);
-        if(Verbose) printf("  Opening MSX2EXT.ROM...");
         P2=LoadROM("MSX2EXT.ROM",0x4000,0);
-        PRINTRESULT(P2);
         if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
@@ -729,12 +699,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         break;
 
       case MSX_MSX2P:
-        if(Verbose) printf("  Opening MSX2P.ROM...");
         P1=LoadROM("MSX2P.ROM",0x8000,0);
-        PRINTRESULT(P1);
-        if(Verbose) printf("  Opening MSX2PEXT.ROM...");
         P2=LoadROM("MSX2PEXT.ROM",0x4000,0);
-        PRINTRESULT(P2);
         if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
@@ -756,7 +722,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
       default:
         /* Unknown MSX model, keep old model */
-        if(Verbose) printf("ResetMSX(): INVALID HARDWARE MODEL!\n");
+        /* ResetMSX - invalid hardware model */
         NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
         break;
     }
@@ -769,14 +735,11 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_MODEL)
   {
     /* Apply patches to BIOS */
-    if(Verbose) printf("  Patching BIOS: ");
     for(J=0;BIOSPatches[J];++J)
     {
-      if(Verbose) printf("%04X..",BIOSPatches[J]);
       P1=MemMap[0][0][0]+BIOSPatches[J];
       P1[0]=0xED;P1[1]=0xFE;P1[2]=0xC9;
     }
-    PRINTOK;
   }
 
   /* If toggling BDOS patches... */
@@ -786,9 +749,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     if(ProgDir) chdir(ProgDir);
 
     /* Try loading DiskROM */
-    if(Verbose) printf("  Opening DISK.ROM...");
     P1=LoadROM("DISK.ROM",0x4000,0);
-    PRINTRESULT(P1);
 
     /* Change to the working directory */
     if(WorkDir) chdir(WorkDir);
@@ -805,15 +766,12 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       /* If BDOS patching requested... */
       if(NewMode&MSX_PATCHBDOS)
       {
-        if(Verbose) printf("  Patching BDOS: ");
         /* Apply patches to BDOS */
         for(J=0;DiskPatches[J];++J)
         {
-          if(Verbose) printf("%04X..",DiskPatches[J]);
           P2=P1+DiskPatches[J]-0x4000;
           P2[0]=0xED;P2[1]=0xFE;P2[2]=0xC9;
         }
-        PRINTOK;
       }
     }
   }
@@ -846,7 +804,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* If changing amount of RAM... */
   if(NewRAMPages!=RAMPages)
   {
-    if(Verbose) printf("Allocating %dkB for RAM...",NewRAMPages*16);
     if((P1 = GetMemory(NewRAMPages*0x4000)))
     {
       memset(P1,NORAM,NewRAMPages*0x4000);
@@ -855,13 +812,12 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       RAMMask  = NewRAMPages-1;
       RAMData  = P1;
     }
-    PRINTRESULT(P1);
   }
 
   /* If changing amount of VRAM... */
   if(NewVRAMPages!=VRAMPages)
   {
-    if(Verbose) printf("Allocating %dkB for VRAM...",NewVRAMPages*16);
+    /* Allocating for VRAM... */
     if((P1 = GetMemory(NewVRAMPages*0x4000)))
     {
       memset(P1,0x00,NewVRAMPages*0x4000);
@@ -869,7 +825,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       VRAMPages = NewVRAMPages;
       VRAM      = P1;
     }
-    PRINTRESULT(P1);
   }
 
   /* For all slots... */
@@ -1198,7 +1153,7 @@ case 0xD4: /* FDC IRQ/DRQ */
   }
 
   /* Return NORAM for non-existing ports */
-  if(Verbose&0x20) printf("I/O: Read from unknown PORT[%02Xh]\n",Port);
+  /* I/O: Read from unknown PORT */
   return(NORAM);
 }
 
@@ -1208,7 +1163,7 @@ case 0xD4: /* FDC IRQ/DRQ */
 /*************************************************************/
 void OutZ80(word Port,byte Value)
 {
-  register byte I,J;
+  byte I,J;
 
   Port&=0xFF;
   switch(Port)
@@ -1398,7 +1353,7 @@ case 0xFF: /* Mapper page at C000h */
   Value&=RAMMask;
   if(RAMMapper[J]!=Value)
   {
-    if(Verbose&0x08) printf("RAM-MAPPER: block %d at %Xh\n",Value,J*0x4000);
+    /* RAM-MAPPER */
     I=J<<1;
     RAMMapper[J]      = Value;
     MemMap[3][2][I]   = RAMData+((int)Value<<14);
@@ -1415,15 +1370,13 @@ case 0xFF: /* Mapper page at C000h */
   }
 
   /* Unknown port */
-  if(Verbose&0x20)
-    printf("I/O: Write to unknown PORT[%02Xh]=%02Xh\n",Port,Value);
 }
 
 /** MapROM() *************************************************/
 /** Switch ROM Mapper pages. This function is supposed to   **/
 /** be called when ROM page registers are written to.       **/
 /*************************************************************/
-void MapROM(register word A,register byte V)
+void MapROM(word A,byte V)
 {
   byte I,J,PS,SS,*P;
 
@@ -1492,8 +1445,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08)
-        printf("ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_GEN16: /* Generic 16kB cartridges (MSXDOS2, HoleInOneSpecial) */
@@ -1508,8 +1459,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         RAM[J+3]=MemMap[PS][SS][J+3]=RAM[J+2]+0x2000;
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08)
-        printf("ROM-MAPPER %c: 16kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V>>1,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_KONAMI5: /* KONAMI5 8kB cartridges */
@@ -1525,8 +1474,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08)
-        printf("ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_KONAMI4: /* KONAMI4 8kB cartridges */
@@ -1541,8 +1488,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08)
-        printf("ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_ASCII8: /* ASCII 8kB cartridges */
@@ -1556,16 +1501,12 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
           /* Select SRAM page */
           V=0xFF;
           P=SRAMData[I];
-          if(Verbose&0x08)
-            printf("ROM-MAPPER %c: 8kB SRAM at %d:%d:%04Xh\n",I+'A',PS,SS,J*0x2000+0x4000);
         }
         else
         {
           /* Select ROM page */
           V&=ROMMask[I];
           P=ROMData[I]+((int)V<<13);
-          if(Verbose&0x08)
-            printf("ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
         }
         /* If page was actually changed... */
         if(V!=ROMMapper[I][J])
@@ -1599,16 +1540,12 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
           /* Select SRAM page */
           V=0xFF;
           P=SRAMData[I];
-          if(Verbose&0x08)
-            printf("ROM-MAPPER %c: 2kB SRAM at %d:%d:%04Xh\n",I+'A',PS,SS,J*0x2000+0x4000);
         }
         else
         {
           /* Select ROM page */
           V=(V<<1)&ROMMask[I];
           P=ROMData[I]+((int)V<<13);
-          if(Verbose&0x08)
-            printf("ROM-MAPPER %c: 16kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V>>1,PS,SS,J*0x2000+0x4000);
         }
         /* If page was actually changed... */
         if(V!=ROMMapper[I][J])
@@ -1653,8 +1590,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
           RAM[J+2]=MemMap[PS][SS][J+2]=SRAMData[I]+(V&0x20? 0x2000:0);
           /* SRAM is now on */
           ROMMapper[I][J]=0xFF;
-          if(Verbose&0x08)
-            printf("GMASTER2 %c: 4kB SRAM page #%d at %d:%d:%04Xh\n",I+'A',(V&0x20)>>5,PS,SS,J*0x2000+0x4000);
         }
         else
         {
@@ -1666,8 +1601,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
             RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
             ROMMapper[I][J]=V;
           }
-          if(Verbose&0x08)
-            printf("GMASTER2 %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
         }
         /* Done with page switch */
         return;
@@ -1696,12 +1629,8 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
             RAM[2]=MemMap[PS][SS][2]=P;
             RAM[3]=MemMap[PS][SS][3]=P+0x2000;
           }
-          if(Verbose&0x08)
-            printf("FMPAC %c: 16kB ROM page #%d at %d:%d:4000h\n",I+'A',V>>1,PS,SS);
           return;
         case 0x7FF6: /* OPL1 enable/disable? */
-          if(Verbose&0x08)
-            printf("FMPAC %c: (7FF6h) = %02Xh\n",I+'A',V);
           V&=0x11;
           return;
         case 0x5FFE: /* Write 4Dh, then (5FFFh)=69h to enable SRAM */
@@ -1712,8 +1641,6 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
             SRAMData[I]:(ROMData[I]+((int)ROMMapper[I][0]<<13));
           RAM[2]=MemMap[PS][SS][2]=P;
           RAM[3]=MemMap[PS][SS][3]=P+0x2000;
-          if(Verbose&0x08)
-            printf("FMPAC %c: 8kB SRAM %sabled at %d:%d:4000h\n",I+'A',FMPACKey==FMPAC_MAGIC? "en":"dis",PS,SS);
           return;
       }
       /* Write to SRAM */
@@ -1727,16 +1654,15 @@ printf("(%04Xh) = %02Xh at PC=%04Xh\n",A,V,CPU.PC.W);
   }
 
   /* No MegaROM mapper or there is an incorrect write */
-  if(Verbose&0x08) printf("MEMORY: Bad write (%d:%d:%04Xh) = %02Xh\n",PS,SS,A,V);
 }
 
 /** PSlot() **************************************************/
 /** Switch primary memory slots. This function is called    **/
 /** when value in port A8h changes.                         **/
 /*************************************************************/
-void PSlot(register byte V)
+void PSlot(byte V)
 {
-  register byte J,I;
+  byte J,I;
 
   if(PSLReg!=V)
     for(PSLReg=V,J=0;J<4;++J,V>>=2)
@@ -1754,9 +1680,9 @@ void PSlot(register byte V)
 /** Switch secondary memory slots. This function is called  **/
 /** when value in (FFFFh) changes.                          **/
 /*************************************************************/
-void SSlot(register byte V)
+void SSlot(byte V)
 {
-  register byte J,I;
+  byte J,I;
 
   /* Cartridge slots do not have subslots, fix them at 0:0:0:0 */
   if((PSL[3]==1)||(PSL[3]==2)) V=0x00;
@@ -1781,7 +1707,7 @@ void SSlot(register byte V)
 /** Set or reset IRQ. Returns IRQ vector assigned to        **/
 /** CPU.IRequest. When upper bit of IRQ is 1, IRQ is reset. **/
 /*************************************************************/
-word SetIRQ(register byte IRQ)
+word SetIRQ(byte IRQ)
 {
   if(IRQ&0x80) IRQPending&=IRQ; else IRQPending|=IRQ;
   CPU.IRequest=IRQPending? INT_IRQ:INT_NONE;
@@ -1793,7 +1719,7 @@ word SetIRQ(register byte IRQ)
 /*************************************************************/
 byte SetScreen(void)
 {
-  register byte I,J;
+  byte I,J;
 
   switch(((VDP[0]&0x0E)>>1)|(VDP[1]&0x18))
   {
@@ -1869,9 +1795,9 @@ void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3)
 /** VDPOut() *************************************************/
 /** Write value into a given VDP register.                  **/
 /*************************************************************/
-void VDPOut(register byte R,register byte V)
+void VDPOut(byte R,byte V)
 {
-  register byte J;
+  byte J;
 
   switch(R)
   {
@@ -1943,7 +1869,7 @@ void Printer(byte V)
 /** This function is called on each write to PPI to make    **/
 /** key click sound, motor relay clicks, and so on.         **/
 /*************************************************************/
-void PPIOut(register byte New,register byte Old)
+void PPIOut(byte New,byte Old)
 {
   /* Keyboard click bit */
   if((New^Old)&0x80) Drum(DRM_CLICK,64);
@@ -1954,11 +1880,11 @@ void PPIOut(register byte New,register byte Old)
 /** RTCIn() **************************************************/
 /** Read value from a given RTC register.                   **/
 /*************************************************************/
-byte RTCIn(register byte R)
+byte RTCIn(byte R)
 {
   static time_t PrevTime;
   static struct tm TM;
-  register byte J;
+  byte J;
   time_t CurTime;
 
   /* Only 16 registers/mode */
@@ -2015,7 +1941,7 @@ word LoopZ80(Z80 *R)
   static int  UCount=0;
   static byte ACount=0;
   static byte Drawing=0;
-  register int J;
+  int J;
 
   /* Flip HRefresh bit */
   VDPStatus[2]^=0x20;
@@ -2227,8 +2153,8 @@ word LoopZ80(Z80 *R)
 /*************************************************************/
 void CheckSprites(void)
 {
-  register word LS,LD;
-  register byte DH,DV,*PS,*PD,*T;
+  word LS,LD;
+  byte DH,DV,*PS,*PD,*T;
   byte I,J,N,M,*S,*D;
 
   /* Clear 5Sprites, Collision, and 5thSprite bits */
@@ -2443,25 +2369,25 @@ int GuessROM(const byte *Buf,int Size)
 {
   int J,I,K,ROMCount[MAXMAPPERS];
   char S[256];
-  FILE *F;
+  RFILE *F;
 
   /* Try opening file with CRCs */
-  if((F = fopen("CARTS.CRC","rb")))
+  if((F = rfopen("CARTS.CRC","rb")))
   {
     /* Compute ROM's CRC */
     for(J=K=0;J<Size;++J) K+=Buf[J];
 
     /* Scan file comparing CRCs */
-    while(fgets(S,sizeof(S)-4,F))
+    while(rfgets(S,sizeof(S)-4,F))
       if(sscanf(S,"%08X %d",&J,&I)==2)
-        if(K==J) { fclose(F);return(I); }
+        if(K==J) { rfclose(F);return(I); }
 
     /* Nothing found */
-    fclose(F);
+    rfclose(F);
   }
 
   /* Try opening file with SHA1 sums */
-  if((F = fopen("CARTS.SHA","rb")))
+  if((F = rfopen("CARTS.SHA","rb")))
   {
     char S1[41],S2[41];
     SHA1 C;
@@ -2474,13 +2400,13 @@ int GuessROM(const byte *Buf,int Size)
       sprintf(S1,"%08x%08x%08x%08x%08x",C.Msg[0],C.Msg[1],C.Msg[2],C.Msg[3],C.Msg[4]);
 
       /* Search for computed SHA1 in the file */
-      while(fgets(S,sizeof(S)-4,F))
+      while(rfgets(S,sizeof(S)-4,F))
         if((sscanf(S,"%40s %d",S2,&J)==2) && !strcmp(S1,S2))
-        { fclose(F);return(J); }
+        { rfclose(F);return(J); }
     }
 
     /* Nothing found */
-    fclose(F);
+    rfclose(F);
   }
 
   /* Clear all counters */
@@ -2531,20 +2457,20 @@ int GuessROM(const byte *Buf,int Size)
 /*************************************************************/
 byte LoadFNT(const char *FileName)
 {
-  FILE *F;
+  RFILE *F;
 
   /* Drop out if no new font requested */
   if(!FileName) { FreeMemory(FontBuf);FontBuf=0;return(1); }
   /* Try opening font file */
-  if(!(F=fopen(FileName,"rb"))) return(0);
+  if(!(F=rfopen(FileName,"rb"))) return(0);
   /* Allocate memory for 256 8x8 characters, if needed */
   if(!FontBuf) FontBuf=GetMemory(256*8);
   /* Drop out if failed memory allocation */
-  if(!FontBuf) { fclose(F);return(0); }
+  if(!FontBuf) { rfclose(F);return(0); }
   /* Read font, ignore short reads */
-  fread(FontBuf,1,256*8,F);
+  rfread(FontBuf,1,256*8,F);
   /* Done */
-  fclose(F);
+  rfclose(F);
   return(1);
 }
 
@@ -2554,8 +2480,8 @@ byte LoadFNT(const char *FileName)
 /*************************************************************/
 byte *LoadROM(const char *Name,int Size,byte *Buf)
 {
-   char path[512];
-  FILE *F;
+  char path[512];
+  RFILE *F;
   byte *P;
   int J;
 
@@ -2563,18 +2489,16 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
   if(Buf&&!Size) return(0);
 
 #if defined( VITA )
-  if(!(F=fopen(Name,"rb")))
+  if(!(F=rfopen(Name,"rb")))
   {
-     strcpy(path,ProgDir);
-     strcat(path,"/");
-     strcat(path,Name);
+     fill_pathname_join(path, ProgDir, Name, sizeof(path));
      /* Open file */
-     if(!(F=fopen(path,"rb")))
+     if(!(F=rfopen(path,"rb")))
         return(0);
   }
 #else
   /* Open file */
-  if(!(F=fopen(Name,"rb")))
+  if(!(F=rfopen(Name,"rb")))
      return(0);
 #endif
 
@@ -2582,37 +2506,36 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
   if(!Size)
   {
     /* Determine size via ftell() or by reading entire [GZIPped] stream */
-    if(!fseek(F,0,SEEK_END)) Size=ftell(F);
+    if(!rfseek(F,0,SEEK_END))
+       Size = rftell(F);
     else
     {
       /* Read file in 16kB increments */
-      while((J=fread(EmptyRAM,1,0x4000,F))==0x4000) Size+=J;
-      if(J>0) Size+=J;
+      while((J = rfread(EmptyRAM,1,0x4000,F))==0x4000)
+         Size+=J;
+      if(J>0)
+         Size+=J;
       /* Clean up the EmptyRAM! */
       memset(EmptyRAM,NORAM,0x4000);
     }
     /* Rewind file to the beginning */
-    rewind(F);
+    filestream_rewind(F);
   }
 
   /* Allocate memory */
   P=Buf? Buf:GetMemory(Size);
-  if(!P)
+  if(P)
   {
-    fclose(F);
-    return(0);
-  }
-
-  /* Read data */
-  if((J=fread(P,1,Size,F))!=Size)
-  {
-    if(!Buf) FreeMemory(P);
-    fclose(F);
-    return(0);
+     /* Read data */
+     if((J = rfread(P,1,Size,F))!=Size)
+     {
+        if(!Buf)
+           FreeMemory(P);
+     }
   }
 
   /* Done */
-  fclose(F);
+  rfclose(F);
   return(P);
 }
 
@@ -2622,12 +2545,15 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type)
 {
-  int C1,C2,Len,Pages,ROM64;
+  int64_t Len;
+  int C1, C2, Pages, ROM64;
   byte *P,PS,SS;
-  FILE *F;
+  RFILE *F;
 
   /* Slot number must be valid */
-  if((Slot<0)||(Slot>=MAXSLOTS)) return(0);
+  if((Slot<0)||(Slot>=MAXSLOTS))
+     return 0;
+
   /* Find primary/secondary slots */
   for(PS=0;PS<4;++PS)
   {
@@ -2635,14 +2561,18 @@ int LoadCart(const char *FileName,int Slot,int Type)
     if(SS<4) break;
   }
   /* Drop out if slots not found */
-  if(PS>=4) return(0);
+  if(PS>=4)
+     return 0;
 
   /* If there is a SRAM in this cartridge slot... */
-  if(SRAMData[Slot]&&SaveSRAM[Slot]&&SRAMName[Slot])
+  if(
+           SRAMData[Slot]
+        && SaveSRAM[Slot]
+        && SRAMName[Slot])
   {
     /* Open .SAV file */
-    if(Verbose) printf("Writing %s...",SRAMName[Slot]);
-    if(!(F=fopen(SRAMName[Slot],"wb"))) SaveSRAM[Slot]=0;
+    if(!(F = rfopen(SRAMName[Slot],"wb")))
+       SaveSRAM[Slot]=0;
     else
     {
       /* Write .SAV file */
@@ -2650,23 +2580,26 @@ int LoadCart(const char *FileName,int Slot,int Type)
       {
         case MAP_ASCII8:
         case MAP_FMPAC:
-          if(fwrite(SRAMData[Slot],1,0x2000,F)!=0x2000) SaveSRAM[Slot]=0;
+          if(rfwrite(SRAMData[Slot],1,0x2000,F)!=0x2000)
+             SaveSRAM[Slot]=0;
           break;
         case MAP_ASCII16:
-          if(fwrite(SRAMData[Slot],1,0x0800,F)!=0x0800) SaveSRAM[Slot]=0;
+          if(rfwrite(SRAMData[Slot],1,0x0800,F)!=0x0800)
+             SaveSRAM[Slot]=0;
           break;
         case MAP_GMASTER2:
-          if(fwrite(SRAMData[Slot],1,0x1000,F)!=0x1000)        SaveSRAM[Slot]=0;
-          if(fwrite(SRAMData[Slot]+0x2000,1,0x1000,F)!=0x1000) SaveSRAM[Slot]=0;
+          if(rfwrite(SRAMData[Slot],1,0x1000,F)!=0x1000)
+             SaveSRAM[Slot]=0;
+          if(rfwrite(SRAMData[Slot]+0x2000,1,0x1000,F)!=0x1000)
+             SaveSRAM[Slot]=0;
           break;
       }
 
       /* Done with .SAV file */
-      fclose(F);
+      rfclose(F);
     }
 
     /* Done saving SRAM */
-    PRINTRESULT(SaveSRAM[Slot]);
   }
 
   /* If ejecting cartridge... */
@@ -2683,30 +2616,31 @@ int LoadCart(const char *FileName,int Slot,int Type)
       /* Restart MSX */
       ResetMSX(Mode,RAMPages,VRAMPages);
       /* Cartridge ejected */
-      if(Verbose) printf("Ejected cartridge from slot %c\n",Slot+'A');
     }
 
     /* Nothing else to do */
-    return(0);
+    return 0;
   }
 
   /* Try opening file */
-  if(!(F=fopen(FileName,"rb"))) return(0);
-  if(Verbose) printf("Found %s:\n",FileName);
+  if(!(F = rfopen(FileName,"rb")))
+     return 0;
 
   /* Determine size via ftell() or by reading entire [GZIPped] stream */
-  if(!fseek(F,0,SEEK_END)) Len=ftell(F);
+  if(!rfseek(F,0,SEEK_END))
+     Len = rftell(F);
   else
   {
     /* Read file in 16kB increments */
-    for(Len=0;(C2=fread(EmptyRAM,1,0x4000,F))==0x4000;Len+=C2);
-    if(C2>0) Len+=C2;
+    for(Len=0;(C2 = rfread(EmptyRAM,1,0x4000,F))==0x4000;Len+=C2);
+    if(C2>0)
+       Len+=C2;
     /* Clean up the EmptyRAM! */
     memset(EmptyRAM,NORAM,0x4000);
   }
 
   /* Rewind file */
-  rewind(F);
+  filestream_rewind(F);
 
   /* Compute size in 8kB pages */
   Len>>=13;
@@ -2714,56 +2648,47 @@ int LoadCart(const char *FileName,int Slot,int Type)
   for(Pages=1;Pages<Len;Pages<<=1);
 
   /* Check "AB" signature in a file */
-  ROM64=0;
-  C1=fgetc(F);
-  C2=fgetc(F);
+  ROM64 = 0;
+  C1    = rfgetc(F);
+  C2    = rfgetc(F);
 
   /* Maybe this is a flat 64kB ROM? */
   if((C1!='A')||(C2!='B'))
-    if(fseek(F,0x4000,SEEK_SET)>=0)
+    if(rfseek(F,0x4000,SEEK_SET)>=0)
     {
-      C1=fgetc(F);
-      C2=fgetc(F);
-      ROM64=(C1=='A')&&(C2=='B');
+      C1    = rfgetc(F);
+      C2    = rfgetc(F);
+      ROM64 = (C1=='A')&&(C2=='B');
     }
 
   /* Maybe it is the last page that contains "AB" signature? */
   if((Len>=2)&&((C1!='A')||(C2!='B')))
-    if(fseek(F,0x2000*(Len-2),SEEK_SET)>=0)
+    if(rfseek(F,0x2000*(Len-2),SEEK_SET)>=0)
     {
-      C1=fgetc(F);
-      C2=fgetc(F);
+      C1 = rfgetc(F);
+      C2 = rfgetc(F);
     }
 
   /* If we can't find "AB" signature, drop out */
   if((C1!='A')||(C2!='B'))
   {
-    if(Verbose) puts("  Not a valid cartridge ROM");
-    fclose(F);
+    rfclose(F);
     return(0);
   }
 
-  if(Verbose) printf("  Cartridge %c: ",'A'+Slot);
-
   /* Done with the file */
-  fclose(F);
-
-  /* Show ROM type and size */
-  if(Verbose)
-    printf
-    (
-      "%dkB %s ROM..",Len*8,
-      ROM64||(Len<=4)? "NORMAL":Type>=MAP_GUESS? "UNKNOWN":ROMNames[Type]
-    );
+  rfclose(F);
 
   /* Assign ROMMask for MegaROMs */
   ROMMask[Slot]=!ROM64&&(Len>4)? (Pages-1):0x00;
   /* Allocate space for the ROM */
   ROMData[Slot]=GetMemory(Pages<<13);
-  if(!ROMData[Slot]) { PRINTFAILED;return(0); }
+  if(!ROMData[Slot])
+     return 0;
 
   /* Try loading ROM */
-  if(!LoadROM(FileName,Len<<13,ROMData[Slot])) { PRINTFAILED;return(0); }
+  if(!LoadROM(FileName,Len<<13,ROMData[Slot]))
+     return 0;
 
   /* Mirror ROM if it is smaller than 2^n pages */
   if(Len<Pages)
@@ -2830,19 +2755,10 @@ int LoadCart(const char *FileName,int Slot,int Type)
       break;
   }
 
-  /* Show starting address */
-  if(Verbose)
-    printf
-    (
-      "starts at %04Xh..",
-      MemMap[PS][SS][2][2]+256*MemMap[PS][SS][2][3]
-    );
-
   /* Guess MegaROM mapper type if not given */
   if((Type>=MAP_GUESS)&&(ROMMask[Slot]+1>4))
   {
     Type=GuessROM(ROMData[Slot],0x2000*(ROMMask[Slot]+1));
-    if(Verbose) printf("guessed %s..",ROMNames[Type]);
     if(Slot<MAXCARTS) SETROMTYPE(Slot,Type);
   }
 
@@ -2863,15 +2779,9 @@ int LoadCart(const char *FileName,int Slot,int Type)
     /* Get SRAM memory */
     SRAMData[Slot]=GetMemory(0x4000);
     if(!SRAMData[Slot])
-    {
-      if(Verbose) printf("scratch SRAM..");
       SRAMData[Slot]=EmptyRAM;
-    }
     else
-    {
-      if(Verbose) printf("got 16kB SRAM..");
       memset(SRAMData[Slot],NORAM,0x4000);
-    }
 
     /* Generate SRAM file name and load SRAM contents */
     if((SRAMName[Slot] = GetMemory(strlen(FileName)+5)))
@@ -2879,15 +2789,17 @@ int LoadCart(const char *FileName,int Slot,int Type)
       /* Compose SRAM file name */
       strcpy(SRAMName[Slot],FileName);
       P = (byte*)(const char*)strrchr(SRAMName[Slot],'.');
-      if(P) strcpy((char*)P,".sav"); else strcat(SRAMName[Slot],".sav");
+      if(P)
+         strcpy((char*)P,".sav");
+      else
+         strcat(SRAMName[Slot],".sav");
+
       /* Try opening file... */
-      if((F = fopen(SRAMName[Slot],"rb")))
+      if((F = rfopen(SRAMName[Slot],"rb")))
       {
         /* Read SRAM file */
-        Len=fread(SRAMData[Slot],1,0x4000,F);
-        fclose(F);
-        /* Print information if needed */
-        if(Verbose) printf("loaded %d bytes from %s..",Len,SRAMName[Slot]);
+        Len = rfread(SRAMData[Slot],1,0x4000,F);
+        rfclose(F);
         /* Mirror data according to the mapper type */
         P=SRAMData[Slot];
         switch(Type)
@@ -2918,7 +2830,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
 
   /* Done setting up cartridge */
   ResetMSX(Mode,RAMPages,VRAMPages);
-  PRINTOK;
 
   /* Done loading cartridge */
   return(Pages);

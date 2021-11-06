@@ -257,9 +257,9 @@ void retro_get_system_info(struct retro_system_info *info)
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
-   info->library_version = "4.9" GIT_VERSION;
-   info->need_fullpath = true;
-   info->block_extract = false;
+   info->library_version  = "4.9" GIT_VERSION;
+   info->need_fullpath    = true;
+   info->block_extract    = false;
    info->valid_extensions = "rom|mx1|mx2|dsk|cas";
 }
 
@@ -384,6 +384,7 @@ static void set_input_descriptors(void)
 
 void retro_set_environment(retro_environment_t cb)
 {
+   struct retro_vfs_interface_info vfs_iface_info;
    bool no_content = true;
    static const struct retro_controller_description port0[] = {
    { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
@@ -413,8 +414,12 @@ void retro_set_environment(retro_environment_t cb)
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
-
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+
+   vfs_iface_info.required_interface_version = 1;
+   vfs_iface_info.iface                      = NULL;
+   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      filestream_vfs_init(&vfs_iface_info);
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -668,7 +673,6 @@ bool retro_load_game(const struct retro_game_info *info)
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    update_fps();
-   printf ("Mode %i, RAMPages %i, VRAMPages %i", Mode, RAMPages, VRAMPages);
    return true;
 }
 
@@ -698,10 +702,9 @@ unsigned int WriteAudio(sample *Data,unsigned int Length)
       Length = 1024;
    for (i=0; i < Length; i++)
    {
-      audio_buf[i << 1]=Data[i];
-      audio_buf[(i << 1) + 1]=Data[i];
+      audio_buf[i << 1]       = Data[i];
+      audio_buf[(i << 1) + 1] = Data[i];
    }
-
 
    return audio_batch_cb((const int16_t*)audio_buf, Length);
 }
@@ -724,7 +727,9 @@ unsigned int GetJoystick(void)
 {
    return 1;
 }
-bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t c)
+
+bool retro_load_game_special(unsigned a,
+      const struct retro_game_info *b, size_t c)
 {
    return false;
 }
@@ -770,7 +775,8 @@ void retro_run(void)
    bool updated = false;
    int16_t joypad_bits[2];
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) 
+         && updated)
       check_variables();
 
    input_poll_cb();
@@ -778,12 +784,14 @@ void retro_run(void)
    for (j = 0; j < 2; j++)
    {
       if (libretro_supports_bitmasks)
-         joypad_bits[j] = input_state_cb(j, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+         joypad_bits[j] = input_state_cb(
+               j, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
       else
       {
          joypad_bits[j] = 0;
          for (i = 0; i < (RETRO_DEVICE_ID_JOYPAD_R3+1); i++)
-            joypad_bits[j] |= input_state_cb(j, RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+            joypad_bits[j] |= input_state_cb(
+                  j, RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
    }
 
@@ -856,9 +864,6 @@ void retro_run(void)
 #else
    video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #endif
-
-
-
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }

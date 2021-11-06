@@ -17,7 +17,7 @@
 /** Reset the chip. Set all data to 0x00. Set all ports to  **/
 /** "input" mode.                                           **/
 /*************************************************************/
-void Reset8255(register I8255 *D)
+void Reset8255(I8255 *D)
 {
   /* Initialize all registers and ports */
   D->R[0]=D->Rout[0]=D->Rin[0]=0x00;
@@ -30,7 +30,7 @@ void Reset8255(register I8255 *D)
 /** Write value V into i8255 register A. Returns 0 when A   **/
 /** is out of range, 1 otherwise.                           **/
 /*************************************************************/
-byte Write8255(register I8255 *D,register byte A,register byte V)
+byte Write8255(I8255 *D,byte A,byte V)
 {
   switch(A)
   {
@@ -69,7 +69,7 @@ byte Write8255(register I8255 *D,register byte A,register byte V)
 /** Read value from an i8255 register A. Returns 0 when A   **/
 /** is out of range.                                        **/
 /*************************************************************/
-byte Read8255(register I8255 *D,register byte A)
+byte Read8255(I8255 *D,byte A)
 {
   switch(A)
   {

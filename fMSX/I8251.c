@@ -19,7 +19,7 @@
 /** Reset 8251 chip, assigning In and Out to the input and  **/
 /** output streams.                                         **/
 /*************************************************************/
-void Reset8251(register I8251 *D,FILE *In,FILE *Out)
+void Reset8251(I8251 *D,FILE *In,FILE *Out)
 {
   D->IRQMask = 0x0F;  /* All interrupts on */
   D->IRQs    = 0x00;  /* No interrupts yet */
@@ -36,9 +36,9 @@ void Reset8251(register I8251 *D,FILE *In,FILE *Out)
 /** Read a byte from a given 8251 register. All values of R **/
 /** will be truncated to 3 bits as there are only 8 regs.   **/
 /*************************************************************/
-byte Rd8251(register I8251 *D,register byte R)
+byte Rd8251(I8251 *D,byte R)
 {
-  register int J;
+  int J;
 
   /* We only have 8 addressable ports */
   R&=0x07;
@@ -105,7 +105,7 @@ byte Rd8251(register I8251 *D,register byte R)
 /** Write a byte to a given 8251 register. All values of R  **/
 /** will be truncated to 3 bits as there are only 8 regs.   **/
 /*************************************************************/
-void Wr8251(register I8251 *D,register byte R,register byte V)
+void Wr8251(I8251 *D,byte R,byte V)
 {
   /* We only have 8 addressable ports */
   R&=0x07;

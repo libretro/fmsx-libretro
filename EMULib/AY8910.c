@@ -44,7 +44,7 @@ static const int Volumes[16] =
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void Reset8910(register AY8910 *D,int ClockHz,int First)
+void Reset8910(AY8910 *D,int ClockHz,int First)
 {
   static byte RegInit[16] =
   {
@@ -108,9 +108,9 @@ byte RdData8910(AY8910 *D)
 /** Call this function to output a value V into the sound   **/
 /** chip.                                                   **/
 /*************************************************************/
-void Write8910(register AY8910 *D,register byte R,register byte V)
+void Write8910(AY8910 *D,byte R,byte V)
 {
-  register int J,I;
+  int J,I;
 
   switch(R)
   {
@@ -240,9 +240,9 @@ void Write8910(register AY8910 *D,register byte R,register byte V)
 /** envelopes. Use mS to pass the time since the last call  **/
 /** of Loop8910() in milliseconds.                          **/
 /*************************************************************/
-void Loop8910(register AY8910 *D,int mS)
+void Loop8910(AY8910 *D,int mS)
 {
-  register int J,I;
+  int J,I;
 
   /* Exit if no envelope running */
   if(!D->EPeriod) return;
@@ -282,9 +282,9 @@ void Loop8910(register AY8910 *D,int mS)
 /** noise channels with MIDI drums, OR second argument with **/
 /** AY8910_DRUMS.                                           **/
 /*************************************************************/
-void Sync8910(register AY8910 *D,register byte Sync)
+void Sync8910(AY8910 *D,byte Sync)
 {
-  register int J,I;
+  int J,I;
 
   /* Hit MIDI drums for noise channels, if requested */
   if(Sync&AY8910_DRUMS)

@@ -101,7 +101,7 @@ typedef struct
 /** starting execution with RunZ80(). It sets registers to  **/
 /** their initial values.                                   **/
 /*************************************************************/
-void ResetZ80(register Z80 *R);
+void ResetZ80(Z80 *R);
 
 /** ExecZ80() ************************************************/
 /** This function will execute given number of Z80 cycles.  **/
@@ -109,13 +109,13 @@ void ResetZ80(register Z80 *R);
 /** negative, and current register values in R.             **/
 /*************************************************************/
 #ifdef EXECZ80
-int ExecZ80(register Z80 *R,register int RunCycles);
+int ExecZ80(Z80 *R,int RunCycles);
 #endif
 
 /** IntZ80() *************************************************/
 /** This function will generate interrupt of given vector.  **/
 /*************************************************************/
-void IntZ80(register Z80 *R,register word Vector);
+void IntZ80(Z80 *R,word Vector);
 
 /** RunZ80() *************************************************/
 /** This function will run Z80 code until an LoopZ80() call **/
@@ -123,23 +123,23 @@ void IntZ80(register Z80 *R,register word Vector);
 /** emulation stopped, and current register values in R.    **/
 /*************************************************************/
 #ifndef EXECZ80
-word RunZ80(register Z80 *R);
+word RunZ80(Z80 *R);
 #endif
 
 /** RdZ80()/WrZ80() ******************************************/
 /** These functions are called when access to RAM occurs.   **/
 /** They allow to control memory access.                    **/
 /************************************ TO BE WRITTEN BY USER **/
-void WrZ80(register word Addr,register byte Value);
-byte RdZ80(register word Addr);
+void WrZ80(word Addr,byte Value);
+byte RdZ80(word Addr);
 
 /** InZ80()/OutZ80() *****************************************/
 /** Z80 emulation calls these functions to read/write from  **/
 /** I/O ports. There can be 65536 I/O ports, but only first **/
 /** 256 are usually used.                                   **/
 /************************************ TO BE WRITTEN BY USER **/
-void OutZ80(register word Port,register byte Value);
-byte InZ80(register word Port);
+void OutZ80(word Port,byte Value);
+byte InZ80(word Port);
 
 /** PatchZ80() ***********************************************/
 /** Z80 emulation calls this function when it encounters a  **/
@@ -149,7 +149,7 @@ byte InZ80(register word Port);
 /** macro for no patching.                                  **/
 /************************************ TO BE WRITTEN BY USER **/
 #ifdef PATCH_Z80
-void PatchZ80(register Z80 *R);
+void PatchZ80(Z80 *R);
 #else
 #define PatchZ80(R)
 #endif
@@ -161,7 +161,7 @@ void PatchZ80(register Z80 *R);
 /** if DebugZ80() returns 0.                                **/
 /*************************************************************/
 #ifdef DEBUG
-byte DebugZ80(register Z80 *R);
+byte DebugZ80(Z80 *R);
 #endif
 
 /** LoopZ80() ************************************************/
@@ -171,7 +171,7 @@ byte DebugZ80(register Z80 *R);
 /** (0x0038, 0x0066, etc.) or INT_NONE for no interrupt.    **/
 /** Return INT_QUIT to exit the emulation loop.             **/
 /************************************ TO BE WRITTEN BY USER **/
-word LoopZ80(register Z80 *R);
+word LoopZ80(Z80 *R);
 
 /** JumpZ80() ************************************************/
 /** Z80 emulation calls this function when it executes a    **/

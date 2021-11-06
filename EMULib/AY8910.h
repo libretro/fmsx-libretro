@@ -51,13 +51,13 @@ typedef struct
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void Reset8910(register AY8910 *D,int ClockHz,int First);
+void Reset8910(AY8910 *D,int ClockHz,int First);
 
 /** Write8910() **********************************************/
 /** Call this function to output a value V into the sound   **/
 /** chip.                                                   **/
 /*************************************************************/
-void Write8910(register AY8910 *D,register byte R,register byte V);
+void Write8910(AY8910 *D,byte R,byte V);
 
 /** WrCtrl8910() *********************************************/
 /** Write a value V to the PSG Control Port.                **/
@@ -82,14 +82,14 @@ byte RdData8910(AY8910 *D);
 /** noise channels with MIDI drums, OR second argument with **/
 /** AY8910_DRUMS.                                           **/
 /*************************************************************/
-void Sync8910(register AY8910 *D,register byte Sync);
+void Sync8910(AY8910 *D,byte Sync);
 
 /** Loop8910() ***********************************************/
 /** Call this function periodically to update volume        **/
 /** envelopes. Use mS to pass the time since the last call  **/
 /** of Loop8910() in milliseconds.                          **/
 /*************************************************************/
-void Loop8910(register AY8910 *D,int mS);
+void Loop8910(AY8910 *D,int mS);
 
 #ifdef __cplusplus
 }

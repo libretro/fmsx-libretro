@@ -62,7 +62,7 @@ INLINE byte OpZ80(word A) { return(RAM[A>>13][A&0x1FFF]); }
 #define RdZ80 RDZ80
 #define WrZ80 WRZ80
 extern byte *Page[],*ROM;
-extern void (*DoMEM)(register word Addr,register byte V);
+extern void (*DoMEM)(word Addr,byte V);
 INLINE byte RdZ80(word A) { return(Page[A>>14][A&0x3FFF]); }
 INLINE void WrZ80(word A,byte V) { if(Page[A>>14]<ROM) Page[A>>14][A&0x3FFF]=V; else DoMEM(A,V); }
 #endif
@@ -338,9 +338,9 @@ enum CodesED
   DB_F8,DB_F9,DB_FA,DB_FB,DB_FC,DB_FD,DB_FE,DB_FF
 };
 
-static void CodesCB(register Z80 *R)
+static void CodesCB(Z80 *R)
 {
-  register byte I;
+  byte I;
 
   /* Read opcode and count cycles */
   I=OpZ80(R->PC.W++);
@@ -362,10 +362,10 @@ static void CodesCB(register Z80 *R)
   }
 }
 
-static void CodesDDCB(register Z80 *R)
+static void CodesDDCB(Z80 *R)
 {
-  register pair J;
-  register byte I;
+  pair J;
+  byte I;
 
 #define XX IX
   /* Get offset, read opcode and count cycles */
@@ -387,10 +387,10 @@ static void CodesDDCB(register Z80 *R)
 #undef XX
 }
 
-static void CodesFDCB(register Z80 *R)
+static void CodesFDCB(Z80 *R)
 {
-  register pair J;
-  register byte I;
+  pair J;
+  byte I;
 
 #define XX IY
   /* Get offset, read opcode and count cycles */
@@ -412,10 +412,10 @@ static void CodesFDCB(register Z80 *R)
 #undef XX
 }
 
-static void CodesED(register Z80 *R)
+static void CodesED(Z80 *R)
 {
-  register byte I;
-  register pair J;
+  byte I;
+  pair J;
 
   /* Read opcode and count cycles */
   I=OpZ80(R->PC.W++);
@@ -439,10 +439,10 @@ static void CodesED(register Z80 *R)
   }
 }
 
-static void CodesDD(register Z80 *R)
+static void CodesDD(Z80 *R)
 {
-  register byte I;
-  register pair J;
+  byte I;
+  pair J;
 
 #define XX IX
   /* Read opcode and count cycles */
@@ -471,10 +471,10 @@ static void CodesDD(register Z80 *R)
 #undef XX
 }
 
-static void CodesFD(register Z80 *R)
+static void CodesFD(Z80 *R)
 {
-  register byte I;
-  register pair J;
+  byte I;
+  pair J;
 
 #define XX IY
   /* Read opcode and count cycles */
@@ -537,10 +537,10 @@ void ResetZ80(Z80 *R)
 /** negative, and current register values in R.             **/
 /*************************************************************/
 #ifdef EXECZ80
-int ExecZ80(register Z80 *R,register int RunCycles)
+int ExecZ80(Z80 *R,int RunCycles)
 {
-  register byte I;
-  register pair J;
+  byte I;
+  pair J;
 
   for(R->ICount=RunCycles;;)
   {
@@ -659,8 +659,8 @@ void IntZ80(Z80 *R,word Vector)
 #ifndef EXECZ80
 word RunZ80(Z80 *R)
 {
-  register byte I;
-  register pair J;
+  byte I;
+  pair J;
 
   for(;;)
   {

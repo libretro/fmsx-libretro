@@ -17,9 +17,9 @@
 /** ClearLine512() *******************************************/
 /** Clear 512 pixels from P with color C.                   **/
 /*************************************************************/
-static void ClearLine512(register pixel *P,register pixel C)
+static void ClearLine512(pixel *P,pixel C)
 {
-  register int J;
+  int J;
 
   for(J=0;J<512;J++) P[J]=C;
 }
@@ -29,10 +29,10 @@ static void ClearLine512(register pixel *P,register pixel C)
 /** the screen border. It returns a pointer to the start of **/
 /** scanline Y in XBuf or 0 if scanline is beyond XBuf.     **/
 /*************************************************************/
-pixel *RefreshBorder512(register byte Y,register pixel C)
+pixel *RefreshBorder512(byte Y,pixel C)
 {
-  register pixel *P;
-  register int H;
+  pixel *P;
+  int H;
 
   /* First line number in the buffer */
   if(!Y) FirstLine=(ScanLines212? 8:18)+VAdjust;
@@ -67,10 +67,10 @@ pixel *RefreshBorder512(register byte Y,register pixel C)
 /** RefreshScr6() ********************************************/
 /** Function to be called to update SCREEN 6.               **/
 /*************************************************************/
-void RefreshLine6(register byte Y)
+void RefreshLine6(byte Y)
 {
-  register pixel *P;
-  register byte X,*T,*R,C;
+  pixel *P;
+  byte X,*T,*R,C;
   byte ZBuf[304];
 
   P=RefreshBorder512(Y,XPal[BGColor&0x03]);
@@ -101,10 +101,10 @@ void RefreshLine6(register byte Y)
 /** RefreshScr7() ********************************************/
 /** Function to be called to update SCREEN 7.               **/
 /*************************************************************/
-void RefreshLine7(register byte Y)
+void RefreshLine7(byte Y)
 {
-  register pixel *P;
-  register byte C,X,*T,*R;
+  pixel *P;
+  byte C,X,*T,*R;
   byte ZBuf[304];
 
   P=RefreshBorder512(Y,XPal[BGColor]);
@@ -135,10 +135,10 @@ void RefreshLine7(register byte Y)
 /** RefreshTx80() ********************************************/
 /** Function to be called to update TEXT80.                 **/
 /*************************************************************/
-void RefreshLineTx80(register byte Y)
+void RefreshLineTx80(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte X,M,*T,*C,*G;
+  pixel *P,FC,BC;
+  byte X,M,*T,*C,*G;
 
   BC=XPal[BGColor];
   P=RefreshBorder512(Y,BC);

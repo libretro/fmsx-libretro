@@ -20,10 +20,11 @@
 #if defined(_WIN32)
     // Copied from linux libc sys/stat.h:
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #include <retro_dirent.h>
+#include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #define DSK_RESERVED_SECS 0
 #define DSK_FATS_PER_DISK 2
@@ -53,6 +54,14 @@
 + DSK_SECTOR_SIZE*DSK_SECS_PER_FAT*DSK_FATS_PER_DISK \
 + ((ID)*32) \
 )
+
+/* Forward declarations */
+RFILE* rfopen(const char *path, const char *mode);
+int rfclose(RFILE* stream);
+int64_t rfread(void* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int64_t rfwrite(void const* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
 
 /** FindFreeCluster() ****************************************/
 /** Finds first free cluster starting from the given one.   **/
@@ -365,7 +374,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
 {
   byte *Dsk1,*Buf,FN[32],*Path;
   struct stat FS;
-  FILE *F;
+  RFILE *F;
   struct RDIR *D;
   int J,I;
 
@@ -374,7 +383,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   if(!Dsk1) return(0);
 
   /* If <Name> is a directory... */
-  if(!stat(Name,&FS)&&S_ISDIR(FS.st_mode))
+  if (path_is_directory(Name))
   {
     /* Open directory */
     D = retro_opendir(Name);
@@ -404,13 +413,13 @@ byte *DSKLoad(const char *Name,byte *Dsk)
 
         /* Open input file */
         if(!stat((const char*)Path,&FS)&&S_ISREG(FS.st_mode)&&FS.st_size)
-          if((F = fopen((const char*)Path,"rb")))
+          if((F = rfopen((const char*)Path,"rb")))
           {
             /* Allocate input buffer */
             if((Buf = malloc(FS.st_size)))
             {
               /* Read file into the buffer */
-              if(fread(Buf,1,FS.st_size,F)==FS.st_size)
+              if(rfread(Buf,1,FS.st_size,F)==FS.st_size)
               {
                 /* Create and write floppy file */
                 if((I = DSKFile(Dsk1,(const char*)FN)))
@@ -421,7 +430,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
               free(Buf);
             }
             /* Done with the input file */
-            fclose(F);
+            rfclose(F);
           }
 
         /* Done with the full input file name */
@@ -434,15 +443,15 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   }
 
   /* Assume <Name> to be a disk image file */
-  F=fopen(Name,"rb");
+  F=rfopen(Name,"rb");
   if(!F) { if(!Dsk) free(Dsk1);return(0); }
 
   /* Read data */
-  if(fread(Dsk1,1,DSK_DISK_SIZE,F)!=DSK_DISK_SIZE)
-  { if(!Dsk) free(Dsk1);fclose(F);return(0); }
+  if(rfread(Dsk1,1,DSK_DISK_SIZE,F)!=DSK_DISK_SIZE)
+  { if(!Dsk) free(Dsk1);rfclose(F);return(0); }
 
   /* Done */
-  fclose(F);
+  rfclose(F);
   return(Dsk1);
 }
 
@@ -451,11 +460,11 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
   const char *T;
   byte *Path,*P;
   struct stat FS;
-  FILE *F;
+  RFILE *F;
   int J,I,K;
 
   /* If <Name> is a directory... */
-  if(!stat(Name,&FS)&&S_ISDIR(FS.st_mode))
+  if (path_is_directory(Name))
   {
     /* Compose path name */
     Path=malloc(strlen(Name)+20);
@@ -480,7 +489,7 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
         if((P = malloc(DSKFileSize(Dsk,J))))
         {
           if((K = DSKRead(Dsk,J,P,DSKFileSize(Dsk,J))))
-            if((F = fopen((const char*)Path,"wb"))) { fwrite(P,1,K,F);fclose(F); }      
+            if((F = rfopen((const char*)Path,"wb"))) { rfwrite(P,1,K,F); rfclose(F); }      
           free(P);
         }
       }
@@ -490,14 +499,14 @@ const byte *DSKSave(const char *Name,const byte *Dsk)
   }
 
   /* Assume <Name> to be a disk image file */
-  F=fopen(Name,"wb");
+  F=rfopen(Name,"wb");
   if(!F) return(0);
 
   /* Write data */
-  if(fwrite(Dsk,1,DSK_DISK_SIZE,F)!=DSK_DISK_SIZE)         
-  { fclose(F);return(0); }
+  if(rfwrite(Dsk,1,DSK_DISK_SIZE,F)!=DSK_DISK_SIZE)         
+  { rfclose(F);return(0); }
 
   /* Done */
-  fclose(F);
+  rfclose(F);
   return(Dsk);
 }

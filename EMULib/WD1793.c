@@ -19,7 +19,7 @@
 /** disks. When Disks=WD1793_EJECT, eject inserted disks,   **/
 /** freeing memory.                                         **/
 /*************************************************************/
-void Reset1793(register WD1793 *D,FDIDisk *Disks,register byte Eject)
+void Reset1793(WD1793 *D,FDIDisk *Disks,byte Eject)
 {
   int J;
 
@@ -53,7 +53,7 @@ void Reset1793(register WD1793 *D,FDIDisk *Disks,register byte Eject)
 /** Read value from a WD1793 register A. Returns read data  **/
 /** on success or 0xFF on failure (bad register address).   **/
 /*************************************************************/
-byte Read1793(register WD1793 *D,register byte A)
+byte Read1793(WD1793 *D,byte A)
 {
   switch(A)
   {
@@ -115,7 +115,7 @@ byte Read1793(register WD1793 *D,register byte A)
 /** Write value V into WD1793 register A. Returns DRQ/IRQ   **/
 /** values.                                                 **/
 /*************************************************************/
-byte Write1793(register WD1793 *D,register byte A,register byte V)
+byte Write1793(WD1793 *D,byte A,byte V)
 {
   int J;
 

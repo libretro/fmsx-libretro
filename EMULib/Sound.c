@@ -22,6 +22,20 @@
 #include <unistd.h>
 #endif
 
+#include <streams/file_stream.h>
+
+/* Forward declarations */
+RFILE* rfopen(const char *path, const char *mode);
+int rfclose(RFILE* stream);
+int64_t rfread(void* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int64_t rfseek(RFILE* stream, int64_t offset, int origin);
+int64_t rftell(RFILE* stream);
+int64_t rfwrite(void const* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int rfgetc(RFILE* stream);
+int rfputc(int character, RFILE * stream);
+
 typedef unsigned char byte;
 typedef unsigned short word;
 
@@ -119,7 +133,7 @@ static int  Logging   = MIDI_OFF; /* MIDI logging state (MIDI_*)      */
 static int  TickCount = 0;        /* MIDI ticks since WriteDelta()    */
 static int  LastMsg   = -1;       /* Last MIDI message                */
 static int  DrumOn    = 0;        /* 1: MIDI drums are ON             */
-static FILE *MIDIOut  = 0;        /* MIDI logging file handle         */
+static RFILE *MIDIOut = 0;        /* MIDI logging file handle         */
 
 static void MIDISound(int Channel,int Freq,int Volume);
 static void MIDISetSound(int Channel,int Type);
@@ -299,7 +313,7 @@ void InitMIDI(const char *FileName)
 /*************************************************************/
 void TrashMIDI(void)
 {
-  long Length;
+  int64_t Length;
   int J;
 
   /* If not logging, drop out */
@@ -309,16 +323,16 @@ void TrashMIDI(void)
   /* End of track */
   MIDIMessage(0xFF,0x2F,0x00);
   /* Put track length in file */
-  fseek(MIDIOut,0,SEEK_END);
-  Length=ftell(MIDIOut)-22;
-  fseek(MIDIOut,18,SEEK_SET);
-  fputc((Length>>24)&0xFF,MIDIOut);
-  fputc((Length>>16)&0xFF,MIDIOut);
-  fputc((Length>>8)&0xFF,MIDIOut);
-  fputc(Length&0xFF,MIDIOut);
+  rfseek(MIDIOut,0,SEEK_END);
+  Length=rftell(MIDIOut)-22;
+  rfseek(MIDIOut,18,SEEK_SET);
+  rfputc((Length>>24)&0xFF,MIDIOut);
+  rfputc((Length>>16)&0xFF,MIDIOut);
+  rfputc((Length>>8)&0xFF,MIDIOut);
+  rfputc(Length&0xFF,MIDIOut);
 
   /* Done logging */
-  fclose(MIDIOut);
+  rfclose(MIDIOut);
   Logging   = MIDI_OFF;
   LastMsg   = -1;
   TickCount = 0;
@@ -361,14 +375,14 @@ int MIDILogging(int Switch)
           MidiCH[J].Note=MidiCH[J].Pitch=MidiCH[J].Level=-1;
 
         /* Open new file and write out the header */
-        MIDIOut=fopen(LogName,"wb");
+        MIDIOut=rfopen(LogName,"wb");
         if(!MIDIOut) return(MIDI_OFF);
-        if(fwrite(MThd,1,12,MIDIOut)!=12)
-        { fclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
-        fputc((MIDI_DIVISIONS>>8)&0xFF,MIDIOut);
-        fputc(MIDI_DIVISIONS&0xFF,MIDIOut);
-        if(fwrite(MTrk,1,8,MIDIOut)!=8)
-        { fclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
+        if(rfwrite(MThd,1,12,MIDIOut)!=12)
+        { rfclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
+        rfputc((MIDI_DIVISIONS>>8)&0xFF,MIDIOut);
+        rfputc(MIDI_DIVISIONS&0xFF,MIDIOut);
+        if(rfwrite(MTrk,1,8,MIDIOut)!=8)
+        { rfclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
 
         /* Write out the tempo */
         WriteTempo(MIDI_DIVISIONS);
@@ -499,13 +513,13 @@ void MIDIMessage(byte D0,byte D1,byte D2)
   WriteDelta();
 
   /* Write out the command */
-  if(D0!=LastMsg) { LastMsg=D0;fputc(D0,MIDIOut); }
+  if(D0!=LastMsg) { LastMsg=D0;rfputc(D0,MIDIOut); }
 
   /* Write out the arguments */
   if(D1<128)
   {
-    fputc(D1,MIDIOut);
-    if(D2<128) fputc(D2,MIDIOut);
+    rfputc(D1,MIDIOut);
+    if(D2<128) rfputc(D2,MIDIOut);
   }
 }
 
@@ -544,19 +558,19 @@ void NoteOff(byte Channel)
 /*************************************************************/
 void WriteDelta(void)
 {
-  if(TickCount<128) fputc(TickCount,MIDIOut);
+  if(TickCount<128) rfputc(TickCount,MIDIOut);
   else
   {
     if(TickCount<128*128)
     {
-      fputc((TickCount>>7)|0x80,MIDIOut);
-      fputc(TickCount&0x7F,MIDIOut);
+      rfputc((TickCount>>7)|0x80,MIDIOut);
+      rfputc(TickCount&0x7F,MIDIOut);
     }
     else
     {
-      fputc(((TickCount>>14)&0x7F)|0x80,MIDIOut);
-      fputc(((TickCount>>7)&0x7F)|0x80,MIDIOut);
-      fputc(TickCount&0x7F,MIDIOut);
+      rfputc(((TickCount>>14)&0x7F)|0x80,MIDIOut);
+      rfputc(((TickCount>>7)&0x7F)|0x80,MIDIOut);
+      rfputc(TickCount&0x7F,MIDIOut);
     }
   }
 
@@ -572,12 +586,12 @@ void WriteTempo(int Freq)
 
   J=500000*MIDI_DIVISIONS*2/Freq;
   WriteDelta();
-  fputc(0xFF,MIDIOut);
-  fputc(0x51,MIDIOut);
-  fputc(0x03,MIDIOut);
-  fputc((J>>16)&0xFF,MIDIOut);
-  fputc((J>>8)&0xFF,MIDIOut);
-  fputc(J&0xFF,MIDIOut);
+  rfputc(0xFF,MIDIOut);
+  rfputc(0x51,MIDIOut);
+  rfputc(0x03,MIDIOut);
+  rfputc((J>>16)&0xFF,MIDIOut);
+  rfputc((J>>8)&0xFF,MIDIOut);
+  rfputc(J&0xFF,MIDIOut);
 }
 
 /** InitSound() **********************************************/
@@ -627,7 +641,7 @@ void TrashSound(void)
 /*************************************************************/
 void RenderAudio(int *Wave,unsigned int Samples)
 {
-  register int N,J,K,I,L,L1,L2,V,A1,A2;
+  int N,J,K,I,L,L1,L2,V,A1,A2;
 
   /* Exit if wave sound not initialized */
   if(SndRate<8192) return;

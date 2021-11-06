@@ -19,7 +19,7 @@
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void ResetSCC(register SCC *D,int First)
+void ResetSCC(SCC *D,int First)
 {
   int J;
 
@@ -43,7 +43,7 @@ void ResetSCC(register SCC *D,int First)
 /** Call this function to read contents of the generic SCC  **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCC(register SCC *D,register byte R)
+byte ReadSCC(SCC *D,byte R)
 {
   return(R<0x80? D->R[R]:0xFF);
 }
@@ -52,7 +52,7 @@ byte ReadSCC(register SCC *D,register byte R)
 /** Call this function to read contents of the newer SCC+   **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCCP(register SCC *D,register byte R)
+byte ReadSCCP(SCC *D,byte R)
 {
   return(R<0xA0? D->R[R]:0xFF);
 }
@@ -61,7 +61,7 @@ byte ReadSCCP(register SCC *D,register byte R)
 /** Call this function to output a value V into the generic **/
 /** SCC sound chip.                                         **/
 /*************************************************************/
-void WriteSCC(register SCC *D,register byte R,register byte V)
+void WriteSCC(SCC *D,byte R,byte V)
 {
   /* Prevent rollover */
   if(R>=0xE0) return;
@@ -77,10 +77,10 @@ void WriteSCC(register SCC *D,register byte R,register byte V)
 /** Call this function to output a value V into the newer   **/
 /** SCC+ sound chip.                                        **/
 /*************************************************************/
-void WriteSCCP(register SCC *D,register byte R,register byte V)
+void WriteSCCP(SCC *D,byte R,byte V)
 {
-  register int J;
-  register byte I;
+  int J;
+  byte I;
 
   /* Exit if no change */
   if(V==D->R[R]) return;
@@ -169,9 +169,9 @@ void WriteSCCP(register SCC *D,register byte R,register byte V)
 /** should be SCC_SYNC/SCC_ASYNC to set/reset sync, or      **/
 /** SCC_FLUSH to leave sync mode as it is.                  **/
 /*************************************************************/
-void SyncSCC(register SCC *D,register byte Sync)
+void SyncSCC(SCC *D,byte Sync)
 {
-  register int J,I;
+  int J,I;
 
   if(Sync!=SCC_FLUSH) D->Sync=Sync;
 

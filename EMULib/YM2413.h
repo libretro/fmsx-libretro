@@ -51,23 +51,23 @@ typedef struct
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void Reset2413(register YM2413 *D,int First);
+void Reset2413(YM2413 *D,int First);
 
 /** WrCtrl2413() *********************************************/
 /** Write a value V to the OPLL Control Port.               **/
 /*************************************************************/
-void WrCtrl2413(register YM2413 *D,register byte V);
+void WrCtrl2413(YM2413 *D,byte V);
 
 /** WrData2413() *********************************************/
 /** Write a value V to the OPLL Data Port.                  **/
 /*************************************************************/
-void WrData2413(register YM2413 *D,register byte V);
+void WrData2413(YM2413 *D,byte V);
 
 /** Write2413() **********************************************/
 /** Call this function to output a value V into given OPLL  **/
 /** register R.                                             **/
 /*************************************************************/
-void Write2413(register YM2413 *D,register byte R,register byte V);
+void Write2413(YM2413 *D,byte R,byte V);
 
 /** Sync2413() ***********************************************/
 /** Flush all accumulated changes by issuing Sound() calls  **/
@@ -75,7 +75,7 @@ void Write2413(register YM2413 *D,register byte R,register byte V);
 /** should be YM2413_SYNC/YM2413_ASYNC to set/reset sync,   **/
 /** or YM2413_FLUSH to leave sync mode as it is.            **/
 /*************************************************************/
-void Sync2413(register YM2413 *D,register byte Sync);
+void Sync2413(YM2413 *D,byte Sync);
 
 #ifdef __cplusplus
 }

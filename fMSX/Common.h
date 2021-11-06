@@ -31,9 +31,9 @@ void RefreshScreen(void) { PutImage(); }
 /** ClearLine() **********************************************/
 /** Clear 256 pixels from P with color C.                   **/
 /*************************************************************/
-static void ClearLine(register pixel *P,register pixel C)
+static void ClearLine(pixel *P,pixel C)
 {
-  register int J;
+  int J;
 
   for(J=0;J<256;J++) P[J]=C;
 }
@@ -42,9 +42,9 @@ static void ClearLine(register pixel *P,register pixel C)
 /** Given a color in YJK format, return the corresponding   **/
 /** palette entry.                                          **/
 /*************************************************************/
-INLINE pixel YJKColor(register int Y,register int J,register int K)
+INLINE pixel YJKColor(int Y,int J,int K)
 {
-  register int R,G,B;
+  int R,G,B;
 		
   R=Y+J;
   G=Y+K;
@@ -62,10 +62,10 @@ INLINE pixel YJKColor(register int Y,register int J,register int K)
 /** the screen border. It returns a pointer to the start of **/
 /** scanline Y in XBuf or 0 if scanline is beyond XBuf.     **/
 /*************************************************************/
-pixel *RefreshBorder(register byte Y,register pixel C)
+pixel *RefreshBorder(byte Y,pixel C)
 {
-  register pixel *P;
-  register int H;
+  pixel *P;
+  int H;
 
   /* First line number in the buffer */
   if(!Y) FirstLine=(ScanLines212? 8:18)+VAdjust;
@@ -101,12 +101,12 @@ pixel *RefreshBorder(register byte Y,register pixel C)
 /** This function is called from RefreshLine#() to refresh  **/
 /** sprites in SCREENs 1-3.                                 **/
 /*************************************************************/
-void Sprites(register byte Y,register pixel *Line)
+void Sprites(byte Y,pixel *Line)
 {
-  register pixel *P,C;
-  register byte H,*PT,*AT;
-  register unsigned int M;
-  register int L,K;
+  pixel *P,C;
+  byte H,*PT,*AT;
+  unsigned int M;
+  int L,K;
 
   /* No extra sprites yet */
   VDPStatus[0]&=~0x5F;
@@ -194,12 +194,12 @@ void Sprites(register byte Y,register pixel *Line)
 /** color sprites in SCREENs 4-8. The result is returned in **/
 /** ZBuf, whose size must be 304 bytes (32+256+16).         **/
 /*************************************************************/
-void ColorSprites(register byte Y,byte *ZBuf)
+void ColorSprites(byte Y,byte *ZBuf)
 {
-  register byte C,H,J,OrThem;
-  register byte *P,*PT,*AT;
-  register int L,K;
-  register unsigned int M;
+  byte C,H,J,OrThem;
+  byte *P,*PT,*AT;
+  int L,K;
+  unsigned int M;
 
   /* No extra sprites yet */
   VDPStatus[0]&=~0x5F;
@@ -300,34 +300,26 @@ void ColorSprites(register byte Y,byte *ZBuf)
 /** RefreshLineF() *******************************************/
 /** Dummy refresh function called for non-existing screens. **/
 /*************************************************************/
-void RefreshLineF(register byte Y)
+void RefreshLineF(byte Y)
 {
-  register pixel *P;
-
-  if(Verbose>1)
-    printf
-    (
-      "ScrMODE %d: ChrTab=%X ChrGen=%X ColTab=%X SprTab=%X SprGen=%X\n",
-      ScrMode,ChrTab-VRAM,ChrGen-VRAM,ColTab-VRAM,SprTab-VRAM,SprGen-VRAM
-    );
-
-  P=RefreshBorder(Y,XPal[BGColor]);
-  if(P) ClearLine(P,XPal[BGColor]);
+  pixel *P=RefreshBorder(Y,XPal[BGColor]);
+  if(P)
+	  ClearLine(P,XPal[BGColor]);
 }
 
 /** RefreshLine0() *******************************************/
 /** Refresh line Y (0..191/211) of SCREEN0.                 **/
 /*************************************************************/
-void RefreshLine0(register byte Y)
+void RefreshLine0(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte X,*T,*G;
-
+  pixel *P,FC,BC;
+  byte X,*T,*G;
   BC=XPal[BGColor];
   P=RefreshBorder(Y,BC);
   if(!P) return;
 
-  if(!ScreenON) ClearLine(P,BC);
+  if(!ScreenON)
+     ClearLine(P,BC);
   else
   {
     P[0]=P[1]=P[2]=P[3]=P[4]=P[5]=P[6]=P[7]=P[8]=BC;
@@ -353,15 +345,16 @@ void RefreshLine0(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN1, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine1(register byte Y)
+void RefreshLine1(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte K,X,*T,*G;
+  pixel FC,BC;
+  byte K,X,*T,*G;
+  pixel *P=RefreshBorder(Y,XPal[BGColor]);
+  if(!P)
+     return;
 
-  P=RefreshBorder(Y,XPal[BGColor]);
-  if(!P) return;
-
-  if(!ScreenON) ClearLine(P,XPal[BGColor]);
+  if(!ScreenON)
+     ClearLine(P,XPal[BGColor]);
   else
   {
     Y+=VScroll;
@@ -388,11 +381,11 @@ void RefreshLine1(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN2, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine2(register byte Y)
+void RefreshLine2(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte K,X,*T;
-  register int I,J;
+  pixel *P,FC,BC;
+  byte K,X,*T;
+  int I,J;
 
   P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
@@ -425,12 +418,10 @@ void RefreshLine2(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN3, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine3(register byte Y)
+void RefreshLine3(byte Y)
 {
-  register pixel *P;
-  register byte X,K,*T,*G;
-
-  P=RefreshBorder(Y,XPal[BGColor]);
+  byte X,K,*T,*G;
+  pixel *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -455,11 +446,11 @@ void RefreshLine3(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN4, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine4(register byte Y)
+void RefreshLine4(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte K,X,C,*T,*R;
-  register int I,J;
+  pixel *P,FC,BC;
+  byte K,X,C,*T,*R;
+  int I,J;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,XPal[BGColor]);
@@ -498,10 +489,10 @@ void RefreshLine4(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN5, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine5(register byte Y)
+void RefreshLine5(byte Y)
 {
-  register pixel *P;
-  register byte I,X,*T,*R;
+  pixel *P;
+  byte I,X,*T,*R;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,XPal[BGColor]);
@@ -540,15 +531,15 @@ void RefreshLine5(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN8, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine8(register byte Y)
+void RefreshLine8(byte Y)
 {
   static byte SprToScr[16] =
   {
     0x00,0x02,0x10,0x12,0x80,0x82,0x90,0x92,
     0x49,0x4B,0x59,0x5B,0xC9,0xCB,0xD9,0xDB
   };
-  register pixel *P;
-  register byte C,X,*T,*R;
+  pixel *P;
+  byte C,X,*T,*R;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,BPal[VDP[7]]);
@@ -579,11 +570,11 @@ void RefreshLine8(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN10/11, including   **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine10(register byte Y)
+void RefreshLine10(byte Y)
 {
-  register pixel *P;
-  register byte C,X,*T,*R;
-  register int J,K;
+  pixel *P;
+  byte C,X,*T,*R;
+  int J,K;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,BPal[VDP[7]]);
@@ -622,11 +613,11 @@ void RefreshLine10(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN12, including      **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine12(register byte Y)
+void RefreshLine12(byte Y)
 {
-  register pixel *P;
-  register byte C,X,*T,*R;
-  register int J,K;
+  pixel *P;
+  byte C,X,*T,*R;
+  int J,K;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,BPal[VDP[7]]);
@@ -670,10 +661,10 @@ void RefreshLine12(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN6, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine6(register byte Y)
+void RefreshLine6(byte Y)
 {
-  register pixel *P;
-  register byte X,*T,*R,C;
+  pixel *P;
+  byte X,*T,*R,C;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,XPal[BGColor&0x03]);
@@ -705,10 +696,10 @@ void RefreshLine6(register byte Y)
 /** Refresh line Y (0..191/211) of SCREEN7, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine7(register byte Y)
+void RefreshLine7(byte Y)
 {
-  register pixel *P;
-  register byte C,X,*T,*R;
+  pixel *P;
+  byte C,X,*T,*R;
   byte ZBuf[304];
 
   P=RefreshBorder(Y,XPal[BGColor]);
@@ -739,10 +730,10 @@ void RefreshLine7(register byte Y)
 /** RefreshLineTx80() ****************************************/
 /** Refresh line Y (0..191/211) of TEXT80.                  **/
 /*************************************************************/
-void RefreshLineTx80(register byte Y)
+void RefreshLineTx80(byte Y)
 {
-  register pixel *P,FC,BC;
-  register byte X,M,*T,*C,*G;
+  pixel *P,FC,BC;
+  byte X,M,*T,*C,*G;
 
   BC=XPal[BGColor];
   P=RefreshBorder(Y,BC);
