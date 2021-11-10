@@ -56,7 +56,7 @@ extern "C" {
 #define CPU_H240     (HREFRESH_240/6)
 #define CPU_H256     (HREFRESH_256/6)
 
-#define MAX_STASIZE  0x50000         /* Max. state data size */   
+#define MAX_STASIZE  0x48000         /* Max. state data size */   
 
 #define INT_IE0     0x01    /* VDP interrupt modes           */
 #define INT_IE1     0x02
@@ -92,7 +92,7 @@ extern "C" {
 
 #define FMPAC_MAGIC 0x694D  /* FMPAC SRAM "magic value"      */
 
-#define FMSX_PAGESIZE    0x4000L /* Size of a RAM page            */
+#define PGSIZE      0x4000L /* Size of a RAM page            */
 #define NORAM       0xFF    /* Byte to be returned from      */
                             /* non-existing pages and ports  */
 #define MAXSCREEN   12      /* Highest screen mode supported */
@@ -155,6 +155,7 @@ extern "C" {
 #define MSX_DRUMS     0x08000000 /* Hit MIDI drums for noise */
 #define MSX_PATCHBDOS 0x10000000 /* Patch DiskROM routines   */
 #define MSX_FIXEDFONT 0x20000000 /* Use fixed 8x8 text font  */
+#define MSX_MSXDOS2   0x40000000 /* Load MSXDOS2 ROM on boot */
 /*************************************************************/
 
 /** Keyboard codes and macros ********************************/
@@ -291,6 +292,12 @@ int LoadFile(const char *FileName);
 /** in 16kB pages on success, 0 on failure.                 **/
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type);
+
+/** LoadPAL() ************************************************/
+/** Load new palette from .PAL file. Returns number of      **/
+/** loaded colors on success, 0 on failure.                 **/
+/*************************************************************/
+int LoadPAL(const char *Name);
 
 /** MakeFileName() *******************************************/
 /** Make a copy of the file name, replacing the extension.  **/

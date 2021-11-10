@@ -72,6 +72,9 @@ void Reset8910(AY8910 *D,int ClockHz,int First)
   SetSound(4+First,SND_NOISE);
   SetSound(5+First,SND_NOISE);
 
+  /* Configure noise generator */
+  SetNoise(0x10000,16,14);
+
   /* Silence all channels */
   for(J=0;J<AY8910_CHANNELS;J++)
   {
@@ -293,7 +296,7 @@ void Sync8910(AY8910 *D,byte Sync)
     J = (D->Freq[3]? D->Volume[3]:0)
       + (D->Freq[4]? D->Volume[4]:0)
       + (D->Freq[5]? D->Volume[5]:0);
-    if(J) Drum(DRM_MIDI|28,(J+2)/3);
+    if(J) Drum(DRM_MIDI|28,J>255? 255:J);
   }
 
   if(Sync!=AY8910_FLUSH) D->Sync=Sync;

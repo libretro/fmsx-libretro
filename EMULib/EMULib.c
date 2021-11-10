@@ -112,9 +112,6 @@ void SetVideo(Image *Img,int X,int Y,int W,int H)
   VideoY   = Y<0? 0:Y>=Img->H? Img->H-1:Y;
   VideoW   = VideoX+W>Img->W? Img->W-VideoX:W;
   VideoH   = VideoY+H>Img->H? Img->H-VideoY:H;
-#ifdef WINDOWS
-  FreeImage(&BigScreen);
-#endif
 }
 
 /** WaitJoystick() *******************************************/

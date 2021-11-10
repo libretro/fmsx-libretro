@@ -90,6 +90,7 @@ typedef struct
   byte LastS;       /* Last STEP direction */
   byte IRQ;         /* 0x80: IRQ pending, 0x40: DRQ pending */
   byte Wait;        /* Expiration counter */
+  byte Cmd;         /* Last command */
 
   int  WRLength;    /* Data left to write */
   int  RDLength;    /* Data left to read */

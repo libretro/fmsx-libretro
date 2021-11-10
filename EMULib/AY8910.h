@@ -37,7 +37,7 @@ typedef struct
   byte R[16];                  /* PSG registers contents     */
   int Freq[AY8910_CHANNELS];   /* Frequencies (0 for off)    */
   int Volume[AY8910_CHANNELS]; /* Volumes (0..255)           */
-  int Clock;                   /* Base clock used by PSG     */
+  int Clock;                   /* Base clock rate (Fin/16)   */
   int First;                   /* First used Sound() channel */
   byte Changed;                /* Bitmap of changed channels */
   byte Sync;                   /* AY8910_SYNC/AY8910_ASYNC   */

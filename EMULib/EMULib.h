@@ -35,11 +35,18 @@
 #define EFF_SHOWFPS    0x0200  /* Show frames-per-sec count  */
 #define EFF_LCDLINES   0x0400  /* Apply LCD scanlines effect */
 #define EFF_VKBD       0x0800  /* Draw virtual keyboard      */
+#define EFF_SOFTEN2    0x1000  /* Softening algorithm select */
 #define EFF_FULLJOY    0x2000  /* Use full screen controls   */
 #define EFF_TILTJOY    0x4000  /* Use accelerometer controls */
 #define EFF_PENJOY     0x8000  /* Use touchpad controls      */
 #define EFF_VSYNC     0x10000  /* Wait for VBlanks           */
 #define EFF_DIRECT    0x20000  /* Copy whole VideoImg        */
+#define EFF_CMYMASK   0x40000  /* Apply vertical CMY mask    */
+#define EFF_RGBMASK   0x80000  /* Apply vertical RGB mask    */
+#define EFF_SOFTEN3 0x1000000  /* Softening algorithm select */
+#define EFF_MONO    0x2000000  /* Apply monochrome color     */
+#define EFF_VIGNETTE 0x4000000 /* Apply CRT-like vignetting  */
+#define EFF_4X3     0x8000000  /* Stretch video to 4x3 ratio */
 #if defined(ANDROID)
 #define EFF_FIXFFWD  0x100000  /* Persistent FFWD button     */
 #define EFF_GLES     0x200000  /* OpenGLES video rendering   */
@@ -58,6 +65,22 @@
 #elif defined(UNIX)
 #define EFF_VARBPP   0x200000  /* X11 determines Image depth */
 #endif
+
+#define EFF_SOFTEN_ALL (EFF_SOFTEN|EFF_SOFTEN2|EFF_SOFTEN3)
+#define EFF_2XSAI      (EFF_SOFTEN)
+#define EFF_EPX        (EFF_SOFTEN2)
+#define EFF_EAGLE      (EFF_SOFTEN|EFF_SOFTEN2)
+#define EFF_SCALE2X    (EFF_SOFTEN3)
+#define EFF_HQ4X       (EFF_SOFTEN|EFF_SOFTEN3)
+#define EFF_NEAREST    (EFF_SOFTEN2|EFF_SOFTEN3)
+
+#define EFF_RASTER_ALL (EFF_TVLINES|EFF_LCDLINES)
+#define EFF_RASTER     (EFF_TVLINES|EFF_LCDLINES)
+
+#define EFF_MASK_ALL   (EFF_CMYMASK|EFF_RGBMASK|EFF_MONO)
+#define EFF_GREEN      (EFF_MONO|EFF_CMYMASK)
+#define EFF_AMBER      (EFF_MONO|EFF_RGBMASK)
+#define EFF_SEPIA      (EFF_MONO|EFF_CMYMASK|EFF_RGBMASK)
 
 /** Button Bits **********************************************/
 /** Bits returned by GetJoystick() and WaitJoystick().      **/
@@ -244,11 +267,59 @@ void LcdizeImage(Image *Img,int X,int Y,int W,int H);
 /*************************************************************/
 void RasterizeImage(Image *Img,int X,int Y,int W,int H);
 
+/** CMYizeImage() ********************************************/
+/** Apply vertical CMY stripes to the image.                **/
+/*************************************************************/
+void CMYizeImage(Image *Img,int X,int Y,int W,int H);
+
+/** RGBizeImage() ********************************************/
+/** Apply vertical RGB stripes to the image.                **/
+/*************************************************************/
+void RGBizeImage(Image *Img,int X,int Y,int W,int H);
+
+/** MonoImage() **********************************************/
+/** Turn image into monochrome.                             **/
+/*************************************************************/
+void MonoImage(Image *Img,int X,int Y,int W,int H);
+
+/** SepiaImage() *********************************************/
+/** Turn image into sepia tones.                            **/
+/*************************************************************/
+void SepiaImage(Image *Img,int X,int Y,int W,int H);
+
+/** GreenImage() *********************************************/
+/** Simulate green CRT phosphor.                            **/
+/*************************************************************/
+void GreenImage(Image *Img,int X,int Y,int W,int H);
+
+/** AmberImage() *********************************************/
+/** Simulate amber CRT phosphor.                            **/
+/*************************************************************/
+void AmberImage(Image *Img,int X,int Y,int W,int H);
+
 /** SoftenImage() ********************************************/
 /** Uses softening algorithm to interpolate image Src into  **/
 /** a bigger image Dst.                                     **/
 /*************************************************************/
 void SoftenImage(Image *Dst,const Image *Src,int X,int Y,int W,int H);
+
+/** SoftenSCALE2X() ******************************************/
+/** Uses SCALE2X softening algorithm to interpolate image   **/
+/** Src into a bigger image Dst.                            **/
+/*************************************************************/
+void SoftenSCALE2X(Image *Dst,const Image *Src,int X,int Y,int W,int H);
+
+/** SoftenEPX() **********************************************/
+/** Uses EPX softening algorithm to interpolate image Src   **/
+/** into a bigger image Dst.                                **/
+/*************************************************************/
+void SoftenEPX(Image *Dst,const Image *Src,int X,int Y,int W,int H);
+
+/** SoftenEAGLE() ********************************************/
+/** Uses EAGLE softening algorithm to interpolate image Src **/
+/** into a bigger image Dst.                                **/
+/*************************************************************/
+void SoftenEAGLE(Image *Dst,const Image *Src,int X,int Y,int W,int H);
 
 /** ClearImage() *********************************************/
 /** Clear image with a given color.                         **/
@@ -303,6 +374,11 @@ void SetPalette(pixel N,unsigned char R,unsigned char G,unsigned char B);
 /** Get the amount of free samples in the audio buffer.     **/
 /*************************************************************/
 unsigned int GetFreeAudio(void);
+
+/** GetTotalAudio() ******************************************/
+/** Get total amount of samples in the audio buffer.        **/
+/*************************************************************/
+unsigned int GetTotalAudio(void);
 
 /** WriteAudio() *********************************************/
 /** Write up to a given number of samples to audio buffer.  **/
@@ -390,6 +466,12 @@ int ProcessEvents(int Wait);
 /** Set visual effects applied to video in ShowVideo().     **/
 /*************************************************************/
 void SetEffects(unsigned int NewEffects);
+
+/** ParseEffects() *******************************************/
+/** Parse command line visual effect options, removing them **/
+/** from Args[] and applying to the initial Effects value.  **/
+/*************************************************************/
+unsigned int ParseEffects(char *Args[],unsigned int Effects);
 
 /** GetFilePath() ********************************************/
 /** Extracts pathname from filename and returns a pointer   **/

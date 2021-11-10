@@ -185,13 +185,13 @@ int DSKFile(byte *Dsk,const char *FileName)
 /*************************************************************/
 const char *DSKFileName(const byte *Dsk,int ID)
 {
-  const unsigned char *Name;
+  const char *Name;
 
   /* Can't have ID that is out of bounds */
   if((ID<1)||(ID>DSK_DIR_SIZE)) return(0);
   /* Return file name */
-  Name=DIRENTRY(Dsk,ID-1);
-  return(!Name[0]||(Name[0]==0xE5)? 0:Name);
+  Name=(const char *)DIRENTRY(Dsk,ID-1);
+  return(!Name[0]||(Name[0]==(char)0xE5)? 0:Name);
 }
 
 /** DSKFileSize() ********************************************/
@@ -371,7 +371,8 @@ int DSKDelete(byte *Dsk,int ID)
 /*************************************************************/
 byte *DSKLoad(const char *Name,byte *Dsk)
 {
-  byte *Dsk1,*Buf,FN[32],*Path;
+  byte *Dsk1,*Buf;
+  char *Path,FN[32];
   struct stat FS;
   RFILE *F;
   struct RDIR *D;
@@ -457,7 +458,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
 const byte *DSKSave(const char *Name,const byte *Dsk)
 {
   const char *T;
-  byte *Path,*P;
+  char *Path,*P;
   struct stat FS;
   RFILE *F;
   int J,I,K;

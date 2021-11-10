@@ -100,6 +100,13 @@ void SetSound(int Channel,int NewType);
 /*************************************************************/
 void SetChannels(int Volume,int Switch);
 
+/** SetNoise() ***********************************************/
+/** Initialize random noise generator to the given Seed and **/
+/** then take random output from OUTBit and XOR it with     **/
+/** XORBit.                                                 **/
+/*************************************************************/
+void SetNoise(int Seed,int OUTBit,int XORBit);
+
 /** SetWave() ************************************************/
 /** Set waveform for a given channel. The channel will be   **/
 /** marked with sound type SND_WAVE. Set Rate=0 if you want **/
