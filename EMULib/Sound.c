@@ -6,7 +6,7 @@
 /** and functions needed to log soundtrack into a MIDI      **/
 /** file. See Sound.h for declarations.                     **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

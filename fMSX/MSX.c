@@ -7,7 +7,7 @@
 /** etc. Initialization code and definitions needed for the **/
 /** machine-dependent drivers are also here.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2014                 **/
+/** Copyright (C) Marat Fayzullin 1994-2017                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
