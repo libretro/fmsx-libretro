@@ -602,7 +602,7 @@ void set_image_buffer_size(byte screen_mode)
 {
    static Image fMSX_image;
 
-   if (screen_mode == 6 || screen_mode == 7)
+   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
        image_buffer_width = WIDTH<<1;
    else
        image_buffer_width = WIDTH;
