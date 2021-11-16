@@ -830,6 +830,7 @@ size_t retro_get_memory_size(unsigned id)
 #endif
 void retro_run(void)
 {
+   byte currentScreenMode;
    int i,j;
    bool updated = false;
    int16_t joypad_bits[2];
@@ -898,7 +899,7 @@ void retro_run(void)
          JOY_SET(joymap[i].fmsx, 1);
    }
 
-   byte currentScreenMode = ScrMode;
+   currentScreenMode = ScrMode;
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / fps);
    if (currentScreenMode != ScrMode) {

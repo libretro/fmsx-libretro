@@ -18,11 +18,14 @@
 #include "Floppy.h"
 #include "SHA1.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <time.h>
 
 #ifdef _WIN32
