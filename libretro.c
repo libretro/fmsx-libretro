@@ -409,7 +409,18 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
-      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
+      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
+            "Guess Mapper Type A|"
+            "Guess Mapper Type B|"
+            "Generic 8kB|"
+            "Generic 16kB|"
+            "Konami5 8kB|"
+            "Konami4 8kB|"
+            "ASCII 8kB|"
+            "ASCII 16kB|"
+            "GameMaster2|"
+            "FMPAC"
+      },
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { NULL, NULL },
@@ -546,7 +557,25 @@ static void check_variables(void)
       if (strcmp(var.value, "Guess Mapper Type A") == 0)
          Mode |= MSX_GUESSA;
       else if (strcmp(var.value, "Guess Mapper Type B") == 0)
-         Mode |= MSX_GUESSB;
+         Mode |= MSX_GUESSB; // I guess this never works
+      else if (strcmp(var.value, "Generic 8kB") == 0)
+         SETROMTYPE(0,MAP_GEN8);
+      else if (strcmp(var.value, "Generic 16kB") == 0)
+         SETROMTYPE(0,MAP_GEN16);
+      else if (strcmp(var.value, "Konami5 8kB") == 0)
+         SETROMTYPE(0,MAP_KONAMI5);
+      else if (strcmp(var.value, "Konami4 8kB") == 0)
+         SETROMTYPE(0,MAP_KONAMI4);
+      else if (strcmp(var.value, "ASCII 8kB") == 0)
+         SETROMTYPE(0,MAP_ASCII8);
+      else if (strcmp(var.value, "ASCII 16kB") == 0)
+         SETROMTYPE(0,MAP_ASCII16);
+      else if (strcmp(var.value, "GameMaster2") == 0)
+         SETROMTYPE(0,MAP_GMASTER2);
+      else if (strcmp(var.value, "FMPAC") == 0)
+         SETROMTYPE(0,MAP_FMPAC);
+      else
+         Mode |= MSX_GUESSA;
    }
    else
    {
