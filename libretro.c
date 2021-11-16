@@ -357,7 +357,7 @@ static void set_input_descriptors(void)
       { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Stick Down" },
       { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Stick Right" },
       { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,          "Fire A" },
-      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,           "FireB" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,          "Fire B" },
       { 0 },
    };
    struct retro_input_descriptor descriptors[32];
@@ -399,7 +399,7 @@ void retro_set_environment(retro_environment_t cb)
    { "Joystick",                       RETRO_DEVICE_JOYPAD },
    };
    static const struct retro_controller_description port1[] = {
-   { "joystick",                       RETRO_DEVICE_JOYPAD}
+   { "Joystick",                       RETRO_DEVICE_JOYPAD}
    };
    static const struct retro_controller_info ports[] = {
       { port0, 4 },
@@ -714,7 +714,8 @@ bool retro_load_game(const struct retro_game_info *info)
       CasName=NULL;
    }
 
-   SETJOYTYPE(0,1);
+   SETJOYTYPE(0,JOY_STICK);
+   SETJOYTYPE(1,JOY_STICK);
 
    set_image_buffer_size(0);
 
