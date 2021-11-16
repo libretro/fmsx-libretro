@@ -27,8 +27,11 @@ extern int RAMPages ;
 
 #define SND_RATE 48000
 
-#define WIDTH  272
-#define HEIGHT 228
+// in screen mode 6 & 7 (512px wide), Wide.h doubles WIDTH
+#define BORDER 8
+#define WIDTH  (256+(BORDER<<1))
+#define HEIGHT (212+(BORDER<<1))
+
 #ifdef PSP
 #define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
 #elif defined(PS2)
@@ -595,9 +598,36 @@ static void check_variables(void)
    update_fps();
 }
 
-bool retro_load_game(const struct retro_game_info *info)
+void set_image_buffer_size(byte screen_mode)
 {
    static Image fMSX_image;
+
+   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
+       image_buffer_width = WIDTH<<1;
+   else
+       image_buffer_width = WIDTH;
+   image_buffer_height = HEIGHT;
+
+   fMSX_image.Cropped = 0;
+#if defined(BPP24)
+   fMSX_image.D = 24;
+#elif defined(BPP16)
+   fMSX_image.D = 16;
+#elif defined(BPP8)
+   fMSX_image.D = 8;
+#else
+   fMSX_image.D = 32;
+#endif
+   fMSX_image.Data = image_buffer;
+   fMSX_image.W = image_buffer_width;
+   fMSX_image.H = image_buffer_height;
+   fMSX_image.L = image_buffer_width;
+
+   GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
+}
+
+bool retro_load_game(const struct retro_game_info *info)
+{
    int i;
    static char ROMName_buffer[MAXCARTS][1024];
    static char DSKName_buffer[MAXDRIVES][1024];
@@ -612,8 +642,6 @@ bool retro_load_game(const struct retro_game_info *info)
    }
 
    image_buffer        = (uint16_t*)malloc(640*480*sizeof(uint16_t));
-   image_buffer_width  =  272;
-   image_buffer_height =  228;
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -650,17 +678,9 @@ bool retro_load_game(const struct retro_game_info *info)
       CasName=NULL;
    }
 
-
    SETJOYTYPE(0,1);
 
-   fMSX_image.Cropped = 0;
-   fMSX_image.D = 16;
-   fMSX_image.Data = image_buffer;
-   fMSX_image.W = image_buffer_width;
-   fMSX_image.H = image_buffer_height;
-   fMSX_image.L = image_buffer_width;
-
-   GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
+   set_image_buffer_size(0);
 
    for(i = 0; i < 80; i++)
       SetColor(i, 0, 0, 0);
@@ -842,9 +862,12 @@ void retro_run(void)
          JOY_SET(joymap[i].fmsx, 1);
    }
 
-
+   byte currentScreenMode = ScrMode;
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / fps);
+   if (currentScreenMode != ScrMode) {
+      set_image_buffer_size(ScrMode);
+   }
 
    fflush(stdout);
 
