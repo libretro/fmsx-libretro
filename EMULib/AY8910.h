@@ -6,7 +6,7 @@
 /** produced by General Instruments, Yamaha, etc. See       **/
 /** AY8910.c for the actual code.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -37,7 +37,7 @@ typedef struct
   byte R[16];                  /* PSG registers contents     */
   int Freq[AY8910_CHANNELS];   /* Frequencies (0 for off)    */
   int Volume[AY8910_CHANNELS]; /* Volumes (0..255)           */
-  int Clock;                   /* Base clock used by PSG     */
+  int Clock;                   /* Base clock rate (Fin/16)   */
   int First;                   /* First used Sound() channel */
   byte Changed;                /* Bitmap of changed channels */
   byte Sync;                   /* AY8910_SYNC/AY8910_ASYNC   */

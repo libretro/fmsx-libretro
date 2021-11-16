@@ -6,7 +6,7 @@
 /** into MIDI octave/note numbers. It is included from the  **/
 /** Sound.c and SndWin.c files.                             **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
