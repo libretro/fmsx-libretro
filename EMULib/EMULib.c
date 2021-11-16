@@ -5,7 +5,7 @@
 /** This file contains platform-independent implementation  **/
 /** part of the emulation library.                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2014                 **/
+/** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -112,9 +112,6 @@ void SetVideo(Image *Img,int X,int Y,int W,int H)
   VideoY   = Y<0? 0:Y>=Img->H? Img->H-1:Y;
   VideoW   = VideoX+W>Img->W? Img->W-VideoX:W;
   VideoH   = VideoY+H>Img->H? Img->H-VideoY:H;
-#ifdef WINDOWS
-  FreeImage(&BigScreen);
-#endif
 }
 
 /** WaitJoystick() *******************************************/

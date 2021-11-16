@@ -6,7 +6,7 @@
 /** controller produced by Western Digital. See WD1793.h    **/
 /** for declarations.                                       **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2014                 **/
+/** Copyright (C) Marat Fayzullin 2005-2016                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -34,6 +34,7 @@ void Reset1793(WD1793 *D,FDIDisk *Disks,byte Eject)
   D->WRLength = 0;
   D->RDLength = 0;
   D->Wait     = 0;
+  D->Cmd      = 0xD0;
 
   /* For all drives... */
   for(J=0;J<4;++J)
@@ -60,8 +61,16 @@ byte Read1793(WD1793 *D,byte A)
       A=D->R[0];
       /* If no disk present, set F_NOTREADY */
       if(!D->Disk[D->Drive]||!D->Disk[D->Drive]->Data) A|=F_NOTREADY;
+      if(D->Cmd<0x80)
+      {
+        /* Keep flipping F_INDEX bit as the disk rotates (Sam Coupe) */
+        D->R[0]=(D->R[0]^F_INDEX)&(F_INDEX|F_BUSY|F_NOTREADY|F_READONLY|F_TRACK0);
+      }
+      else
+      {
       /* When reading status, clear all bits but F_BUSY and F_NOTREADY */
-      D->R[0]&=F_BUSY|F_NOTREADY;
+        D->R[0]&=F_BUSY|F_NOTREADY|F_READONLY|F_DRQ;
+      }
       return(A);
     case WD1793_TRACK:
     case WD1793_SECTOR:
@@ -125,6 +134,7 @@ byte Write1793(WD1793 *D,byte A,byte V)
       {
         /* Reset any executing command */
         D->RDLength=D->WRLength=0;
+        D->Cmd=0xD0;
         /* Either reset BUSY flag or reset all flags if BUSY=0 */
         if(D->R[0]&F_BUSY) D->R[0]&=~F_BUSY;
         else               D->R[0]=D->Track[D->Drive]? 0:F_TRACK0;
@@ -137,6 +147,7 @@ byte Write1793(WD1793 *D,byte A,byte V)
       if(D->R[0]&F_BUSY) break;
       /* Reset status register */
       D->R[0]=0x00;
+      D->Cmd=V;
       /* Depending on the command... */
       switch(V&0xF0)
       {
