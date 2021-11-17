@@ -47,10 +47,8 @@
 #ifdef _MSC_VER
 #undef chdir
 #undef getcwd
-#undef unlink
 #define chdir _chdir
 #define getcwd _getcwd
-#define unlink _unlink
 #endif
 
 /** User-defined parameters for fMSX *************************/
