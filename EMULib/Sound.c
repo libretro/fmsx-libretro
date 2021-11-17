@@ -2,9 +2,8 @@
 /**                                                         **/
 /**                          Sound.c                        **/
 /**                                                         **/
-/** This file file implements core part of the sound API    **/
-/** and functions needed to log soundtrack into a MIDI      **/
-/** file. See Sound.h for declarations.                     **/
+/** This file file implements core part of the sound API.   **/
+/** See Sound.h for declarations.                           **/
 /**                                                         **/
 /** Copyright (C) Marat Fayzullin 1996-2016                 **/
 /**     You are not allowed to distribute this software     **/
@@ -21,63 +20,8 @@
 #include <unistd.h>
 #endif
 
-#include <streams/file_stream.h>
-
-/* Forward declarations */
-RFILE* rfopen(const char *path, const char *mode);
-int rfclose(RFILE* stream);
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int64_t rfseek(RFILE* stream, int64_t offset, int origin);
-int64_t rftell(RFILE* stream);
-int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int rfgetc(RFILE* stream);
-int rfputc(int character, RFILE * stream);
-
 typedef unsigned char byte;
 typedef unsigned short word;
-
-static const struct { byte Note;word Wheel; } Freqs[4096] =
-{
-#include "MIDIFreq.h"
-};
-
-static const int Programs[] =
-{
-  80,  /* SND_MELODIC/SND_RECTANGLE */
-  80,  /* SND_TRIANGLE */
-  122, /* SND_NOISE */
-  122, /* SND_PERIODIC */
-  80,  /* SND_WAVE */
-};
-
-static struct
-{
-  int Type;
-  int Note;
-  int Pitch;
-  int Level;
-  int Power;
-} MidiCH[MIDI_CHANNELS] =
-{
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 },
-  { -1,-1,-1,-1,256 }
-};
 
 static struct
 {
@@ -119,29 +63,6 @@ static int NoiseXor   = 14;       /* NoiseGen bit used for XORing     */
 int MasterSwitch      = 0xFFFF;   /* Switches to turn channels on/off */
 int MasterVolume      = 192;      /* Master volume                    */
 
-/** MIDI Logging Variables ********************************************/
-static const char *LogName = 0;   /* MIDI logging file name           */
-static int  Logging   = MIDI_OFF; /* MIDI logging state (MIDI_*)      */
-static int  TickCount = 0;        /* MIDI ticks since WriteDelta()    */
-static int  LastMsg   = -1;       /* Last MIDI message                */
-static int  DrumOn    = 0;        /* 1: MIDI drums are ON             */
-static RFILE *MIDIOut = 0;        /* MIDI logging file handle         */
-
-static void MIDISound(int Channel,int Freq,int Volume);
-static void MIDISetSound(int Channel,int Type);
-static void MIDIDrum(int Type,int Force);
-static void MIDIMessage(byte D0,byte D1,byte D2);
-static void NoteOn(byte Channel,byte Note,byte Level);
-static void NoteOff(byte Channel);
-static void WriteDelta(void);
-static void WriteTempo(int Freq);
-
-/** SHIFT() **************************************************/
-/** Make MIDI channel#10 last, as it is normally used for   **/
-/** percussion instruments only and doesn't sound nice.     **/
-/*************************************************************/
-#define SHIFT(Ch) (Ch==15? 9:Ch>8? Ch+1:Ch)
-
 /** GetSndRate() *********************************************/
 /** Get current sampling rate used for synthesis.           **/
 /*************************************************************/
@@ -169,28 +90,10 @@ void Sound(int Channel,int Freq,int Volume)
     WaveCH[Channel].Pos    = 0;
     WaveCH[Channel].Count  = 0;
   }
-
-  /* Log sound to MIDI file */
-  MIDISound(Channel,Freq,Volume);
-}
-
-/** Drum() ***************************************************/
-/** Hit a drum of given type with given force (0..255).     **/
-/** MIDI drums can be used by ORing their numbers with      **/
-/** SND_MIDI.                                               **/
-/*************************************************************/
-void Drum(int Type,int Force)
-{
-  /* Drum force has to be valid */
-  Force = Force<0? 0:Force>255? 255:Force;
-
-  /* Log drum to MIDI file */
-  MIDIDrum(Type,Force);
 }
 
 /** SetSound() ***********************************************/
-/** Set sound type at a given channel. MIDI instruments can **/
-/** be set directly by ORing their numbers with SND_MIDI.   **/
+/** Set sound type at a given channel.                      **/
 /*************************************************************/
 void SetSound(int Channel,int Type)
 {
@@ -199,9 +102,6 @@ void SetSound(int Channel,int Type)
 
   /* Set wave channel type */
   WaveCH[Channel].Type = Type;
-
-  /* Log instrument change to MIDI file */
-  MIDISetSound(Channel,Type);
 }
 
 /** SetChannels() ********************************************/
@@ -239,7 +139,7 @@ void SetNoise(int Seed,int OUTBit,int XORBit)
 /*************************************************************/
 void SetWave(int Channel,const signed char *Data,int Length,int Rate)
 {
-  unsigned int I,J;
+  unsigned int J;
 
   /* Channel and waveform length have to be valid */
   if((Channel<0)||(Channel>=SND_CHANNELS)||(Length<=0)) return;
@@ -251,21 +151,6 @@ void SetWave(int Channel,const signed char *Data,int Length,int Rate)
   WaveCH[Channel].Pos    = Length? WaveCH[Channel].Pos%Length:0;
   WaveCH[Channel].Count  = 0;
   WaveCH[Channel].Data   = Data;
-
-  /* Log instrument change to MIDI file */
-  MIDISetSound(Channel,Rate? -1:SND_WAVE);
-
-  /* Compute overall waveform power for MIDI */
-  if(Rate) I=0;
-  else
-  {
-    for(J=I=0;J<Length;++J) I+=Data[J]>0? Data[J]:-Data[J];
-    I = (I<<1)/Length;
-    I = I>256? 256:I;
-  }
-
-  /* Will use power value when computing MIDI volume */
-  MidiCH[Channel].Power = I;
 }
 
 /** GetWave() ************************************************/
@@ -283,326 +168,6 @@ const signed char *GetWave(int Channel)
     WaveCH[Channel].Rate&&(WaveCH[Channel].Type==SND_WAVE)?
     WaveCH[Channel].Data+WaveCH[Channel].Pos:0
   );
-}
-
-/** InitMIDI() ***********************************************/
-/** Initialize soundtrack logging into MIDI file FileName.  **/
-/** Repeated calls to InitMIDI() will close current MIDI    **/
-/** file and continue logging into a new one.               **/ 
-/*************************************************************/
-void InitMIDI(const char *FileName)
-{
-  int WasLogging;
-
-  /* Must pass a name! */
-  if(!FileName) return;
-
-  /* Memorize logging status */
-  WasLogging=Logging;
-
-  /* If MIDI logging in progress, close current file */
-  if(MIDIOut) TrashMIDI();
-
-  /* Set log file name and ticks/second parameter, no logging yet */
-  LogName   = FileName;
-  Logging   = MIDI_OFF;
-  LastMsg   = -1;
-  TickCount = 0;
-  MIDIOut   = 0;
-  DrumOn    = 0;
-
-  /* If was logging, restart */
-  if(WasLogging) MIDILogging(MIDI_ON);
-}
-
-/** TrashMIDI() **********************************************/
-/** Finish logging soundtrack and close the MIDI file.      **/
-/*************************************************************/
-void TrashMIDI(void)
-{
-  int64_t Length;
-  int J;
-
-  /* If not logging, drop out */
-  if(!MIDIOut) return;
-  /* Turn sound off */
-  for(J=0;J<MIDI_CHANNELS;J++) NoteOff(J);
-  /* End of track */
-  MIDIMessage(0xFF,0x2F,0x00);
-  /* Put track length in file */
-  rfseek(MIDIOut,0,SEEK_END);
-  Length=rftell(MIDIOut)-22;
-  rfseek(MIDIOut,18,SEEK_SET);
-  rfputc((Length>>24)&0xFF,MIDIOut);
-  rfputc((Length>>16)&0xFF,MIDIOut);
-  rfputc((Length>>8)&0xFF,MIDIOut);
-  rfputc(Length&0xFF,MIDIOut);
-
-  /* Done logging */
-  rfclose(MIDIOut);
-  Logging   = MIDI_OFF;
-  LastMsg   = -1;
-  TickCount = 0;
-  MIDIOut   = 0;
-}
-
-/** MIDILogging() ********************************************/
-/** Turn soundtrack logging on/off and return its current   **/
-/** status. Possible values of Switch are MIDI_OFF (turn    **/
-/** logging off), MIDI_ON (turn logging on), MIDI_TOGGLE    **/
-/** (toggle logging), and MIDI_QUERY (just return current   **/
-/** state of logging).                                      **/
-/*************************************************************/
-int MIDILogging(int Switch)
-{
-  static const char MThd[] = "MThd\0\0\0\006\0\0\0\1";
-                           /* ID  DataLen   Fmt Trks */
-  static const char MTrk[] = "MTrk\0\0\0\0";
-                           /* ID  TrkLen   */
-  int J,I;
-
-  /* Toggle logging if requested */
-  if(Switch==MIDI_TOGGLE) Switch=!Logging;
-
-  if((Switch==MIDI_ON)||(Switch==MIDI_OFF))
-    if(Switch^Logging)
-    {
-      /* When turning logging off, silence all channels */
-      if(!Switch&&MIDIOut)
-        for(J=0;J<MIDI_CHANNELS;J++) NoteOff(J);
-
-      /* When turning logging on, open MIDI file */
-      if(Switch&&!MIDIOut&&LogName)
-      {
-        /* No messages have been sent yet */
-        LastMsg=-1;
-
-        /* Clear all storage */
-        for(J=0;J<MIDI_CHANNELS;J++)
-          MidiCH[J].Note=MidiCH[J].Pitch=MidiCH[J].Level=-1;
-
-        /* Open new file and write out the header */
-        MIDIOut=rfopen(LogName,"wb");
-        if(!MIDIOut) return(MIDI_OFF);
-        if(rfwrite(MThd,1,12,MIDIOut)!=12)
-        { rfclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
-        rfputc((MIDI_DIVISIONS>>8)&0xFF,MIDIOut);
-        rfputc(MIDI_DIVISIONS&0xFF,MIDIOut);
-        if(rfwrite(MTrk,1,8,MIDIOut)!=8)
-        { rfclose(MIDIOut);MIDIOut=0;return(MIDI_OFF); }
-
-        /* Write out the tempo */
-        WriteTempo(MIDI_DIVISIONS);
-      }
-
-      /* Turn logging off on failure to open MIDIOut */
-      if(!MIDIOut) Switch=MIDI_OFF;
-
-      /* Assign new switch value */
-      Logging=Switch;
-
-      /* If switching logging on... */
-      if(Switch)
-      {
-        /* Start logging without a pause */
-        TickCount=0;
-
-        /* Write instrument changes */
-        for(J=0;J<MIDI_CHANNELS;J++)
-          if((MidiCH[J].Type>=0)&&(MidiCH[J].Type&0x10000))
-          {
-            I=MidiCH[J].Type&~0x10000;
-            MidiCH[J].Type=-1;
-            MIDISetSound(J,I);
-          }
-      }
-    }
-
-  /* Return current logging status */
-  return(Logging);
-}
-
-/** MIDITicks() **********************************************/
-/** Log N 1ms MIDI ticks.                                   **/
-/*************************************************************/
-void MIDITicks(int N)
-{
-  if(Logging&&MIDIOut&&(N>0)) TickCount+=N;
-}
-
-/** MIDISound() **********************************************/
-/** Set sound frequency (Hz) and volume (0..255) for a      **/
-/** given channel.                                          **/
-/*************************************************************/
-void MIDISound(int Channel,int Freq,int Volume)
-{
-  int MIDIVolume,MIDINote,MIDIWheel;
-
-  /* If logging off, file closed, or invalid channel, drop out */
-  if(!Logging||!MIDIOut||(Channel>=MIDI_CHANNELS-1)||(Channel<0)) return;
-  /* Frequency must be in range */
-  if((Freq<MIDI_MINFREQ)||(Freq>MIDI_MAXFREQ)) Freq=0;
-  /* Volume must be in range */
-  if(Volume<0) Volume=0; else if(Volume>255) Volume=255;
-  /* Instrument number must be valid */
-  if(MidiCH[Channel].Type<0) Freq=0;
-
-  if(!Volume||!Freq) NoteOff(Channel);
-  else
-  {
-    /* SND_TRIANGLE has 1/2 volume of SND_MELODIC   */
-    /* SND_WAVE may have different effective volume */
-    Volume = MidiCH[Channel].Type==SND_TRIANGLE? (Volume>>1)
-           : MidiCH[Channel].Type==SND_WAVE?     ((Volume*MidiCH[Channel].Power)>>8)
-           : Volume;
-
-    /* Compute MIDI note parameters */
-    MIDIVolume = Volume>>1;
-    MIDINote   = Freqs[Freq/3].Note;
-    MIDIWheel  = Freqs[Freq/3].Wheel;
-
-    /* Play new note */
-    NoteOn(Channel,MIDINote,MIDIVolume);
-
-    /* Change pitch */
-    if(MidiCH[Channel].Pitch!=MIDIWheel)
-    {
-      MIDIMessage(0xE0+SHIFT(Channel),MIDIWheel&0x7F,(MIDIWheel>>7)&0x7F);
-      MidiCH[Channel].Pitch=MIDIWheel;
-    }
-  }
-}
-
-/** MIDISetSound() *******************************************/
-/** Set sound type for a given channel.                     **/
-/*************************************************************/
-void MIDISetSound(int Channel,int Type)
-{
-  /* Channel must be valid */
-  if((Channel>=MIDI_CHANNELS-1)||(Channel<0)) return;
-
-  /* If instrument changed... */
-  if(MidiCH[Channel].Type!=Type)
-  {
-    /* If logging off or file closed, drop out */
-    if(!Logging||!MIDIOut) MidiCH[Channel].Type=Type|0x10000;
-    else
-    {
-      MidiCH[Channel].Type=Type;
-      if(Type<0) NoteOff(Channel);
-      else
-      {
-        Type=Type&SND_MIDI? (Type&0x7F):Programs[Type%5];
-        MIDIMessage(0xC0+SHIFT(Channel),Type,255);
-      }
-    }
-  }
-}
-
-/** MIDIDrum() ***********************************************/
-/** Hit a drum of a given type with given force.            **/
-/*************************************************************/
-void MIDIDrum(int Type,int Force)
-{
-  /* If logging off or invalid channel, drop out */
-  if(!Logging||!MIDIOut) return;
-  /* The only non-MIDI drum is a click ("Low Wood Block") */
-  Type=Type&DRM_MIDI? (Type&0x7F):77;
-  /* Release previous drum */
-  if(DrumOn) MIDIMessage(0x89,DrumOn,127);
-  /* Hit next drum */
-  if(Type) MIDIMessage(0x99,Type,(Force&0xFF)>>1);
-  DrumOn=Type;
-}
-
-/** MIDIMessage() ********************************************/
-/** Write out a MIDI message.                               **/
-/*************************************************************/
-void MIDIMessage(byte D0,byte D1,byte D2)
-{
-  /* Write number of ticks that passed */
-  WriteDelta();
-
-  /* Write out the command */
-  if(D0!=LastMsg) { LastMsg=D0;rfputc(D0,MIDIOut); }
-
-  /* Write out the arguments */
-  if(D1<128)
-  {
-    rfputc(D1,MIDIOut);
-    if(D2<128) rfputc(D2,MIDIOut);
-  }
-}
-
-/** NoteOn() *************************************************/
-/** Turn on a note on a given channel.                      **/
-/*************************************************************/
-void NoteOn(byte Channel,byte Note,byte Level)
-{
-  Note  = Note>0x7F? 0x7F:Note;
-  Level = Level>0x7F? 0x7F:Level;
-
-  if((MidiCH[Channel].Note!=Note)||(MidiCH[Channel].Level!=Level))
-  {
-    if(MidiCH[Channel].Note>=0) NoteOff(Channel);
-    MIDIMessage(0x90+SHIFT(Channel),Note,Level);
-    MidiCH[Channel].Note=Note;
-    MidiCH[Channel].Level=Level;
-  }
-}
-
-/** NoteOff() ************************************************/
-/** Turn off a note on a given channel.                     **/
-/*************************************************************/
-void NoteOff(byte Channel)
-{
-  if(MidiCH[Channel].Note>=0)
-  {
-    MIDIMessage(0x80+SHIFT(Channel),MidiCH[Channel].Note,127);
-    MidiCH[Channel].Note=-1;
-  }
-}
-
-/** WriteDelta() *********************************************/
-/** Write number of ticks since the last MIDI command and   **/
-/** reset the counter.                                      **/
-/*************************************************************/
-void WriteDelta(void)
-{
-  if(TickCount<128) rfputc(TickCount,MIDIOut);
-  else
-  {
-    if(TickCount<128*128)
-    {
-      rfputc((TickCount>>7)|0x80,MIDIOut);
-      rfputc(TickCount&0x7F,MIDIOut);
-    }
-    else
-    {
-      rfputc(((TickCount>>14)&0x7F)|0x80,MIDIOut);
-      rfputc(((TickCount>>7)&0x7F)|0x80,MIDIOut);
-      rfputc(TickCount&0x7F,MIDIOut);
-    }
-  }
-
-  TickCount=0;
-}
-
-/** WriteTempo() *********************************************/
-/** Write out soundtrack tempo (Hz).                        **/
-/*************************************************************/
-void WriteTempo(int Freq)
-{
-  int J;
-
-  J=500000*MIDI_DIVISIONS*2/Freq;
-  WriteDelta();
-  rfputc(0xFF,MIDIOut);
-  rfputc(0x51,MIDIOut);
-  rfputc(0x03,MIDIOut);
-  rfputc((J>>16)&0xFF,MIDIOut);
-  rfputc((J>>8)&0xFF,MIDIOut);
-  rfputc(J&0xFF,MIDIOut);
 }
 
 /** InitSound() **********************************************/

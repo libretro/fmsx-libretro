@@ -2,8 +2,7 @@
 /**                                                         **/
 /**                          Sound.h                        **/
 /**                                                         **/
-/** This file defines standard sound generation API and     **/
-/** functions needed to log soundtrack into a MIDI file.    **/
+/** This file defines standard sound generation API.        **/
 /** See Sound.c and the sound drivers for the code.         **/ 
 /**                                                         **/
 /** Copyright (C) Marat Fayzullin 1996-2016                 **/
@@ -80,16 +79,8 @@ unsigned int RenderAndPlayAudio(unsigned int Samples);
 /*************************************************************/
 void Sound(int Channel,int Freq,int Volume);
 
-/** Drum() ***************************************************/
-/** Hit a drum of given type with given force (0..255).     **/
-/** MIDI drums can be used by ORing their numbers with      **/
-/** SND_MIDI.                                               **/
-/*************************************************************/
-void Drum(int Type,int Force);
-
 /** SetSound() ***********************************************/
-/** Set sound type at a given channel. MIDI instruments can **/
-/** be set directly by ORing their numbers with SND_MIDI.   **/
+/** Set sound type at a given channel.                      **/
 /*************************************************************/
 void SetSound(int Channel,int NewType);
 
@@ -126,32 +117,6 @@ const signed char *GetWave(int Channel);
 /** Get current sampling rate used for synthesis.           **/
 /*************************************************************/
 unsigned int GetSndRate(void);
-
-/** InitMIDI() ***********************************************/
-/** Initialize soundtrack logging into MIDI file FileName.  **/
-/** Repeated calls to InitMIDI() will close current MIDI    **/
-/** file and continue logging into a new one.               **/ 
-/*************************************************************/
-void InitMIDI(const char *FileName);
-
-/** TrashMIDI() **********************************************/
-/** Finish logging soundtrack and close the MIDI file.      **/
-/*************************************************************/
-void TrashMIDI(void);
-
-/** MIDILogging() ********************************************/
-/** Turn soundtrack logging on/off and return its current   **/
-/** status. Possible values of Switch are MIDI_OFF (turn    **/
-/** logging off), MIDI_ON (turn logging on), MIDI_TOGGLE    **/
-/** (toggle logging), and MIDI_QUERY (just return current   **/
-/** state of logging).                                      **/
-/*************************************************************/
-int MIDILogging(int Switch);
-
-/** MIDITicks() **********************************************/
-/** Log N 1ms MIDI ticks.                                   **/
-/*************************************************************/
-void MIDITicks(int N);
 
 #if !defined(MSDOS) & !defined(UNIX) & !defined(MAEMO) & !defined(WINDOWS) & !defined(S60) & !defined(UIQ) && !defined(ANDROID)
 #define SND_CHANNELS MIDI_CHANNELS         /* Default number */

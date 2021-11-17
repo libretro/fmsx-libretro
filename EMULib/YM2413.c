@@ -274,15 +274,6 @@ void Sync2413(YM2413 *D,byte Sync)
   /* If there were any changes to the drums... */
   I=D->DChanged;
   J=D->R[0x0E];
-  if(I)
-  {
-    /* Turn drums on/off as requested */
-    if(I&0x01) Drum(DRM_MIDI|Drums2413[0],J&0x01? 255*(D->R[0x37]>>4)/15:0);
-    if(I&0x02) Drum(DRM_MIDI|Drums2413[1],J&0x02? 255*(D->R[0x38]&0x0F)/15:0);
-    if(I&0x04) Drum(DRM_MIDI|Drums2413[2],J&0x04? 255*(D->R[0x38]>>4)/15:0);
-    if(I&0x08) Drum(DRM_MIDI|Drums2413[3],J&0x08? 255*(D->R[0x37]&0x0F)/15:0);
-    if(I&0x10) Drum(DRM_MIDI|Drums2413[4],J&0x10? 255*(D->R[0x36]&0x0F)/15:0);
-  }
 
   D->Changed=D->PChanged=D->DChanged=0x000;
 }

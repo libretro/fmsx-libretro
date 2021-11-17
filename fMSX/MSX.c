@@ -555,9 +555,6 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     if(ChangeDisk(J,DSKName[J])) { }
   }
 
-  /* Initialize sound logging */
-  InitMIDI(SndName);
-
   /* Done with initialization */
 
   /* Start execution of the code */
@@ -591,9 +588,6 @@ void TrashMSX(void)
 
   /* Change back to working directory */
   if(WorkDir) chdir(WorkDir);
-
-  /* Shut down sound logging */
-  TrashMIDI();
 
   /* Eject disks, free disk buffers */
   Reset1793(&FDC,FDD,WD1793_EJECT);
@@ -1852,10 +1846,6 @@ void Printer(byte V)
 /*************************************************************/
 void PPIOut(byte New,byte Old)
 {
-  /* Keyboard click bit */
-  if((New^Old)&0x80) Drum(DRM_CLICK,64);
-  /* Motor relay bit */
-  if((New^Old)&0x10) Drum(DRM_CLICK,255);
 }
 
 /** RTCIn() **************************************************/
@@ -2056,9 +2046,8 @@ word LoopZ80(Z80 *R)
     /* Check sprites and set Collision bit */
     if(!(VDPStatus[0]&0x20)&&CheckSprites()) VDPStatus[0]|=0x20;
 
-    /* Count MIDI ticks and update AY8910 state */
+    /* Update AY8910 state */
     J=1000*VPeriod/CPU_CLOCK;
-    MIDITicks(J);
     Loop8910(&PSG,J);
 
     /* Flush changes to the sound channels */
