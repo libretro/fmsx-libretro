@@ -21,6 +21,7 @@ Specify these in your RetroArch core options:
     fmsx_mapper_type_mode=Guess Mapper Type A*|Guess Mapper Type B|Generic 8kB|Generic 16kB|Konami5 8kB|Konami4 8kB|ASCII 8kB|ASCII 16kB|GameMaster2|FMPAC
     fmsx_ram_pages=Auto*|64KB|128KB|256KB|512KB
     fmsx_vram_pages=Auto*|32KB|64KB|128KB|192KB
+    fmsx_simbdos=No*|Yes
 
 A star (*) indicates this is the default setting.
 
@@ -44,6 +45,10 @@ Optional; loaded when found:
 
 ## Technical details
 
-Video: 16bpp RGB565 272x228 (544x228 in 512px MSX2 screen modes).
+Video: 16bpp RGB565 272x228 (544x228 in 512px MSX2 screen modes). This includes an 8px (16px) border; MSX native screen resolutions are:
+- horizontal: 256 or 512 (textmode: 40 or 80 columns)
+- vertical: 192 or 212
 
 Audio: rendered in 48kHz 16b mono.
+
+Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.

@@ -17,6 +17,7 @@
 #include "Sound.h"
 #include "Floppy.h"
 #include "SHA1.h"
+#include "MCF.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -176,9 +177,14 @@ byte PLatch;                       /* Palette buffer         */
 byte ALatch;                       /* Address buffer         */
 int  Palette[16];                  /* Current palette        */
 
+/** Cheat entries ********************************************/
+int MCFCount     = 0;              /* Size of MCFEntries[]   */
+MCFEntry MCFEntries[MAXCHEATS];    /* Entries from .MCF file */
+
 /** Places in DiskROM to be patched with ED FE C9 ************/
 static const word DiskPatches[] =
 { 0x4010,0x4013,0x4016,0x401C,0x401F,0 };
+CheatCode CheatCodes[MAXCHEATS];
 
 /** Places in BIOS to be patched with ED FE C9 ***************/
 static const word BIOSPatches[] =
@@ -432,6 +438,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   FMPACKey    = 0x0000;
   ExitNow     = 0;
   NChunks     = 0;
+  MCFCount    = 0;
 
   /* Zero cartridge related data */
   for(J=0;J<MAXSLOTS;++J)
@@ -2034,6 +2041,24 @@ word LoopZ80(Z80 *R)
       else RefreshLine12(ScanLine);
   }
 
+  /* Every few scanlines, update sound */
+  if(!(ScanLine&0x07))
+  {
+    /* Compute number of microseconds */
+    J = (int)(1000000L*(CPU_HPERIOD<<3)/CPU_CLOCK);
+
+    /* Update AY8910 state */
+    Loop8910(&PSG,J);
+
+    /* Flush changes to the sound channels */
+    Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
+    SyncSCC(&SCChip,SCC_FLUSH);
+    Sync2413(&OPLL,YM2413_FLUSH);
+
+    /* Render and play all sound now */
+    PlayAllSound(J);
+  }
+
   /* Keyboard, sound, and other stuff always runs at line 192    */
   /* This way, it can't be shut off by overscan tricks (Maarten) */
   if(ScanLine==192)
@@ -2044,14 +2069,6 @@ word LoopZ80(Z80 *R)
     /* Check sprites and set Collision bit */
     if(!(VDPStatus[0]&0x20)&&CheckSprites()) VDPStatus[0]|=0x20;
 
-    /* Update AY8910 state */
-    J=1000*VPeriod/CPU_CLOCK;
-    Loop8910(&PSG,J);
-
-    /* Flush changes to the sound channels */
-    Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
-    SyncSCC(&SCChip,SCC_FLUSH);
-    Sync2413(&OPLL,YM2413_FLUSH);
 
     /* Check joystick */
     JoyState=Joystick();
@@ -2337,9 +2354,48 @@ int LoadFile(const char *FileName)
   if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
   /* Try loading as palette */
   if(hasext(FileName,".PAL")) return(!!LoadPAL(FileName));
+  if(hasext(FileName,".MCF")) return(!!LoadMCF(FileName));
 
   /* Unknown file type */
   return(0);
+}
+
+/** ApplyMCFCheat() ******************************************/
+/** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
+/** on success.                                             **/
+/*************************************************************/
+int ApplyMCFCheat(int N)
+{
+  int Status;
+
+  /* Must be a valid MSX-specific entry */
+  if((N<0)||(N>=MCFCount)||(MCFEntries[N].Addr>0xFFFF)||(MCFEntries[N].Size>2))
+    return(0);
+
+  /* Switch cheats off for now and remove all present cheats */
+  Status = Cheats(CHTS_QUERY);
+  Cheats(CHTS_OFF);
+  ResetCheats();
+
+  /* Insert cheat codes from the MCF entry */
+  CheatCodes[0].Addr = MCFEntries[N].Addr;
+  CheatCodes[0].Data = MCFEntries[N].Data;
+  CheatCodes[0].Size = MCFEntries[N].Size;
+  sprintf(
+    (char *)CheatCodes[0].Text,
+    CheatCodes[0].Size>1? "%04X-%04X":"%04X-%02X",
+    CheatCodes[0].Addr,
+    CheatCodes[0].Data
+  );
+
+  /* Have one cheat code now */
+  CheatCount = 1;
+
+  /* Turn cheats back on, if they were on */
+  Cheats(Status);
+
+  /* Done */
+  return(CheatCount);
 }
 
 /** GuessROM() ***********************************************/
@@ -2852,6 +2908,16 @@ int LoadPAL(const char *Name)
 
   fclose(F);
   return(J);
+}
+
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name)
+{
+  MCFCount = LoadFileMCF(Name,MCFEntries,sizeof(MCFEntries)/sizeof(MCFEntries[0]));
+  return(MCFCount);
 }
 
 #define SaveSTRUCT(Name) \

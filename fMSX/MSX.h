@@ -263,6 +263,14 @@ extern const char *FNTName;           /* Font file for text  */
 extern FDIDisk FDD[4];                /* Floppy disk images  */
 extern FILE *CasStream;               /* Cassette I/O stream */
 
+typedef struct
+{
+  unsigned int Addr;
+  word Data,Orig;
+  byte Size;
+  byte Text[14];
+} CheatCode;
+
 /** StartMSX() ***********************************************/
 /** Allocate memory, load ROM image, initialize hardware,   **/
 /** CPU and start the emulation. This function returns 0 in **/
@@ -343,6 +351,12 @@ byte LoadFNT(const char *FileName);
 /*************************************************************/
 int SetScreenDepth(int Depth);
 
+/** ApplyMCFCheat() ******************************************/
+/** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
+/** on success.                                             **/
+/*************************************************************/
+int ApplyMCFCheat(int N);
+
 /** SaveState() **********************************************/
 /** Save emulation state to a memory buffer. Returns size   **/
 /** on success, 0 on failure.                               **/
@@ -354,6 +368,12 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /** on success, 0 on failure.                               **/
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
+
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name);
 
 /** InitMachine() ********************************************/
 /** Allocate resources needed by the machine-dependent code.**/
@@ -390,6 +410,11 @@ unsigned int Mouse(byte N);
 byte DiskPresent(byte ID);
 byte DiskRead(byte ID,byte *Buf,int N);
 byte DiskWrite(byte ID,const byte *Buf,int N);
+
+/** PlayAllSound() *******************************************/
+/** Render and play given number of microseconds of sound.  **/
+/************************************ TO BE WRITTEN BY USER **/
+void PlayAllSound(int uSec);
 
 /** SetColor() ***********************************************/
 /** Set color N (0..15) to (R,G,B).                         **/
