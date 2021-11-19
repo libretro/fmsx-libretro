@@ -6,7 +6,7 @@
 /** and MSX emulation itself. See Z80.h for #defines        **/
 /** related to Z80 emulation.                               **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -401,6 +401,7 @@ void ResetCheats(void);
 /** query (3).                                              **/
 /*************************************************************/
 int Cheats(int Switch);
+
 /** SaveState() **********************************************/
 /** Save emulation state to a memory buffer. Returns size   **/
 /** on success, 0 on failure.                               **/

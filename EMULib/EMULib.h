@@ -5,7 +5,7 @@
 /** This file contains platform-independent definitions and **/
 /** declarations for the emulation library.                 **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2016                 **/
+/** Copyright (C) Marat Fayzullin 1996-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

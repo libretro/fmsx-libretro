@@ -5,7 +5,7 @@
 /** This file file implements core part of the sound API.   **/
 /** See Sound.h for declarations.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2016                 **/
+/** Copyright (C) Marat Fayzullin 1996-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

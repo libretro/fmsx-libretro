@@ -6,7 +6,7 @@
 /** produced by General Instruments, Yamaha, etc. See       **/
 /** AY8910.c for the actual code.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2016                 **/
+/** Copyright (C) Marat Fayzullin 1996-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
