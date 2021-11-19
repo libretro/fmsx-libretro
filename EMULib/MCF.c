@@ -15,6 +15,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <streams/file_stream.h>
+
+/* Forward declarations */
+RFILE* rfopen(const char *path, const char *mode);
+char *rfgets(char *buffer, int maxCount, RFILE* stream);
+int rfclose(RFILE* stream);
+int64_t rfread(void* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int64_t rfseek(RFILE* stream, int64_t offset, int origin);
+int64_t rftell(RFILE* stream);
+int64_t rfwrite(void const* buffer,
+   size_t elem_size, size_t elem_count, RFILE* stream);
+int rfgetc(RFILE* stream);
+int rfeof(RFILE* stream);
+
 /** LoadFileMCF() ********************************************/
 /** Load cheats from .MCF file. Returns number of loaded    **/
 /** cheat entries or 0 on failure.                          **/

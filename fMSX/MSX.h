@@ -104,6 +104,7 @@ extern "C" {
 #define MAXCARTS    2       /* Number of user cartridges     */
 #define MAXMAPPERS  8       /* Total defined MegaROM mappers */
 #define MAXCHUNKS   256     /* Max number of memory blocks   */
+#define MAXCHEATS   256     /* Max number of cheats          */
 
 #define MAXCHANNELS (AY8910_CHANNELS+YM2413_CHANNELS)
   /* Number of sound channels used by the emulation */
@@ -199,6 +200,13 @@ extern volatile byte KeyState[16];
 #define KBD_SPACE    0x20
 #define KBD_NUMPAD8  0x80
 #define KBD_NUMPAD9  0x81
+/*************************************************************/
+
+/** Cheats() arguments ***************************************/
+#define CHTS_OFF      0               /* Turn all cheats off */
+#define CHTS_ON       1               /* Turn all cheats on  */
+#define CHTS_TOGGLE   2               /* Toggle cheats state */
+#define CHTS_QUERY    3               /* Query cheats state  */
 /*************************************************************/
 
 /** Following macros can be used in screen drivers ***********/
@@ -301,6 +309,21 @@ int LoadFile(const char *FileName);
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type);
 
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name);
+
+/** LoadCHT() ************************************************/
+/** Load cheats from .CHT file. Cheat format is either      **/
+/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
+/** cheats. Returns the number of cheats on success, 0 on   **/
+/** failure.                                                **/
+/*************************************************************/
+int LoadCHT(const char *Name);
+
 /** LoadPAL() ************************************************/
 /** Load new palette from .PAL file. Returns number of      **/
 /** loaded colors on success, 0 on failure.                 **/
@@ -357,6 +380,27 @@ int SetScreenDepth(int Depth);
 /*************************************************************/
 int ApplyMCFCheat(int N);
 
+/** AddCheat() ***********************************************/
+/** Add a new cheat. Returns 0 on failure or the number of  **/
+/** cheats on success.                                      **/
+/*************************************************************/
+int AddCheat(const char *Cheat);
+
+/** DelCheat() ***********************************************/
+/** Delete a cheat. Returns 0 on failure, 1 on success.     **/
+/*************************************************************/
+int DelCheat(const char *Cheat);
+
+/** ResetCheats() ********************************************/
+/** Remove all cheats.                                      **/
+/*************************************************************/
+void ResetCheats(void);
+
+/** Cheats() *************************************************/
+/** Toggle cheats on (1), off (0), inverse state (2) or     **/
+/** query (3).                                              **/
+/*************************************************************/
+int Cheats(int Switch);
 /** SaveState() **********************************************/
 /** Save emulation state to a memory buffer. Returns size   **/
 /** on success, 0 on failure.                               **/
@@ -368,12 +412,6 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /** on success, 0 on failure.                               **/
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
-
-/** LoadMCF() ************************************************/
-/** Load cheats from .MCF file. Returns number of loaded    **/
-/** cheat entries or 0 on failure.                          **/
-/*************************************************************/
-int LoadMCF(const char *Name);
 
 /** InitMachine() ********************************************/
 /** Allocate resources needed by the machine-dependent code.**/
