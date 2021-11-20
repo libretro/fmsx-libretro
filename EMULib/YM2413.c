@@ -122,7 +122,7 @@ void Reset2413(YM2413 *D,int First)
   D->Sync     = YM2413_ASYNC;
   D->Changed  = (1<<YM2413_CHANNELS)-1;
   D->PChanged = (1<<YM2413_CHANNELS)-1;
-  D->DChanged = (1<<YM2413_CHANNELS)-1;
+  D->DChanged = 0x1F;
   D->Latch    = 0;
 }
 

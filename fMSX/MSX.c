@@ -17,6 +17,7 @@
 #include "Sound.h"
 #include "Floppy.h"
 #include "SHA1.h"
+#include "MCF.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -176,6 +177,15 @@ byte PLatch;                       /* Palette buffer         */
 byte ALatch;                       /* Address buffer         */
 int  Palette[16];                  /* Current palette        */
 
+/** Cheat entries ********************************************/
+int MCFCount     = 0;              /* Size of MCFEntries[]   */
+MCFEntry MCFEntries[MAXCHEATS];    /* Entries from .MCF file */
+
+/** Cheat codes **********************************************/
+byte CheatsON    = 0;              /* 1: Cheats are on       */
+int  CheatCount  = 0;              /* # cheats, <=MAXCHEATS  */
+CheatCode CheatCodes[MAXCHEATS];
+
 /** Places in DiskROM to be patched with ED FE C9 ************/
 static const word DiskPatches[] =
 { 0x4010,0x4013,0x4016,0x401C,0x401F,0 };
@@ -293,6 +303,7 @@ byte RTCIn(byte R);               /* Read RTC registers              */
 byte SetScreen(void);             /* Change screen mode              */
 word SetIRQ(byte IRQ);            /* Set/Reset IRQ                   */
 word StateID(void);               /* Compute emulation state ID      */
+int  ApplyCheats(void);           /* Apply RAM-based cheats          */
 
 static int hasext(const char *FileName,const char *Ext);
 static byte *GetMemory(int Size); /* Get memory chunk                */
@@ -310,6 +321,7 @@ int64_t rftell(RFILE* stream);
 int64_t rfwrite(void const* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream);
 int rfgetc(RFILE* stream);
+int rfeof(RFILE* stream);
 
 /** hasext() *************************************************/
 /** Check if file name has given extension.                 **/
@@ -432,6 +444,9 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   FMPACKey    = 0x0000;
   ExitNow     = 0;
   NChunks     = 0;
+  CheatsON    = 0;
+  CheatCount  = 0;
+  MCFCount    = 0;
 
   /* Zero cartridge related data */
   for(J=0;J<MAXSLOTS;++J)
@@ -2034,6 +2049,24 @@ word LoopZ80(Z80 *R)
       else RefreshLine12(ScanLine);
   }
 
+  /* Every few scanlines, update sound */
+  if(!(ScanLine&0x07))
+  {
+    /* Compute number of microseconds */
+    J = (int)(1000000L*(CPU_HPERIOD<<3)/CPU_CLOCK);
+
+    /* Update AY8910 state */
+    Loop8910(&PSG,J);
+
+    /* Flush changes to the sound channels */
+    Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
+    SyncSCC(&SCChip,SCC_FLUSH);
+    Sync2413(&OPLL,YM2413_FLUSH);
+
+    /* Render and play all sound now */
+    //PlayAllSound(J); - fmsx-libretro renders audio & video per scanline
+  }
+
   /* Keyboard, sound, and other stuff always runs at line 192    */
   /* This way, it can't be shut off by overscan tricks (Maarten) */
   if(ScanLine==192)
@@ -2044,14 +2077,8 @@ word LoopZ80(Z80 *R)
     /* Check sprites and set Collision bit */
     if(!(VDPStatus[0]&0x20)&&CheckSprites()) VDPStatus[0]|=0x20;
 
-    /* Update AY8910 state */
-    J=1000*VPeriod/CPU_CLOCK;
-    Loop8910(&PSG,J);
-
-    /* Flush changes to the sound channels */
-    Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
-    SyncSCC(&SCChip,SCC_FLUSH);
-    Sync2413(&OPLL,YM2413_FLUSH);
+    /* Apply RAM-based cheats */
+    if(CheatsON&&CheatCount) ApplyCheats();
 
     /* Check joystick */
     JoyState=Joystick();
@@ -2337,9 +2364,213 @@ int LoadFile(const char *FileName)
   if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
   /* Try loading as palette */
   if(hasext(FileName,".PAL")) return(!!LoadPAL(FileName));
+  /* Try loading as cheats */
+  if(hasext(FileName,".CHT")) return(!!LoadCHT(FileName));
+  if(hasext(FileName,".MCF")) return(!!LoadMCF(FileName));
 
   /* Unknown file type */
   return(0);
+}
+
+/** ApplyMCFCheat() ******************************************/
+/** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
+/** on success.                                             **/
+/*************************************************************/
+int ApplyMCFCheat(int N)
+{
+  int Status;
+
+  /* Must be a valid MSX-specific entry */
+  if((N<0)||(N>=MCFCount)||(MCFEntries[N].Addr>0xFFFF)||(MCFEntries[N].Size>2))
+    return(0);
+
+  /* Switch cheats off for now and remove all present cheats */
+  Status = Cheats(CHTS_QUERY);
+  Cheats(CHTS_OFF);
+  ResetCheats();
+
+  /* Insert cheat codes from the MCF entry */
+  CheatCodes[0].Addr = MCFEntries[N].Addr;
+  CheatCodes[0].Data = MCFEntries[N].Data;
+  CheatCodes[0].Size = MCFEntries[N].Size;
+  sprintf(
+    (char *)CheatCodes[0].Text,
+    CheatCodes[0].Size>1? "%04X-%04X":"%04X-%02X",
+    CheatCodes[0].Addr,
+    CheatCodes[0].Data
+  );
+
+  /* Have one cheat code now */
+  CheatCount = 1;
+
+  /* Turn cheats back on, if they were on */
+  Cheats(Status);
+
+  /* Done */
+  return(CheatCount);
+}
+
+/** AddCheat() ***********************************************/
+/** Add a new cheat. Returns 0 on failure or the number of  **/
+/** cheats on success.                                      **/
+/*************************************************************/
+int AddCheat(const char *Cheat)
+{
+  static const char *Hex = "0123456789ABCDEF";
+  unsigned int A,D;
+  char *P;
+  int J,N;
+
+  /* Table full: no more cheats */
+  if(CheatCount>=MAXCHEATS) return(0);
+
+  /* Check cheat length and decode */
+  N=strlen(Cheat);
+
+  if(((N==13)||(N==11))&&(Cheat[8]=='-'))
+  {
+    for(J=0,A=0;J<8;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else A=(A<<4)|(P-Hex);
+    }
+    for(J=9,D=0;J<N;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else D=(D<<4)|(P-Hex);
+    }
+  }
+  else if(((N==9)||(N==7))&&(Cheat[4]=='-'))
+  {
+    for(J=0,A=0x0100;J<4;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else A=(A<<4)|(P-Hex);
+    }
+    for(J=5,D=0;J<N;J++)
+    {
+      P=strchr(Hex,toupper(Cheat[J]));
+      if(!P) return(0); else D=(D<<4)|(P-Hex);
+    }
+  }
+  else
+  {
+    /* Cannot parse this cheat */
+    return(0);
+  }
+
+  /* Add cheat */
+  strcpy((char *)CheatCodes[CheatCount].Text,Cheat);
+  if(N==13)
+  {
+    CheatCodes[CheatCount].Addr = A;
+    CheatCodes[CheatCount].Data = D&0xFFFF;
+    CheatCodes[CheatCount].Size = 2;
+  }
+  else
+  {
+    CheatCodes[CheatCount].Addr = A;
+    CheatCodes[CheatCount].Data = D&0xFF;
+    CheatCodes[CheatCount].Size = 1;
+  }
+
+  /* Successfully added a cheat! */
+  return(++CheatCount);
+}
+
+/** ResetCheats() ********************************************/
+/** Remove all cheats.                                      **/
+/*************************************************************/
+void ResetCheats(void) { Cheats(CHTS_OFF);CheatCount=0; }
+
+/** ApplyCheats() ********************************************/
+/** Apply RAM-based cheats. Returns the number of applied   **/
+/** cheats.                                                 **/
+/*************************************************************/
+int ApplyCheats(void)
+{
+  int J,I;
+
+  /* For all current cheats that look like 01AAAAAA-DD/DDDD... */
+  for(J=I=0;J<CheatCount;++J)
+    if((CheatCodes[J].Addr>>24)==0x01)
+    {
+      WrZ80(CheatCodes[J].Addr&0xFFFF,CheatCodes[J].Data&0xFF);
+      if(CheatCodes[J].Size>1)
+        WrZ80((CheatCodes[J].Addr+1)&0xFFFF,CheatCodes[J].Data>>8);
+      ++I;
+    }
+
+  /* Return number of applied cheats */
+  return(I);
+}
+
+/** Cheats() *************************************************/
+/** Toggle cheats on (1), off (0), inverse state (2) or     **/
+/** query (3).                                              **/
+/*************************************************************/
+int Cheats(int Switch)
+{
+  byte *P,*Base;
+  int J,Size;
+
+  switch(Switch)
+  {
+    case CHTS_ON:
+    case CHTS_OFF:    if(Switch==CheatsON) return(CheatsON);
+    case CHTS_TOGGLE: Switch=!CheatsON;break;
+    default:          return(CheatsON);
+  }
+
+  /* Find valid cartridge */
+  for(J=1;(J<=2)&&!ROMData[J];++J);
+
+  /* Must have ROM */
+  if(J>2) return(Switch=CHTS_OFF);
+
+  /* Compute ROM address and size */
+  Base = ROMData[J];
+  Size = ((int)ROMMask[J]+1)<<14;
+
+  /* If toggling cheats... */
+  if(Switch!=CheatsON)
+  {
+    /* If enabling cheats... */
+    if(Switch)
+    {
+      /* Patch ROM with the cheat values */
+      for(J=0;J<CheatCount;++J)
+        if(!(CheatCodes[J].Addr>>24)&&(CheatCodes[J].Addr+CheatCodes[J].Size<=Size))
+        {
+          P = Base + CheatCodes[J].Addr;
+          CheatCodes[J].Orig = P[0];
+          P[0] = CheatCodes[J].Data;
+          if(CheatCodes[J].Size>1)
+          {
+            CheatCodes[J].Orig |= (int)P[1]<<8;
+            P[1] = CheatCodes[J].Data>>8;
+          }
+        }
+    }
+    else
+    {
+      /* Restore original ROM values */
+      for(J=0;J<CheatCount;++J)
+        if(!(CheatCodes[J].Addr>>24)&&(CheatCodes[J].Addr+CheatCodes[J].Size<=Size))
+        {
+          P = Base + CheatCodes[J].Addr;
+          P[0] = CheatCodes[J].Orig;
+          if(CheatCodes[J].Size>1)
+            P[1] = CheatCodes[J].Orig>>8;
+        }
+    }
+
+    /* Done toggling cheats */
+    CheatsON = Switch;
+  }
+
+  /* Done */
+  return(CheatsON);
 }
 
 /** GuessROM() ***********************************************/
@@ -2826,6 +3057,43 @@ int LoadCart(const char *FileName,int Slot,int Type)
   return(Pages);
 }
 
+/** LoadCHT() ************************************************/
+/** Load cheats from .CHT file. Cheat format is either      **/
+/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
+/** cheats. Returns the number of cheats on success, 0 on   **/
+/** failure.                                                **/
+/*************************************************************/
+int LoadCHT(const char *Name)
+{
+  char Buf[256],S[16];
+  int Status;
+  RFILE *F;
+
+  /* Open .CHT text file with cheats */
+  F = rfopen(Name,"rb");
+  if(!F) return(0);
+
+  /* Switch cheats off for now and remove all present cheats */
+  Status = Cheats(CHTS_QUERY);
+  Cheats(CHTS_OFF);
+  ResetCheats();
+
+  /* Try adding cheats loaded from file */
+  while(!rfeof(F))
+    if(rfgets(Buf,sizeof(Buf),F) && (sscanf(Buf,"%13s",S)==1))
+      AddCheat(S);
+
+  /* Done with the file */
+  rfclose(F);
+
+  /* Turn cheats back on, if they were on */
+  Cheats(Status);
+
+  /* Done */
+  return(CheatCount);
+}
+
 /** LoadPAL() ************************************************/
 /** Load new palette from .PAL file. Returns number of      **/
 /** loaded colors on success, 0 on failure.                 **/
@@ -2852,6 +3120,16 @@ int LoadPAL(const char *Name)
 
   rfclose(F);
   return(J);
+}
+
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name)
+{
+  MCFCount = LoadFileMCF(Name,MCFEntries,sizeof(MCFEntries)/sizeof(MCFEntries[0]));
+  return(MCFCount);
 }
 
 #define SaveSTRUCT(Name) \

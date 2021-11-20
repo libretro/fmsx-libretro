@@ -202,7 +202,7 @@ void Write8910(AY8910 *D,byte R,byte V)
       D->R[R]=V;
       /* Compute envelope period (why not <<4?) */
       J=((int)D->R[12]<<8)+D->R[11];
-      D->EPeriod=1000*(J? J:0x10000)/D->Clock;
+      D->EPeriod=(int)(1000000L*(J? J:0x10000)/D->Clock);
       /* No channels changed */
       return;
 
@@ -240,18 +240,18 @@ void Write8910(AY8910 *D,byte R,byte V)
 
 /** Loop8910() ***********************************************/
 /** Call this function periodically to update volume        **/
-/** envelopes. Use mS to pass the time since the last call  **/
-/** of Loop8910() in milliseconds.                          **/
+/** envelopes. Use uSec to pass the time since the last     **/
+/** call of Loop8910() in microseconds.                     **/
 /*************************************************************/
-void Loop8910(AY8910 *D,int mS)
+void Loop8910(AY8910 *D,int uSec)
 {
   int J,I;
 
   /* Exit if no envelope running */
   if(!D->EPeriod) return;
 
-  /* Count milliseconds */
-  D->ECount += mS;
+  /* Count microseconds */
+  D->ECount += uSec;
   if(D->ECount<D->EPeriod) return;
 
   /* Count steps */

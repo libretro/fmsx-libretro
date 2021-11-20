@@ -29,6 +29,7 @@ SOURCES_C := \
 	$(EMULIB)/SHA1.c \
 	$(EMULIB)/Floppy.c \
 	$(EMULIB)/FDIDisk.c \
+	$(EMULIB)/MCF.c \
 	$(LIBZ80)/Z80.c \
 	$(EMULIB)/I8255.c \
 	$(EMULIB)/YM2413.c \

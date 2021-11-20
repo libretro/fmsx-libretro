@@ -42,7 +42,7 @@ typedef struct
   byte Changed;                /* Bitmap of changed channels */
   byte Sync;                   /* AY8910_SYNC/AY8910_ASYNC   */
   byte Latch;                  /* Latch for the register num */
-  int EPeriod;                 /* Envelope step in msecs     */
+  int EPeriod;                 /* Envelope step in microsecs */
   int ECount;                  /* Envelope step counter      */
   int EPhase;                  /* Envelope phase             */
 } AY8910;
@@ -86,10 +86,10 @@ void Sync8910(AY8910 *D,byte Sync);
 
 /** Loop8910() ***********************************************/
 /** Call this function periodically to update volume        **/
-/** envelopes. Use mS to pass the time since the last call  **/
-/** of Loop8910() in milliseconds.                          **/
+/** envelopes. Use uSec to pass the time since the last     **/
+/** call of Loop8910() in microseconds.                     **/
 /*************************************************************/
-void Loop8910(AY8910 *D,int mS);
+void Loop8910(AY8910 *D,int uSec);
 
 #ifdef __cplusplus
 }

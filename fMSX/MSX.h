@@ -104,6 +104,7 @@ extern "C" {
 #define MAXCARTS    2       /* Number of user cartridges     */
 #define MAXMAPPERS  8       /* Total defined MegaROM mappers */
 #define MAXCHUNKS   256     /* Max number of memory blocks   */
+#define MAXCHEATS   256     /* Max number of cheats          */
 
 #define MAXCHANNELS (AY8910_CHANNELS+YM2413_CHANNELS)
   /* Number of sound channels used by the emulation */
@@ -201,6 +202,13 @@ extern volatile byte KeyState[16];
 #define KBD_NUMPAD9  0x81
 /*************************************************************/
 
+/** Cheats() arguments ***************************************/
+#define CHTS_OFF      0               /* Turn all cheats off */
+#define CHTS_ON       1               /* Turn all cheats on  */
+#define CHTS_TOGGLE   2               /* Toggle cheats state */
+#define CHTS_QUERY    3               /* Query cheats state  */
+/*************************************************************/
+
 /** Following macros can be used in screen drivers ***********/
 #define BigSprites    (VDP[1]&0x01)   /* Zoomed sprites      */
 #define Sprites16x16  (VDP[1]&0x02)   /* 16x16/8x8 sprites   */
@@ -263,6 +271,14 @@ extern const char *FNTName;           /* Font file for text  */
 extern FDIDisk FDD[4];                /* Floppy disk images  */
 extern FILE *CasStream;               /* Cassette I/O stream */
 
+typedef struct
+{
+  unsigned int Addr;
+  word Data,Orig;
+  byte Size;
+  byte Text[14];
+} CheatCode;
+
 /** StartMSX() ***********************************************/
 /** Allocate memory, load ROM image, initialize hardware,   **/
 /** CPU and start the emulation. This function returns 0 in **/
@@ -292,6 +308,21 @@ int LoadFile(const char *FileName);
 /** in 16kB pages on success, 0 on failure.                 **/
 /*************************************************************/
 int LoadCart(const char *FileName,int Slot,int Type);
+
+/** LoadMCF() ************************************************/
+/** Load cheats from .MCF file. Returns number of loaded    **/
+/** cheat entries or 0 on failure.                          **/
+/*************************************************************/
+int LoadMCF(const char *Name);
+
+/** LoadCHT() ************************************************/
+/** Load cheats from .CHT file. Cheat format is either      **/
+/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
+/** cheats. Returns the number of cheats on success, 0 on   **/
+/** failure.                                                **/
+/*************************************************************/
+int LoadCHT(const char *Name);
 
 /** LoadPAL() ************************************************/
 /** Load new palette from .PAL file. Returns number of      **/
@@ -343,6 +374,33 @@ byte LoadFNT(const char *FileName);
 /*************************************************************/
 int SetScreenDepth(int Depth);
 
+/** ApplyMCFCheat() ******************************************/
+/** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
+/** on success.                                             **/
+/*************************************************************/
+int ApplyMCFCheat(int N);
+
+/** AddCheat() ***********************************************/
+/** Add a new cheat. Returns 0 on failure or the number of  **/
+/** cheats on success.                                      **/
+/*************************************************************/
+int AddCheat(const char *Cheat);
+
+/** DelCheat() ***********************************************/
+/** Delete a cheat. Returns 0 on failure, 1 on success.     **/
+/*************************************************************/
+int DelCheat(const char *Cheat);
+
+/** ResetCheats() ********************************************/
+/** Remove all cheats.                                      **/
+/*************************************************************/
+void ResetCheats(void);
+
+/** Cheats() *************************************************/
+/** Toggle cheats on (1), off (0), inverse state (2) or     **/
+/** query (3).                                              **/
+/*************************************************************/
+int Cheats(int Switch);
 /** SaveState() **********************************************/
 /** Save emulation state to a memory buffer. Returns size   **/
 /** on success, 0 on failure.                               **/
@@ -390,6 +448,11 @@ unsigned int Mouse(byte N);
 byte DiskPresent(byte ID);
 byte DiskRead(byte ID,byte *Buf,int N);
 byte DiskWrite(byte ID,const byte *Buf,int N);
+
+/** PlayAllSound() *******************************************/
+/** Render and play given number of microseconds of sound.  **/
+/************************************ TO BE WRITTEN BY USER **/
+void PlayAllSound(int uSec);
 
 /** SetColor() ***********************************************/
 /** Set color N (0..15) to (R,G,B).                         **/
