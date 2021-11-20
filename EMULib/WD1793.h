@@ -6,7 +6,7 @@
 /** controller produced by Western Digital. See WD1793.c    **/
 /** for implementation.                                     **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2018                 **/
+/** Copyright (C) Marat Fayzullin 2005-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

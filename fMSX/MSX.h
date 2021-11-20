@@ -6,7 +6,7 @@
 /** and MSX emulation itself. See Z80.h for #defines        **/
 /** related to Z80 emulation.                               **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2018                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

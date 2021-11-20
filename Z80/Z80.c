@@ -7,7 +7,7 @@
 /** LoopZ80(), and PatchZ80() functions to accomodate the   **/
 /** emulated machine's architecture.                        **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2018                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
