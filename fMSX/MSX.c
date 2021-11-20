@@ -2834,12 +2834,12 @@ int LoadPAL(const char *Name)
 {
   static const char *Hex = "0123456789ABCDEF";
   char S[256],*P,*T,*H;
-  FILE *F;
+  RFILE *F;
   int J,I;
 
-  if(!(F=fopen(Name,"rb"))) return(0);
+  if(!(F=rfopen(Name,"rb"))) return(0);
 
-  for(J=0;(J<16)&&fgets(S,sizeof(S),F);++J)
+  for(J=0;(J<16)&&rfgets(S,sizeof(S),F);++J)
   {
     /* Skip white space and optional '#' character */
     for(P=S;*P&&(*P<=' ');++P);
@@ -2850,7 +2850,7 @@ int LoadPAL(const char *Name)
     if(T-P==6) SetColor(J,I>>16,(I>>8)&0xFF,I&0xFF);
   }
 
-  fclose(F);
+  rfclose(F);
   return(J);
 }
 
