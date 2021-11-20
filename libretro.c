@@ -424,6 +424,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
+      { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { NULL, NULL },
    };
 
@@ -588,6 +589,12 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_PATCHBDOS;
+
+   var.key = "fmsx_autospace";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+      Mode |= MSX_AUTOSPACE;
 
    var.key = "fmsx_ram_pages";
    var.value = NULL;
@@ -857,7 +864,8 @@ void retro_run(void)
    }
 
    for (i=0; i < 130; i++)
-      KBD_RES(i);
+      if(i != KBD_SPACE || !(OPTION(MSX_AUTOSPACE)))
+         KBD_RES(i);
 
    joystate = 0;
 
