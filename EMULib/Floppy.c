@@ -90,7 +90,7 @@ static int FindFreeCluster(const byte *Dsk,int Start)
 /** Create disk image in Dsk or allocate memory when Dsk=0. **/
 /** Returns pointer to the disk image or 0 on failure.      **/
 /*************************************************************/
-byte *DSKCreate(byte *Dsk)
+byte *DSKCreate(byte *Dsk,const char *Label)
 {
   byte *FAT,*DIR,*DAT;
 
@@ -113,7 +113,8 @@ byte *DSKCreate(byte *Dsk)
   Dsk[0x00] = 0xC9;
   Dsk[0x01] = 0xC9;
   Dsk[0x02] = 0xC9;
-  memcpy(Dsk+3,"MSX-DISK",8);
+  memset(Dsk+3,0x00,8);
+  if(Label) strncpy((char *)(Dsk+3),Label,8);
   Dsk[0x0B] = DSK_SECTOR_SIZE&0xFF; 
   Dsk[0x0C] = (DSK_SECTOR_SIZE>>8)&0xFF;
   Dsk[0x0D] = DSK_SECS_PER_CLTR;
@@ -369,7 +370,7 @@ int DSKDelete(byte *Dsk,int ID)
 /** functions return pointer to disk contents on success or **/
 /** 0 on failure.                                           **/
 /*************************************************************/
-byte *DSKLoad(const char *Name,byte *Dsk)
+byte *DSKLoad(const char *Name,byte *Dsk,const char *Label)
 {
   byte *Dsk1,*Buf;
   char *Path,FN[32];
@@ -379,7 +380,7 @@ byte *DSKLoad(const char *Name,byte *Dsk)
   int J,I;
 
   /* Create disk image */
-  Dsk1=DSKCreate(Dsk);
+  Dsk1=DSKCreate(Dsk,Label);
   if(!Dsk1) return(0);
 
   /* If <Name> is a directory... */

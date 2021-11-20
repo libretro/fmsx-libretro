@@ -215,13 +215,17 @@ void TrashSound(void)
 /*************************************************************/
 void RenderAudio(int *Wave,unsigned int Samples)
 {
-  int N,J,K,I,L,L1,L2,V,A1,A2;
+  int J,K,I,L1,L2,V,A1;
+#ifdef WAVE_INTERPOLATION
+  /* Keep GCC happy about variable initialization */
+  int A2 = 0;
+  int L  = 0;
+  int N  = 0;
+#endif
 
   /* Exit if wave sound not initialized */
   if(SndRate<8192) return;
 
-  /* Keep GCC happy about variable initialization */
-  N=L=A2=0;
   /* Waveform generator */
   for(J=0;J<SND_CHANNELS;J++)
     if(WaveCH[J].Freq&&(V=WaveCH[J].Volume)&&(MasterSwitch&(1<<J)))
@@ -237,7 +241,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
           L1 = WaveCH[J].Pos%WaveCH[J].Length;
           L2 = WaveCH[J].Count;
           A1 = WaveCH[J].Data[L1]*V;
-#ifdef NO_WAVE_INTERPOLATION
+#if !defined(WAVE_INTERPOLATION)
           /* Add waveform to the buffer */
           for(I=0;I<Samples;I++)
           {
@@ -253,7 +257,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
             /* Next waveform step */
             L2+=0x8000;
           }
-#else
+#else /* WAVE_INTERPOLATION */
           /* If expecting interpolation... */
           if(L2<K)
           {
@@ -288,7 +292,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
                 N  = ((K-L2)>>15)+1;
               }
             }
-#endif /* !NO_WAVE_INTERPOLATION */
+#endif /* WAVE_INTERPOLATION */
           /* End counting */
           WaveCH[J].Pos   = L1;
           WaveCH[J].Count = L2;
@@ -328,10 +332,10 @@ void RenderAudio(int *Wave,unsigned int Samples)
           if(WaveCH[J].Freq>=SndRate/2) break;
           K=0x10000*WaveCH[J].Freq/SndRate;
           L1=WaveCH[J].Count;
-#ifndef SLOW_MELODIC_AUDIO
+#if !defined(SLOW_MELODIC_AUDIO)
           for(I=0;I<Samples;I++,L1+=K)
             Wave[I]+=((L1-K)^(L1+K))&0x8000? 0:(L1&0x8000? 127:-128)*V;
-#else
+#else /* SLOW_MELODIC_AUDIO */
           for(I=0;I<Samples;I++,L1+=K)
           {
             L2 = L1+K;
@@ -340,7 +344,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
               A1=A1*(0x8000-(L1&0x7FFF)-(L2&0x7FFF))/K;
             Wave[I]+=A1*V;
           }
-#endif
+#endif /* SLOW_MELODIC_AUDIO */
           WaveCH[J].Count=L1&0xFFFF;
           break;
       }

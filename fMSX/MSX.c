@@ -2328,7 +2328,7 @@ byte ChangeDisk(byte N,const char *FileName)
     );
 
   /* If FileName not empty, treat it as directory, otherwise new disk */
-  if(P&&!(*FileName? DSKLoad(FileName,P):DSKCreate(P)))
+  if(P&&!(*FileName? DSKLoad(FileName,P,"MSX-DISK"):DSKCreate(P,"MSX-DISK")))
   { EjectFDI(&FDD[N]);return(0); }
 
   /* Done */
