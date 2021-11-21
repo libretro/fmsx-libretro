@@ -253,6 +253,11 @@ void ScaleImage(Image *Dst,const Image *Src,int X,int Y,int W,int H);
 /*************************************************************/
 unsigned int ARMScaleImage(Image *Dst,Image *Src,int X,int Y,int W,int H,int Attrs);
 
+/** InterpolateImage() ***************************************/
+/** Scale image Src into Dst using linear interpolation.    **/
+/*************************************************************/
+void InterpolateImage(Image *Dst,const Image *Src,int X,int Y,int W,int H);
+
 /** TelevizeImage() ******************************************/
 /** Create televizion effect on the image.                  **/
 /*************************************************************/

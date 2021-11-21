@@ -600,7 +600,9 @@ word RunZ80(Z80 *R)
     if(R->PC.W==R->Trap) R->Trace=1;
     /* Call single-step debugger, exit if requested */
     if(R->Trace)
+    {
       if(!DebugZ80(R)) return(R->PC.W);
+    }
 #endif
 
     /* Read opcode and count cycles */
