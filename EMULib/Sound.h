@@ -5,7 +5,7 @@
 /** This file defines standard sound generation API.        **/
 /** See Sound.c and the sound drivers for the code.         **/ 
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2020                 **/
+/** Copyright (C) Marat Fayzullin 1996-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

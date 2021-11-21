@@ -7,7 +7,7 @@
 /** ommitted, ConDebug.c just includes the default command  **/
 /** line based debugger (Debug.c).                          **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2005-2020                 **/
+/** Copyright (C) Marat Fayzullin 2005-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

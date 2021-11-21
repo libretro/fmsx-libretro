@@ -5,7 +5,7 @@
 /** This file implements functions to operate on 720kB      **/
 /** floppy disk images. See Floppy.h for declarations.      **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2004-2020                 **/
+/** Copyright (C) Marat Fayzullin 2004-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

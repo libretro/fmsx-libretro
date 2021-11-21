@@ -6,7 +6,7 @@
 /** the Z80 emulator which is called on each Z80 step when  **/
 /** Trap!=0.                                                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1995-2020                 **/
+/** Copyright (C) Marat Fayzullin 1995-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

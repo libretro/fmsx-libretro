@@ -5,7 +5,7 @@
 /** This file contains routines to save and load emulation  **/
 /** state.                                                  **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2020                 **/
+/** Copyright (C) Marat Fayzullin 1994-2021                 **/
 /**     The contents of this file are property of Marat     **/
 /**     Fayzullin and should only be used as agreed with    **/
 /**     him. The file is confidential. Absolutely no        **/
