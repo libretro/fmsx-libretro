@@ -28,6 +28,7 @@ typedef unsigned char byte;
 /** SCC ******************************************************/
 /** This data structure stores SCC state.                   **/
 /*************************************************************/
+#pragma pack(4)
 typedef struct
 {
   byte R[256];                /* SCC register contents       */
@@ -38,6 +39,7 @@ typedef struct
   byte WChanged;              /* Bitmap of changed waveforms */
   byte Sync;                  /* SCC_SYNC/SCC_ASYNC          */
 } SCC;
+#pragma pack()
 
 /** ResetSCC() ***********************************************/
 /** Reset the sound chip and use sound channels from the    **/

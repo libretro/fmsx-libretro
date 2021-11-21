@@ -32,11 +32,15 @@ typedef unsigned char byte;
 /** AY8910 ***************************************************/
 /** This data structure stores AY8910 state.                **/
 /*************************************************************/
+#pragma pack(4)
 typedef struct
 {
   byte R[16];                  /* PSG registers contents     */
+
+  /* THESE VALUES ARE NOT USED BUT KEPT FOR BACKWARD COMPATIBILITY */
   int Freq[AY8910_CHANNELS];   /* Frequencies (0 for off)    */
   int Volume[AY8910_CHANNELS]; /* Volumes (0..255)           */
+
   int Clock;                   /* Base clock rate (Fin/16)   */
   int First;                   /* First used Sound() channel */
   byte Changed;                /* Bitmap of changed channels */
@@ -46,6 +50,7 @@ typedef struct
   int ECount;                  /* Envelope step counter      */
   int EPhase;                  /* Envelope phase             */
 } AY8910;
+#pragma pack()
 
 /** Reset8910() **********************************************/
 /** Reset the sound chip and use sound channels from the    **/

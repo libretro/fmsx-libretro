@@ -73,6 +73,7 @@
 #define EFF_SCALE2X    (EFF_SOFTEN3)
 #define EFF_HQ4X       (EFF_SOFTEN|EFF_SOFTEN3)
 #define EFF_NEAREST    (EFF_SOFTEN2|EFF_SOFTEN3) /* Disable hw interpolation */
+#define EFF_LINEAR     (EFF_SOFTEN|EFF_SOFTEN2|EFF_SOFTEN3) /* Force hw interpolation */
 
 #define EFF_RASTER_ALL (EFF_TVLINES|EFF_LCDLINES)
 #define EFF_RASTER     (EFF_TVLINES|EFF_LCDLINES)

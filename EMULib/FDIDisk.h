@@ -17,16 +17,22 @@
 extern "C" {
 #endif
 
-#define FMT_AUTO   0
-#define FMT_IMG    1
-#define FMT_MGT    2
-#define FMT_TRD    3
-#define FMT_FDI    4
-#define FMT_SCL    5
-#define FMT_HOBETA 6
-#define FMT_DSK    7
-#define FMT_CPCDSK 8
-#define FMT_SF7000 9
+#define FMT_AUTO   0       /* Determine format automatically */                   
+#define FMT_IMG    1       /* ZX Spectrum disk               */             
+#define FMT_MGT    2       /* ZX Spectrum disk               */             
+#define FMT_TRD    3       /* ZX Spectrum TRDOS disk         */
+#define FMT_FDI    4       /* Generic FDI image              */ 
+#define FMT_SCL    5       /* ZX Spectrum TRDOS disk         */
+#define FMT_HOBETA 6       /* ZX Spectrum HoBeta disk        */
+#define FMT_MSXDSK 7       /* MSX disk                       */          
+#define FMT_DSK    7       /* MSX disk (deprecated)          */          
+#define FMT_CPCDSK 8       /* CPC disk                       */          
+#define FMT_SF7000 9       /* Sega SF-7000 disk              */ 
+#define FMT_SAMDSK 10      /* Sam Coupe disk                 */    
+#define FMT_ADMDSK 11      /* Coleco Adam disk               */  
+#define FMT_DDP    12      /* Coleco Adam tape               */  
+
+#define SEEK_DELETED (0x40000000)
 
 #define DataFDI(D) ((D)->Data+(D)->Data[10]+((int)((D)->Data[11])<<8))
 
@@ -93,6 +99,19 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format);
 /** on success or 0 on failure.                             **/
 /*************************************************************/
 byte *SeekFDI(FDIDisk *D,int Side,int Track,int SideID,int TrackID,int SectorID);
+
+/** LinearFDI() **********************************************/
+/** Seek to given sector by its linear number. Returns      **/
+/** sector address on success or 0 on failure.              **/
+/*************************************************************/
+byte *LinearFDI(FDIDisk *D,int SectorN);
+
+/** FormatFDI() ***********************************************/
+/** Allocate memory and create new standard disk image for a **/
+/** given format. Returns disk data pointer on success, 0 on **/
+/** failure.                                                 **/
+/**************************************************************/
+byte *FormatFDI(FDIDisk *D,int Format);
 
 #ifdef __cplusplus
 }

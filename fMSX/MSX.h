@@ -56,7 +56,8 @@ extern "C" {
 #define CPU_H240     (HREFRESH_240/6)
 #define CPU_H256     (HREFRESH_256/6)
 
-#define MAX_STASIZE  0x48000         /* Max. state data size */   
+/* Maximum state data size */   
+#define MAX_STASIZE  (0x8000+(RAMPages*0x4000)+(VRAMPages*0x4000))
 
 #define INT_IE0     0x01    /* VDP interrupt modes           */
 #define INT_IE1     0x02
@@ -339,7 +340,7 @@ char *MakeFileName(const char *FileName,const char *Extension);
 /** ChangePrinter() ******************************************/
 /** Change printer output to a given file. The previous     **/
 /** file is closed. ChangePrinter(0) redirects output to    **/
-/** stdout. Returns 1 on success, 0 on failure.             **/
+/** stdout.                                                 **/
 /*************************************************************/
 void ChangePrinter(const char *FileName);
 
@@ -442,7 +443,7 @@ unsigned int Joystick(void);
 unsigned int Mouse(byte N);
 
 /** DiskPresent()/DiskRead()/DiskWrite() *********************/
-/*** These three functions are called to check for floppyd  **/
+/*** These three functions are called to check for floppy   **/
 /*** disk presence in the "drive", and to read/write given  **/
 /*** sector to the disk.                                    **/
 /************************************ TO BE WRITTEN BY USER **/

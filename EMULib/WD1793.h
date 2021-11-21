@@ -79,9 +79,10 @@ extern "C" {
 typedef unsigned char byte;
 #endif
 
+#pragma pack(4)
 typedef struct
 {
-  FDIDisk *Disk[4]; /* Disk images */
+  int  Rsrvd1[4]; /* Reserved, do not touch */
 
   byte R[5];        /* Registers */
   byte Drive;       /* Current disk # */
@@ -94,10 +95,16 @@ typedef struct
 
   int  WRLength;    /* Data left to write */
   int  RDLength;    /* Data left to read */
-  byte *Ptr;        /* Pointer to data */
+  int  Rsrvd2;    /* Reserved, do not touch */
 
   byte Verbose;     /* 1: Print debugging messages */
+
+  /*--- Save1793() will save state above this line ----*/
+
+  byte *Ptr;        /* Pointer to data */
+  FDIDisk *Disk[4]; /* Disk images */
 } WD1793;
+#pragma pack()
 
 /** Reset1793() **********************************************/
 /** Reset WD1793. When Disks=WD1793_INIT, also initialize   **/
@@ -117,6 +124,18 @@ byte Read1793(WD1793 *D,byte A);
 /** values.                                                 **/
 /*************************************************************/
 byte Write1793(WD1793 *D,byte A,byte V);
+
+/** Save1793() ***********************************************/
+/** Save WD1793 state to a given buffer of given maximal    **/
+/** size. Returns number of bytes saved or 0 on failure.    **/
+/*************************************************************/
+unsigned int Save1793(const WD1793 *D,byte *Buf,unsigned int Size);
+
+/** Load1793() ***********************************************/
+/** Load WD1793 state from a given buffer of given maximal  **/
+/** size. Returns number of bytes loaded or 0 on failure.   **/
+/*************************************************************/
+unsigned int Load1793(WD1793 *D,byte *Buf,unsigned int Size);
 
 #ifdef __cplusplus
 }

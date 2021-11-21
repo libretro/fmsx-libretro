@@ -93,7 +93,7 @@ typedef struct
   byte TrapBadOps;    /* Set to 1 to warn of illegal opcodes */
   word Trap;          /* Set Trap to address to trace from   */
   byte Trace;         /* Set Trace=1 to start tracing        */
-  void *User;         /* Arbitrary user data (ID,RAM*,etc.)  */
+  unsigned int User;  /* Arbitrary user data (ID,RAM*,etc.)  */
 } Z80;
 
 /** ResetZ80() ***********************************************/
