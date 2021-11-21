@@ -7,7 +7,7 @@
 /** implementations. It also includes dummy sound drivers   **/
 /** for fMSX.                                               **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -218,19 +218,27 @@ void Sprites(byte Y,pixel *Line)
           /* Draw left 8 pixels of the sprite */
           if(K&0xFF00)
           {
-            if(K&0x8000) P[0]=C;if(K&0x4000) P[1]=C;
-            if(K&0x2000) P[2]=C;if(K&0x1000) P[3]=C;
-            if(K&0x0800) P[4]=C;if(K&0x0400) P[5]=C;
-            if(K&0x0200) P[6]=C;if(K&0x0100) P[7]=C;
+            if(K&0x8000) P[0]=C;
+            if(K&0x4000) P[1]=C;
+            if(K&0x2000) P[2]=C;
+            if(K&0x1000) P[3]=C;
+            if(K&0x0800) P[4]=C;
+            if(K&0x0400) P[5]=C;
+            if(K&0x0200) P[6]=C;
+            if(K&0x0100) P[7]=C;
           }
 
           /* Draw right 8 pixels of the sprite */
           if(K&0x00FF)
           {
-            if(K&0x0080) P[8]=C; if(K&0x0040) P[9]=C;
-            if(K&0x0020) P[10]=C;if(K&0x0010) P[11]=C;
-            if(K&0x0008) P[12]=C;if(K&0x0004) P[13]=C;
-            if(K&0x0002) P[14]=C;if(K&0x0001) P[15]=C;
+            if(K&0x0080) P[8]=C;
+            if(K&0x0040) P[9]=C;
+            if(K&0x0020) P[10]=C;
+            if(K&0x0010) P[11]=C;
+            if(K&0x0008) P[12]=C;
+            if(K&0x0004) P[13]=C;
+            if(K&0x0002) P[14]=C;
+            if(K&0x0001) P[15]=C;
           }
         }
       }
@@ -340,17 +348,25 @@ void ColorSprites(byte Y,byte *ZBuf)
           }
           else
           {
-            if(J&0x80) P[0]|=C;if(J&0x40) P[1]|=C;
-            if(J&0x20) P[2]|=C;if(J&0x10) P[3]|=C;
-            if(J&0x08) P[4]|=C;if(J&0x04) P[5]|=C;
-            if(J&0x02) P[6]|=C;if(J&0x01) P[7]|=C;
+            if(J&0x80) P[0]|=C;
+            if(J&0x40) P[1]|=C;
+            if(J&0x20) P[2]|=C;
+            if(J&0x10) P[3]|=C;
+            if(J&0x08) P[4]|=C;
+            if(J&0x04) P[5]|=C;
+            if(J&0x02) P[6]|=C;
+            if(J&0x01) P[7]|=C;
             if(IH>8)
             {
               J=PT[16];
-              if(J&0x80) P[8]|=C; if(J&0x40) P[9]|=C;
-              if(J&0x20) P[10]|=C;if(J&0x10) P[11]|=C;
-              if(J&0x08) P[12]|=C;if(J&0x04) P[13]|=C;
-              if(J&0x02) P[14]|=C;if(J&0x01) P[15]|=C;
+              if(J&0x80) P[8]|=C;
+              if(J&0x40) P[9]|=C;
+              if(J&0x20) P[10]|=C;
+              if(J&0x10) P[11]|=C;
+              if(J&0x08) P[12]|=C;
+              if(J&0x04) P[13]|=C;
+              if(J&0x02) P[14]|=C;
+              if(J&0x01) P[15]|=C;
             }
           }
         }
@@ -358,32 +374,48 @@ void ColorSprites(byte Y,byte *ZBuf)
         {
           if(OH>IH)
           {
-            if(J&0x80) P[0]=P[1]=C;  if(J&0x40) P[2]=P[3]=C;
-            if(J&0x20) P[4]=P[5]=C;  if(J&0x10) P[6]=P[7]=C;
-            if(J&0x08) P[8]=P[9]=C;  if(J&0x04) P[10]=P[11]=C;
-            if(J&0x02) P[12]=P[13]=C;if(J&0x01) P[14]=P[15]=C;
+            if(J&0x80) P[0]=P[1]=C;
+            if(J&0x40) P[2]=P[3]=C;
+            if(J&0x20) P[4]=P[5]=C;
+            if(J&0x10) P[6]=P[7]=C;
+            if(J&0x08) P[8]=P[9]=C;
+            if(J&0x04) P[10]=P[11]=C;
+            if(J&0x02) P[12]=P[13]=C;
+            if(J&0x01) P[14]=P[15]=C;
             if(IH>8)
             {
               J=PT[16];
-              if(J&0x80) P[16]=P[17]=C;if(J&0x40) P[18]=P[19]=C;
-              if(J&0x20) P[20]=P[21]=C;if(J&0x10) P[22]=P[23]=C;
-              if(J&0x08) P[24]=P[25]=C;if(J&0x04) P[26]=P[27]=C;
-              if(J&0x02) P[28]=P[29]=C;if(J&0x01) P[30]=P[31]=C;
+              if(J&0x80) P[16]=P[17]=C;
+              if(J&0x40) P[18]=P[19]=C;
+              if(J&0x20) P[20]=P[21]=C;
+              if(J&0x10) P[22]=P[23]=C;
+              if(J&0x08) P[24]=P[25]=C;
+              if(J&0x04) P[26]=P[27]=C;
+              if(J&0x02) P[28]=P[29]=C;
+              if(J&0x01) P[30]=P[31]=C;
             }
           }
           else
           {
-            if(J&0x80) P[0]=C;if(J&0x40) P[1]=C;
-            if(J&0x20) P[2]=C;if(J&0x10) P[3]=C;
-            if(J&0x08) P[4]=C;if(J&0x04) P[5]=C;
-            if(J&0x02) P[6]=C;if(J&0x01) P[7]=C;
+            if(J&0x80) P[0]=C;
+            if(J&0x40) P[1]=C;
+            if(J&0x20) P[2]=C;
+            if(J&0x10) P[3]=C;
+            if(J&0x08) P[4]=C;
+            if(J&0x04) P[5]=C;
+            if(J&0x02) P[6]=C;
+            if(J&0x01) P[7]=C;
             if(IH>8)
             {
               J=PT[16];
-              if(J&0x80) P[8]=C; if(J&0x40) P[9]=C;
-              if(J&0x20) P[10]=C;if(J&0x10) P[11]=C;
-              if(J&0x08) P[12]=C;if(J&0x04) P[13]=C;
-              if(J&0x02) P[14]=C;if(J&0x01) P[15]=C;
+              if(J&0x80) P[8]=C;
+              if(J&0x40) P[9]=C;
+              if(J&0x20) P[10]=C;
+              if(J&0x10) P[11]=C;
+              if(J&0x08) P[12]=C;
+              if(J&0x04) P[13]=C;
+              if(J&0x02) P[14]=C;
+              if(J&0x01) P[15]=C;
             }
           }
         }

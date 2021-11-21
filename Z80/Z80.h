@@ -5,7 +5,7 @@
 /** This file contains declarations relevant to emulation   **/
 /** of Z80 CPU.                                             **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2017                 **/
+/** Copyright (C) Marat Fayzullin 1994-2018                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
