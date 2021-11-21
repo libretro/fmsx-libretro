@@ -2087,9 +2087,6 @@ word LoopZ80(Z80 *R)
     /* Check keyboard */
     Keyboard();
 
-    /* Exit emulation if requested */
-    if(ExitNow) return(INT_QUIT);
-
     /* Check mouse in joystick port #1 */
     if(JOYTYPE(0)>=JOY_MOUSTICK)
     {
@@ -2139,6 +2136,9 @@ word LoopZ80(Z80 *R)
         /* Autofire FIRE-B if needed */
         if(OPTION(MSX_AUTOFIREB)) JoyState&=~(JST_FIREB|(JST_FIREB<<8));
       }
+
+    /* Exit emulation if requested */
+    if(ExitNow) return(INT_QUIT);
   }
 
   /* Return whatever interrupt is pending */
