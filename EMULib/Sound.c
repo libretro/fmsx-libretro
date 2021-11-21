@@ -5,7 +5,7 @@
 /** This file file implements core part of the sound API.   **/
 /** See Sound.h for declarations.                           **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2018                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -18,6 +18,13 @@
 #include <direct.h>
 #else
 #include <unistd.h>
+#endif
+
+#if defined(ANDROID)
+/* On Android, may need to open files for writing at an */
+/* alternative location, if the requested location is   */
+/* not available. OpenRealFile() WILL NOT USE ZLIB.     */
+#define fopen OpenRealFile
 #endif
 
 typedef unsigned char byte;
@@ -238,6 +245,8 @@ void RenderAudio(int *Wave,unsigned int Samples)
           K  = WaveCH[J].Rate>0?
                (SndRate<<15)/WaveCH[J].Freq/WaveCH[J].Rate
              : (SndRate<<15)/WaveCH[J].Freq/WaveCH[J].Length;
+          /* Do not allow high frequencies (GBC Frogger) */
+          if(K<0x8000) break;
           L1 = WaveCH[J].Pos%WaveCH[J].Length;
           L2 = WaveCH[J].Count;
           A1 = WaveCH[J].Data[L1]*V;

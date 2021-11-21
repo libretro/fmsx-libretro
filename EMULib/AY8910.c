@@ -6,7 +6,7 @@
 /** produced by General Instruments, Yamaha, etc. See       **/
 /** AY8910.h for declarations.                              **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1996-2018                 **/
+/** Copyright (C) Marat Fayzullin 1996-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -60,7 +60,7 @@ void Reset8910(AY8910 *D,int ClockHz,int First)
   D->First   = First;
   D->Sync    = AY8910_ASYNC;
   D->Changed = 0x00;
-  D->EPeriod = 0;
+  D->EPeriod = -1;
   D->ECount  = 0;
   D->Latch   = 0x00;
 
@@ -113,7 +113,7 @@ byte RdData8910(AY8910 *D)
 /*************************************************************/
 void Write8910(AY8910 *D,byte R,byte V)
 {
-  int J,I;
+  int J;
 
   switch(R)
   {
@@ -125,85 +125,56 @@ void Write8910(AY8910 *D,byte R,byte V)
     case 0:
     case 2:
     case 4:
-      /* Write value */
-      D->R[R]=V;
-      /* Exit if the channel is silenced */
-      if(D->R[7]&(1<<(R>>1))) return;
-      /* Go to the first register in the pair */
-      R&=0xFE;
-      /* Compute frequency */
-      J=((int)(D->R[R+1]&0x0F)<<8)+D->R[R];
-      /* Compute channel number */
-      R>>=1;
-      /* Assign frequency */
-      D->Freq[R]=D->Clock/(J? J:0x1000);
-      /* Compute changed channels mask */
-      D->Changed|=1<<R;
+      if(V!=D->R[R])
+      {
+        /* Compute changed channels mask */
+        D->Changed|=(1<<(R>>1))&~D->R[7];
+        /* Write value */
+        D->R[R]=V;
+      }
       break;
 
     case 6:
-      /* Write value */
-      D->R[6]=V&=0x1F;
-      /* Exit if noise channels are silenced */
-      if(!(~D->R[7]&0x38)) return;
-      /* Compute and assign noise frequency */
-      /* Shouldn't do <<2, but need to keep frequency down */
-      J=D->Clock/((V&0x1F? (V&0x1F):0x20)<<2);
-      if(!(D->R[7]&0x08)) D->Freq[3]=J;
-      if(!(D->R[7]&0x10)) D->Freq[4]=J;
-      if(!(D->R[7]&0x20)) D->Freq[5]=J;
-      /* Compute changed channels mask */
-      D->Changed|=0x38&~D->R[7];
+      V&=0x1F;
+      if(V!=D->R[R])
+      {
+        /* Compute changed channels mask */
+        D->Changed|=0x38&~D->R[7];
+        /* Write value */
+        D->R[R]=V;
+      }
       break;
 
     case 7:
-      /* Find changed channels */
-      R=(V^D->R[7])&0x3F;
-      D->Changed|=R;
+      /* Compute changed channels mask */
+      D->Changed|=(V^D->R[R])&0x3F;
       /* Write value */
-      D->R[7]=V;
-      /* Update frequencies */
-      for(J=0;R&&(J<AY8910_CHANNELS);J++,R>>=1,V>>=1)
-        if(R&1)
-        {
-          if(V&1) D->Freq[J]=0;
-          else if(J<3)
-          {
-            I=((int)(D->R[J*2+1]&0x0F)<<8)+D->R[J*2];
-            D->Freq[J]=D->Clock/(I? I:0x1000);
-          }
-          else
-          {
-            /* Shouldn't do <<2, but need to keep frequency down */
-            I=D->R[6]&0x1F;
-            D->Freq[J]=D->Clock/((I? I:0x20)<<2);
-          }
-        }
+      D->R[R]=V;
       break;
       
     case 8:
     case 9:
     case 10:
-      /* Write value */
-      D->R[R]=V&=0x1F;
-      /* Compute channel number */
-      R-=8;
-      /* Compute and assign new volume */
-      J=Volumes[V&0x10? Envelopes[D->R[13]&0x0F][D->EPhase]:(V&0x0F)];
-      D->Volume[R]=J;
-      D->Volume[R+3]=(J+1)>>1;
-      /* Compute changed channels mask */
-      D->Changed|=(0x09<<R)&~D->R[7];
+      V&=0x1F;
+      if(V!=D->R[R])
+      {
+        /* Compute changed channels mask */
+        D->Changed|=(0x09<<(R-8))&~D->R[7];
+        /* Write value */
+        D->R[R]=V;
+      }
       break;
 
     case 11:
     case 12:
-      /* Write value */
-      D->R[R]=V;
-      /* Compute envelope period (why not <<4?) */
-      J=((int)D->R[12]<<8)+D->R[11];
-      D->EPeriod=(int)(1000000L*(J? J:0x10000)/D->Clock);
-      /* No channels changed */
+      if(V!=D->R[R])
+      {
+        /* Will need to recompute EPeriod next time */
+        D->EPeriod = -1;
+        /* Write value */
+        D->R[R]=V;
+        /* No channels changed */
+      }
       return;
 
     case 13:
@@ -212,14 +183,9 @@ void Write8910(AY8910 *D,byte R,byte V)
       /* Reset envelope */
       D->ECount = 0;
       D->EPhase = 0;
+      /* Compute changed channels mask */
       for(J=0;J<AY8910_CHANNELS/2;++J)
-        if(D->R[J+8]&0x10)
-        {
-          I = Volumes[Envelopes[V][0]];
-          D->Volume[J]   = I;
-          D->Volume[J+3] = (I+1)>>1;
-          D->Changed    |= (0x09<<J)&~D->R[7];
-        }
+        if(D->R[J+8]&0x10) D->Changed|=(0x09<<J)&~D->R[7];
       break;
 
     case 14:
@@ -245,7 +211,15 @@ void Write8910(AY8910 *D,byte R,byte V)
 /*************************************************************/
 void Loop8910(AY8910 *D,int uSec)
 {
-  int J,I;
+  int J;
+
+  /* If envelope period was updated... */
+  if(D->EPeriod<0)
+  {
+    /* Compute envelope period (why not <<4?) */
+    J=((int)D->R[12]<<8)+D->R[11];
+    D->EPeriod=(int)(1000000L*(J? J:0x10000)/D->Clock);
+  }
 
   /* Exit if no envelope running */
   if(!D->EPeriod) return;
@@ -263,15 +237,9 @@ void Loop8910(AY8910 *D,int uSec)
   if(D->EPhase>31)
     D->EPhase = (D->R[13]&0x09)==0x08? (D->EPhase&0x1F):31;
 
-  /* Set envelope volumes for relevant channels */
-  for(I=0;I<3;++I)
-    if(D->R[I+8]&0x10)
-    {
-      J = Volumes[Envelopes[D->R[13]&0x0F][D->EPhase]];
-      D->Volume[I]   = J;
-      D->Volume[I+3] = (J+1)>>1;
-      D->Changed    |= (0x09<<I)&~D->R[7];
-    }
+  /* Compute changed channels mask */
+  for(J=0;J<AY8910_CHANNELS/2;++J)
+    if(D->R[J+8]&0x10) D->Changed|=(0x09<<J)&~D->R[7];
 
   /* For asynchronous mode, make Sound() calls right away */
   if(!D->Sync&&D->Changed) Sync8910(D,AY8910_FLUSH);
@@ -287,16 +255,58 @@ void Loop8910(AY8910 *D,int uSec)
 /*************************************************************/
 void Sync8910(AY8910 *D,byte Sync)
 {
-  int J,I;
+  int J,I,K;
+  int Freq,Volume,Drums;
 
-  /* Hit MIDI drums for noise channels, if requested */
-  if(Sync&AY8910_DRUMS)
-    Sync&=~AY8910_DRUMS;
+  /* Update sync/async mode */
+  I = Sync&~AY8910_DRUMS;
+  if(I!=AY8910_FLUSH) D->Sync=I;
 
-  if(Sync!=AY8910_FLUSH) D->Sync=Sync;
+  /* If hitting drums, always compute noise channels */
+  I = D->Changed|(Sync&AY8910_DRUMS? 0x38:0x00);
 
-  for(J=0,I=D->Changed;I&&(J<AY8910_CHANNELS);J++,I>>=1)
-    if(I&1) Sound(J+D->First,D->Freq[J],D->Volume[J]);
+  /* For every changed channel... */
+  for(J=0,Drums=0;I&&(J<AY8910_CHANNELS);++J,I>>=1)
+  {
+    if(I&1)
+    {
+      if(D->R[7]&(1<<J)) Freq=Volume=0;
+      else
+      {
+        /* If it is a melodic channel... */
+        if(J<AY8910_CHANNELS/2)
+        {
+          /* Compute melodic channel volume */
+          K = D->R[J+8]&0x1F;
+          K = Volumes[K&0x10? Envelopes[D->R[13]&0x0F][D->EPhase]:(K&0x0F)];
+          Volume = K;
+          /* Compute melodic channel frequency */
+          K = J<<1;
+          K = ((int)(D->R[K+1]&0x0F)<<8)+D->R[K];
+          // Eggerland Mystery 1 (MSX) uses 0 to silence sound
+          //Freq = D->Clock/(K? K:0x1000);
+          Freq = K? D->Clock/K:0;
+        }
+        else
+        {
+          /* Compute noise channel volume */
+          K = D->R[J+5]&0x1F;
+          K = Volumes[K&0x10? Envelopes[D->R[13]&0x0F][D->EPhase]:(K&0x0F)];
+          Volume = (K+1)>>1;
+          Drums += Volume;
+          /* Compute noise channel frequency */
+          /* Shouldn't do <<2, but need to keep frequency down */
+          K = D->R[6]&0x1F;
+          Freq = D->Clock/((K&0x1F? (K&0x1F):0x20)<<2);
+        }
+      }
 
+      /* Play sound */
+      Sound(D->First+J,Freq,Volume);
+    }
+  }
+
+
+  /* Done with all the changes */
   D->Changed=0x00;
 }

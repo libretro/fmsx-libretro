@@ -5,7 +5,7 @@
 /** This file contains declarations relevant to emulation   **/
 /** of Z80 CPU.                                             **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2018                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -93,7 +93,7 @@ typedef struct
   byte TrapBadOps;    /* Set to 1 to warn of illegal opcodes */
   word Trap;          /* Set Trap to address to trace from   */
   byte Trace;         /* Set Trace=1 to start tracing        */
-  void *User;         /* Arbitrary user data (ID,RAM*,etc.)  */
+  unsigned int User;  /* Arbitrary user data (ID,RAM*,etc.)  */
 } Z80;
 
 /** ResetZ80() ***********************************************/

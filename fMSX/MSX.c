@@ -7,7 +7,7 @@
 /** etc. Initialization code and definitions needed for the **/
 /** machine-dependent drivers are also here.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2018                 **/
+/** Copyright (C) Marat Fayzullin 1994-2020                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -2058,13 +2058,10 @@ word LoopZ80(Z80 *R)
     /* Update AY8910 state */
     Loop8910(&PSG,J);
 
-    /* Flush changes to the sound channels */
-    Sync8910(&PSG,AY8910_FLUSH|(OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
-    SyncSCC(&SCChip,SCC_FLUSH);
-    Sync2413(&OPLL,YM2413_FLUSH);
+    /* Flush changes to sound channels, only hit drums once a frame */
+    Sync8910(&PSG,AY8910_FLUSH|(!ScanLine&&OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
 
-    /* Render and play all sound now */
-    //PlayAllSound(J); - fmsx-libretro renders audio & video per scanline
+    // fmsx-libretro: do not sync SCC & FM-PAC every 8 scanlines; causes interference
   }
 
   /* Keyboard, sound, and other stuff always runs at line 192    */
@@ -2076,6 +2073,10 @@ word LoopZ80(Z80 *R)
 
     /* Check sprites and set Collision bit */
     if(!(VDPStatus[0]&0x20)&&CheckSprites()) VDPStatus[0]|=0x20;
+
+    // fmsx-libretro: keep sync SCC & FM-PAC at scanline 192 (version 4.9 & earlier)
+    SyncSCC(&SCChip,SCC_FLUSH);
+    Sync2413(&OPLL,YM2413_FLUSH);
 
     /* Apply RAM-based cheats */
     if(CheatsON&&CheatCount) ApplyCheats();
@@ -2268,8 +2269,18 @@ char *MakeFileName(const char *FileName,const char *Extension)
 /*************************************************************/
 byte ChangeTape(const char *FileName)
 {
-  if(CasStream) fclose(CasStream);
-  CasStream = FileName? fopen(FileName,"r+b"):0;
+  /* Close previous tape image, if open */
+  if(CasStream) { fclose(CasStream);CasStream=0; }
+
+  /* If opening a new tape image... */
+  if(FileName)
+  {
+    /* Try read+append first, then read-only */
+    CasStream = fopen(FileName,"r+b");
+    CasStream = CasStream? CasStream:fopen(FileName,"rb");
+  }
+
+  /* Done */
   return(!FileName||CasStream);
 }
 
@@ -2281,7 +2292,7 @@ void RewindTape(void) { if(CasStream) rewind(CasStream); }
 /** ChangePrinter() ******************************************/
 /** Change printer output to a given file. The previous     **/
 /** file is closed. ChangePrinter(0) redirects output to    **/
-/** stdout. Returns 1 on success, 0 on failure.             **/
+/** stdout.                                                 **/
 /*************************************************************/
 void ChangePrinter(const char *FileName)
 {
@@ -2315,17 +2326,8 @@ byte ChangeDisk(byte N,const char *FileName)
     return(1);
   }
 
-  /*
-   * Failed to open as a plain file
-   */
-
-  /* Create a new 720kB disk image */
-  P = NewFDI(&FDD[N],
-      DSK_SIDS_PER_DISK,
-      DSK_TRKS_PER_SIDE,
-      DSK_SECS_PER_TRCK,
-      DSK_SECTOR_SIZE
-    );
+  /* If failed opening existing image, create a new 720kB disk image */
+  P = FormatFDI(&FDD[N],FMT_DSK);
 
   /* If FileName not empty, treat it as directory, otherwise new disk */
   if(P&&!(*FileName? DSKLoad(FileName,P,"MSX-DISK"):DSKCreate(P,"MSX-DISK")))
@@ -2578,9 +2580,15 @@ int Cheats(int Switch)
 /*************************************************************/
 int GuessROM(const byte *Buf,int Size)
 {
-  int J,I,K,ROMCount[MAXMAPPERS];
+  int J,I,K,Result,ROMCount[MAXMAPPERS];
   char S[256];
   RFILE *F;
+
+  /* No result yet */
+  Result = -1;
+
+  /* Change to the program directory */
+  if(ProgDir && chdir(ProgDir)) { }
 
   /* Try opening file with CRCs */
   if((F = rfopen("CARTS.CRC","rb")))
@@ -2591,14 +2599,14 @@ int GuessROM(const byte *Buf,int Size)
     /* Scan file comparing CRCs */
     while(rfgets(S,sizeof(S)-4,F))
       if(sscanf(S,"%08X %d",&J,&I)==2)
-        if(K==J) { rfclose(F);return(I); }
+        if(K==J) { Result=I;break; }
 
-    /* Nothing found */
+    /* Done with the file */
     rfclose(F);
   }
 
   /* Try opening file with SHA1 sums */
-  if((F = rfopen("CARTS.SHA","rb")))
+  if((Result<0) && (F=rfopen("CARTS.SHA","rb")))
   {
     char S1[41],S2[41];
     SHA1 C;
@@ -2606,26 +2614,29 @@ int GuessROM(const byte *Buf,int Size)
     /* Compute ROM's SHA1 */
     ResetSHA1(&C);
     InputSHA1(&C,Buf,Size);
-    if(ComputeSHA1(&C))
+    if(ComputeSHA1(&C) && OutputSHA1(&C,S1,sizeof(S1)))
     {
-      sprintf(S1,"%08x%08x%08x%08x%08x",C.Msg[0],C.Msg[1],C.Msg[2],C.Msg[3],C.Msg[4]);
-
-      /* Search for computed SHA1 in the file */
       while(rfgets(S,sizeof(S)-4,F))
         if((sscanf(S,"%40s %d",S2,&J)==2) && !strcmp(S1,S2))
-        { rfclose(F);return(J); }
+        { Result=J;break; }
     }
 
-    /* Nothing found */
+    /* Done with the file */
     rfclose(F);
   }
+
+  /* We are now back to working directory */
+  if(WorkDir && chdir(WorkDir)) { }
+
+  /* If found ROM by CRC or SHA1, we are done */
+  if(Result>=0) return(Result);
 
   /* Clear all counters */
   for(J=0;J<MAXMAPPERS;++J) ROMCount[J]=1;
   /* Generic 8kB mapper is default */
   ROMCount[MAP_GEN8]+=1;
   /* ASCII 16kB preferred over ASCII 8kB */
-  ROMCount[MAP_ASCII16]-=1;
+  ROMCount[MAP_ASCII8]-=1;
 
   /* Count occurences of characteristic addresses */
   for(J=0;J<Size-2;++J)
@@ -2854,9 +2865,10 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* Rewind file */
   filestream_rewind(F);
 
-  /* Compute size in 8kB pages */
-  Len>>=13;
-  /* Calculate 2^n closest to number of pages */
+  /* Length in 8kB pages */
+  Len = Len>>13;
+
+  /* Calculate 2^n closest to number of 8kB pages */
   for(Pages=1;Pages<Len;Pages<<=1);
 
   /* Check "AB" signature in a file */
@@ -2873,7 +2885,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
       ROM64 = (C1=='A')&&(C2=='B');
     }
 
-  /* Maybe it is the last page that contains "AB" signature? */
+  /* Maybe it is the last 16kB page that contains "AB" signature? */
   if((Len>=2)&&((C1!='A')||(C2!='B')))
     if(rfseek(F,0x2000*(Len-2),SEEK_SET)>=0)
     {
@@ -2980,7 +2992,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* Guess MegaROM mapper type if not given */
   if((Type>=MAP_GUESS)&&(ROMMask[Slot]+1>4))
   {
-    Type=GuessROM(P,0x2000*(ROMMask[Slot]+1));
+    Type=GuessROM(P,Len<<13);
     if(Slot<MAXCARTS) SETROMTYPE(Slot,Type);
   }
 
