@@ -263,7 +263,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
-   info->library_version  = "4.9" GIT_VERSION;
+   info->library_version  = "6.0" GIT_VERSION;
    info->need_fullpath    = true;
    info->block_extract    = false;
    info->valid_extensions = "rom|mx1|mx2|dsk|cas";
@@ -284,7 +284,6 @@ void retro_init(void)
 {
    int i;
    struct retro_log_callback log;
-
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       log_cb = log.log;
@@ -456,7 +455,8 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 
-static void update_fps(void) {
+static void update_fps(void)
+{
    fps = (Mode & MSX_PAL) ? 50 : 60;
 }
 
@@ -493,7 +493,6 @@ void retro_cheat_set(unsigned a, bool b, const char * c) {}
 void PutImage(void)
 {
    ExitNow = 1;
-
 }
 
 static void check_variables(void)
@@ -684,7 +683,7 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   image_buffer        = (uint16_t*)malloc(640*480*sizeof(uint16_t));
+   image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -809,7 +808,6 @@ void retro_unload_game(void)
    image_buffer = NULL;
    image_buffer_width = 0;
    image_buffer_height = 0;
-
 }
 
 unsigned retro_get_region(void)

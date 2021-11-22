@@ -6,7 +6,7 @@
 /** disk images in various formats. The internal format is  **/
 /** always .FDI. See FDIDisk.h for declarations.            **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 2007-2020                 **/
+/** Copyright (C) Marat Fayzullin 2007-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/

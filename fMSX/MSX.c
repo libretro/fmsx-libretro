@@ -7,7 +7,7 @@
 /** etc. Initialization code and definitions needed for the **/
 /** machine-dependent drivers are also here.                **/
 /**                                                         **/
-/** Copyright (C) Marat Fayzullin 1994-2020                 **/
+/** Copyright (C) Marat Fayzullin 1994-2021                 **/
 /**     You are not allowed to distribute this software     **/
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
@@ -2251,15 +2251,25 @@ word StateID(void)
 /** Make a copy of the file name, replacing the extension.  **/
 /** Returns allocated new name or 0 on failure.             **/
 /*************************************************************/
-char *MakeFileName(const char *FileName,const char *Extension)
+char *MakeFileName(const char *Name,const char *Ext)
 {
-  char *Result,*P;
+  char *Result,*P1,*P2,*P3;
 
-  Result = malloc(strlen(FileName)+strlen(Extension)+1);
+  Result = malloc(strlen(Name)+strlen(Ext)+1);
   if(!Result) return(0);
+  strcpy(Result,Name);
 
-  strcpy(Result,FileName);
-  if((P = strrchr(Result,'.'))) strcpy(P,Extension); else strcat(Result,Extension);
+  /* Locate where extension and filename actually start */
+  P1 = strrchr(Result,'.');
+  P2 = strrchr(Result,'/');
+  P3 = strrchr(Result,'\\');
+  P2 = P3 && (P3>P2)? P3:P2;
+  P3 = strrchr(Result,':');
+  P2 = P3 && (P3>P2)? P3:P2;
+
+  if(P1 && (!P2 || (P1>P2))) strcpy(P1,Ext);
+  else strcat(Result,Ext);
+
   return(Result);
 }
 
