@@ -486,7 +486,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(!RAMPages||!VRAMPages) return(0);
 
   /* Change to the program directory */
-  if(ProgDir) chdir(ProgDir);
+  if(ProgDir && chdir(ProgDir));
 
   /* Try loading font */
   if(FNTName)
@@ -536,7 +536,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   }
 
   /* We are now back to working directory */
-  if(WorkDir) chdir(WorkDir);
+  if(WorkDir && chdir(WorkDir));
 
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
@@ -586,7 +586,7 @@ void TrashMSX(void)
   int J;
 
   /* CMOS.ROM is saved in the program directory */
-  if(ProgDir) chdir(ProgDir);
+  if(ProgDir && chdir(ProgDir));
 
   /* Save CMOS RAM, if present */
   if(SaveCMOS)
@@ -600,7 +600,7 @@ void TrashMSX(void)
   }
 
   /* Change back to working directory */
-  if(WorkDir) chdir(WorkDir);
+  if(WorkDir && chdir(WorkDir));
 
   /* Eject disks, free disk buffers */
   Reset1793(&FDC,FDD,WD1793_EJECT);
@@ -662,7 +662,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_MODEL)
   {
     /* Change to the program directory */
-    if(ProgDir) chdir(ProgDir);
+    if(ProgDir && chdir(ProgDir));
 
     switch(NewMode&MSX_MODEL)
     {
@@ -734,7 +734,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     }
 
     /* Change to the working directory */
-    if(WorkDir) chdir(WorkDir);
+    if(WorkDir && chdir(WorkDir));
   }
 
   /* If hardware model changed ok, patch freshly loaded BIOS */
@@ -752,13 +752,13 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_PATCHBDOS)
   {
     /* Change to the program directory */
-    if(ProgDir) chdir(ProgDir);
+    if(ProgDir && chdir(ProgDir));
 
     /* Try loading DiskROM */
     P1=LoadROM("DISK.ROM",0x4000,0);
 
     /* Change to the working directory */
-    if(WorkDir) chdir(WorkDir);
+    if(WorkDir && chdir(WorkDir));
 
     /* If failed loading DiskROM, ignore the new PATCHBDOS bit */
     if(!P1) NewMode=(NewMode&~MSX_PATCHBDOS)|(Mode&MSX_PATCHBDOS);
@@ -2327,7 +2327,7 @@ byte ChangeDisk(byte N,const char *FileName)
   }
 
   /* If failed opening existing image, create a new 720kB disk image */
-  P = FormatFDI(&FDD[N],FMT_DSK);
+  P = FormatFDI(&FDD[N],FMT_MSXDSK);
 
   /* If FileName not empty, treat it as directory, otherwise new disk */
   if(P&&!(*FileName? DSKLoad(FileName,P,"MSX-DISK"):DSKCreate(P,"MSX-DISK")))

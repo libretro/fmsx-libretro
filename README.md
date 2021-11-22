@@ -1,14 +1,14 @@
 fmsx
 ====
 
-this is a port of fMSX 5.1 to the libretro API
+This is a port of Marat Fayzullin's fMSX 5.9 to the libretro API.
 
-source : http://fms.komkon.org/fMSX/
+Source : http://fms.komkon.org/fMSX/
 
 
 ## Recognized file extension
 * .rom .mx1 .mx2 .ROM .MX1 .MX2 - for ROM images
-* .dsk .DSK - for 360/720kB disk images
+* .dsk .DSK - for FAT12 360/720kB disk images
 * .cas .CAS - for fMSX tape files
 
 
@@ -50,5 +50,6 @@ Video: 16bpp RGB565 272x228 (544x228 in 512px MSX2 screen modes). This includes 
 - vertical: 192 or 212
 
 Audio: rendered in 48kHz 16b mono.
+fMSX emulates PSG, SCC and FM-PAC.
 
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
