@@ -424,6 +424,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
+      { "fmsx_allsprites", "Show all sprites; No|Yes" },
       { NULL, NULL },
    };
 
@@ -558,7 +559,7 @@ static void check_variables(void)
       if (strcmp(var.value, "Guess Mapper Type A") == 0)
          Mode |= MSX_GUESSA;
       else if (strcmp(var.value, "Guess Mapper Type B") == 0)
-         Mode |= MSX_GUESSB; // I guess this never works
+         Mode |= MSX_GUESSB; // applies to cartridge B, which fmsx-libretro does not support
       else if (strcmp(var.value, "Generic 8kB") == 0)
          SETROMTYPE(0,MAP_GEN8);
       else if (strcmp(var.value, "Generic 16kB") == 0)
@@ -594,6 +595,12 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_AUTOSPACE;
+
+   var.key = "fmsx_allsprites";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+      Mode |= MSX_ALLSPRITE;
 
    var.key = "fmsx_ram_pages";
    var.value = NULL;

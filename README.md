@@ -21,6 +21,7 @@ Specify these in your RetroArch core options:
     fmsx_mapper_type_mode=Guess Mapper Type A*|Guess Mapper Type B|Generic 8kB|Generic 16kB|Konami5 8kB|Konami4 8kB|ASCII 8kB|ASCII 16kB|GameMaster2|FMPAC
     fmsx_ram_pages=Auto*|64KB|128KB|256KB|512KB
     fmsx_vram_pages=Auto*|32KB|64KB|128KB|192KB
+    fmsx_allsprites=No*|Yes
     fmsx_simbdos=No*|Yes
 
 A star (*) indicates this is the default setting.
