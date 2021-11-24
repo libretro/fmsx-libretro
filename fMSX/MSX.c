@@ -104,9 +104,6 @@ byte *SRAMData[MAXSLOTS];          /* SRAM (battery backed)  */
 /** Disk images used by fMSX *********************************/
 const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
 
-/** Soundtrack logging ***************************************/
-const char *SndName = "LOG.MID";   /* Sound log file         */
-
 /** Fixed font used by fMSX **********************************/
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
 byte *FontBuf;                     /* Font for text modes    */
