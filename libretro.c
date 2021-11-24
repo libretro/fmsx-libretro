@@ -23,6 +23,8 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 static byte PaletteFrozen=0;
 
+static char FntName_buffer[1024];
+
 extern byte *RAMData;
 extern int RAMPages ;
 
@@ -379,6 +381,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
+      { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
       { NULL, NULL },
    };
 
@@ -596,6 +599,17 @@ static void check_variables(void)
    else
    {
       VRAMPages = ModeVRAM;
+   }
+
+   var.key = "fmsx_font";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "standard") != 0)
+   {
+        strncpy(FntName_buffer, var.value, sizeof(FntName_buffer)-1);
+        FntName_buffer[sizeof(FntName_buffer)-1] = 0;
+        FNTName=FntName_buffer;
+        Mode |= MSX_FIXEDFONT;
    }
 
    update_fps();

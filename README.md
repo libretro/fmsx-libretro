@@ -14,17 +14,19 @@ Source : http://fms.komkon.org/fMSX/
 
 ## Configuration options
 
-Specify these in your RetroArch core options:
+Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
 
-    fmsx_mode=MSX2+*|MSX1|MSX2
-    fmsx_video_mode=NTSC*|PAL
-    fmsx_mapper_type_mode=Guess Mapper Type A*|Guess Mapper Type B|Generic 8kB|Generic 16kB|Konami5 8kB|Konami4 8kB|ASCII 8kB|ASCII 16kB|GameMaster2|FMPAC
-    fmsx_ram_pages=Auto*|64KB|128KB|256KB|512KB
-    fmsx_vram_pages=Auto*|32KB|64KB|128KB|192KB
-    fmsx_allsprites=No*|Yes
-    fmsx_simbdos=No*|Yes
-
-A star (*) indicates this is the default setting.
+|setting|meaning|choices<br>(*) indicates the default setting
+|---|---|---
+|`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2
+|`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL
+|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess Mapper Type A*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
+|`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB
+|`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
+|`fmsx_simbdos`|Simulate BDOS DiskROM access calls|No*&vert;Yes
+|`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes
+|`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes
+|`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT
 
 
 ## BIOS
@@ -137,11 +139,13 @@ How to use this:
 
 To (de)activate KANA LOCK, press page down (COUNTRY). It works just like caps lock: press and release to enable.
 
+Best enable SCREEN 1 to appreciate the full 8px width of the Japanese characters; in screen 0 characters are only 6px wide.
+
 
 ## Technical details
 
 Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). This includes an 8px (16px) border; MSX native screen resolutions are:
-- horizontal: 256 or 512 (textmode: 40 or 80 columns)
+- horizontal: 256 or 512 (textmode: 32, 40 or 80 columns)
 - vertical: 192 or 212
 
 Audio: rendered in 48kHz 16b mono.
