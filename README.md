@@ -150,26 +150,51 @@ fMSX emulates PSG, SCC and FM-PAC.
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
 
 ### MSX1 colour palette
-This is how fMSX implements it by default:
-* 0 : 000000
-* 1 : 000000
-* 2 : 20C020
-* 3 : 60E060
-* 4 : 2020E0
-* 5 : 4060E0
-* 6 : A02020
-* 7 : 40C0E0
-* 8 : E02020
-* 9 : E06060
-* A : C0C020
-* B : C0C080
-* C : 208020
-* D : C040A0
-* E : A0A0A0
-* F : E0E0E0
 
-Note: there is some discussion about the 'right' mapping of TMS9918 colours to RGB. This is how fMSX does it.
+"To make a custom palette for `Game.rom`, create `Game.pal` [in the same directory] containing 16 #RRGGBB hex values, one per line. 
+This palette file will be loaded automatically." ([fMSX site](https://fms.komkon.org/fMSX/fMSX.html#LABB), section "New in fMSX 4.0")
 
+The fMSX default:
+```
+#000000
+#000000
+#20C020
+#60E060
+#2020E0
+#4060E0
+#A02020
+#40C0E0
+#E02020
+#E06060
+#C0C020
+#C0C080
+#208020
+#C040A0
+#A0A0A0
+#E0E0E0
+```
+
+Note: [there is some discussion](https://github.com/openMSX/openMSX/issues/1024) about the 'right' mapping of TMS9918 colours to RGB. This is how fMSX does it.
+
+An [example alternative palette](https://paulwratt.github.io/programmers-palettes/HW-MSX/HW-MSX.html) with less vibrant colours is:
+```
+#000000
+#010101
+#3eb849
+#74d07d
+#5955e0
+#8076f1
+#b95e51
+#65dbef
+#db6559
+#ff897d
+#ccc35e
+#ded087
+#3aa241
+#b766b5
+#cccccc
+#ffffff
+```
 
 ## Developers
 Some information for developers wanting to upgrade to newer fMSX versions, or improve this port.
