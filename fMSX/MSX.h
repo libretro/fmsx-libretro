@@ -263,7 +263,6 @@ extern byte SSLReg[4];                /* Secondary slot reg. */
 extern const char *ProgDir;           /* Program directory   */
 extern const char *ROMName[MAXCARTS]; /* Cart A/B ROM files  */
 extern const char *DSKName[MAXDRIVES];/* Disk A/B images     */
-extern const char *SndName;           /* Soundtrack log file */
 extern const char *PrnName;           /* Printer redir. file */
 extern const char *CasName;           /* Tape image file     */
 extern const char *ComName;           /* Serial redir. file  */
