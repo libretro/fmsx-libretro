@@ -45,6 +45,98 @@ Optional; loaded when found:
 * GMASTER2.ROM, GMASTER.ROM
 
 
+## Mapping of controls
+
+User 1:
+
+* "Joystick": map RetroPad to MSX joystick A
+
+|RetroPad|MSX
+|---|---
+|LEFT  | Stick Left
+|UP    |   Stick Up
+|DOWN  | Stick Down
+|RIGHT |Stick Right
+|A     |     Fire A
+|B     |     Fire B
+* "Joystick + Emulated Keyboard": map RetroPad to MSX joystick A, plus to a few MSX keyboard keys useful for gaming
+
+|RetroPad|MSX
+|---|---
+|LEFT  | Stick Left
+|UP    |   Stick Up
+|DOWN  | Stick Down
+|RIGHT |Stick Right
+|A     |     Fire A
+|B     |     Fire B
+|X     |         F3
+|Y     |      Space
+|START |         F1
+|SELECT|         F2
+|L     |         F4
+|R     |         F5
+|L2    |      Graph
+|R2    |       Ctrl
+|L3    |      Enter
+|R3    |     Escape
+* "Emulated Keyboard": map RetroPad to MSX keyboard cursor, plus to a few _other_ MSX keyboard keys useful for gaming - where * indicates a difference with "Joystick + Emulated Keyboard"
+
+|RetroPad|MSX
+|---|---
+|LEFT  | Arrow Left
+|UP    |   Arrow Up
+|DOWN  | Arrow Down
+|RIGHT |Arrow Right
+|A     |      Space *
+|B     |      Enter *
+|X     |          N *
+|Y     |          M *
+|START |         F1
+|SELECT|         F4 *
+|L     |         F2 *
+|R     |         F3 *
+|L2    |      Graph
+|R2    |       Ctrl
+|L3    |         F5 *
+|R3    |     Escape
+* "Keyboard": maps host keyboard to MSX keyboard. Only on (RetroArch) platforms with a real keyboard (Linux, Windows, etc). Don't forget to press Scroll Lock to enter Game Focus Mode!
+  * MSX1 & 2: US/European keyboard map, cursors, numeric pad, F1-F5
+  * MSX2+: Japanese keyboard map - see below
+  * with these special keys for all 3 MSX models:
+
+|Host             | MSX
+|---|---
+|ctrl             |CONTROL
+|shift            |SHIFT
+|left alt         |GRAPH
+|ins              |INSERT
+|del              |DELETE
+|home             |HOME/CLS
+|end              |SELECT
+|pageup or pause  |STOP/BREAK
+|pagedown         |COUNTRY
+
+
+User 2:
+* "Joystick": map RetroPad to MSX joystick B
+
+### MSX1/2 US/European keyboard map
+Enter accented characters (like &eacute;) with COUNTRY (page down) and graphical symbols with GRAPH (left alt).
+
+### MSX2+ Japanese keyboard map
+This is a typical MSX2+ with Japanese keyboard:
+![Japanese keyboard](Japanese-MSX2+-keyboard.jpg)
+
+How to use this:
+* normal: bottomleft Roman letter/symbol
+* shift: topleft symbol
+* alt: topright symbol (without the box)
+* KANA LOCK active: bottomright Japanese character
+* KANA LOCK active with shift: middleright Japanese character
+
+To (de)activate KANA LOCK, press page down (COUNTRY). It works just like caps lock: press and release to enable.
+
+
 ## Technical details
 
 Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). This includes an 8px (16px) border; MSX native screen resolutions are:
