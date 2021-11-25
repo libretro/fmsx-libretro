@@ -21,6 +21,7 @@ static unsigned image_buffer_height;
 static uint16_t XPal[80];
 static uint16_t BPal[256];
 static uint16_t XPal0;
+static byte PaletteFrozen=0;
 
 static char FntName_buffer[1024];
 
@@ -642,12 +643,23 @@ void set_image_buffer_size(byte screen_mode)
    GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
 }
 
+void replace_ext(char *fname, const char *ext)
+{
+    char *end = fname + strlen(fname);
+    char *cur = end;
+    while (cur > fname && *cur != '.') --cur;
+    if (*cur == '.' && end - cur > strlen(ext)) {
+        strcpy(cur+1, ext);
+    }
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
    static char ROMName_buffer[MAXCARTS][1024];
    static char DSKName_buffer[MAXDRIVES][1024];
    static char CasName_buffer[1024];
+   static char PalName_buffer[1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -686,6 +698,17 @@ bool retro_load_game(const struct retro_game_info *info)
          strcpy(CasName_buffer, info->path);
          CasName=CasName_buffer;
       }
+
+      /* Try loading as palette: <basename>.pal */
+      strncpy(PalName_buffer, info->path, sizeof(PalName_buffer)-1);
+      PalName_buffer[sizeof(PalName_buffer)-1]=0;
+      replace_ext(PalName_buffer, "pal");
+      if(filestream_exists(PalName_buffer) && LoadPAL(PalName_buffer) == 16) PaletteFrozen=1;
+      else
+      {
+         replace_ext(PalName_buffer, "PAL");
+         if(filestream_exists(PalName_buffer) && LoadPAL(PalName_buffer) == 16) PaletteFrozen=1;
+      }
    }
    else
    {
@@ -718,6 +741,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void SetColor(byte N,byte R,byte G,byte B)
 {
+  if(PaletteFrozen && N<16) return;
   if(N)
      XPal[N]=PIXEL(R,G,B);
   else
