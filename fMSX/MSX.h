@@ -25,10 +25,13 @@
 
 #include <stdint.h>
 
+#include <streams/file_stream.h>
+
 /** INLINE ***************************************************/
 /** C99 standard has "inline", but older compilers've used  **/
 /** __inline for the same purpose.                          **/
 /*************************************************************/
+#undef INLINE
 #ifdef __C99__
 #define INLINE static inline
 #else
@@ -203,6 +206,15 @@ extern volatile byte KeyState[16];
 #define KBD_NUMPAD9  0x81
 /*************************************************************/
 
+/** Cassette Tapes *******************************************/
+extern byte tape_type;
+
+#define NO_TAPE      0
+#define ASCII_TAPE   1
+#define BINARY_TAPE  2
+#define BASIC_TAPE   3
+/*************************************************************/
+
 /** Cheats() arguments ***************************************/
 #define CHTS_OFF      0               /* Turn all cheats off */
 #define CHTS_ON       1               /* Turn all cheats on  */
@@ -269,7 +281,7 @@ extern const char *ComName;           /* Serial redir. file  */
 extern const char *FNTName;           /* Font file for text  */ 
 
 extern FDIDisk FDD[4];                /* Floppy disk images  */
-extern FILE *CasStream;               /* Cassette I/O stream */
+extern RFILE *CasStream;               /* Cassette I/O stream */
 
 typedef struct
 {
@@ -413,16 +425,6 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /** on success, 0 on failure.                               **/
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
-
-/** InitMachine() ********************************************/
-/** Allocate resources needed by the machine-dependent code.**/
-/************************************ TO BE WRITTEN BY USER **/
-int InitMachine(void);
-
-/** TrashMachine() *******************************************/
-/** Deallocate all resources taken by InitMachine().        **/
-/************************************ TO BE WRITTEN BY USER **/
-void TrashMachine(void);
 
 /** Keyboard() ***********************************************/
 /** This function is periodically called to poll keyboard.  **/
