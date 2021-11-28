@@ -430,7 +430,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     return(0);
 #endif
 
-  /* Zero everyting */
+  /* Zero everything */
   CasStream=PrnStream=ComIStream=ComOStream=0;
   FontBuf     = 0;
   RAMData     = 0;
@@ -2398,10 +2398,14 @@ int ApplyMCFCheat(int N)
   Cheats(CHTS_OFF);
   ResetCheats();
 
-  /* Insert cheat codes from the MCF entry */
-  CheatCodes[0].Addr = MCFEntries[N].Addr;
+  /* Insert cheat codes from the MCF entry as RAM-based cheat */
+  CheatCodes[0].Addr = MCFEntries[N].Addr | 0x01000000;
   CheatCodes[0].Data = MCFEntries[N].Data;
   CheatCodes[0].Size = MCFEntries[N].Size;
+  CheatCodes[0].Orig = RdZ80(CheatCodes[0].Addr&0xFFFF);
+  if(CheatCodes[0].Size>1)
+    CheatCodes[0].Orig |= (int)(RdZ80((CheatCodes[0].Addr+1)&0xFFFF)<<8);
+
   sprintf(
     (char *)CheatCodes[0].Text,
     CheatCodes[0].Size>1? "%04X-%04X":"%04X-%02X",
@@ -2417,6 +2421,12 @@ int ApplyMCFCheat(int N)
 
   /* Done */
   return(CheatCount);
+}
+
+char* GetMCFNote(int N, int *Value)
+{
+  if (Value) *Value = MCFEntries[N].Data;
+  return MCFEntries[N].Note;
 }
 
 /** AddCheat() ***********************************************/
@@ -2571,6 +2581,12 @@ int Cheats(int Switch)
           P[0] = CheatCodes[J].Orig;
           if(CheatCodes[J].Size>1)
             P[1] = CheatCodes[J].Orig>>8;
+        }
+        else if((CheatCodes[J].Addr>>24)==0x01) // restore RAM-based values
+        {
+          WrZ80(CheatCodes[J].Addr&0xFFFF,CheatCodes[J].Orig&0xFF);
+          if(CheatCodes[J].Size>1)
+            WrZ80((CheatCodes[J].Addr+1)&0xFFFF,CheatCodes[J].Orig>>8);
         }
     }
 

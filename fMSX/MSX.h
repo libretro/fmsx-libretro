@@ -380,16 +380,16 @@ int SetScreenDepth(int Depth);
 /*************************************************************/
 int ApplyMCFCheat(int N);
 
+/** GetMCFNote() *********************************************/
+/** Returns cheat description and value.                    **/
+/*************************************************************/
+char* GetMCFNote(int N, int *Value);
+
 /** AddCheat() ***********************************************/
 /** Add a new cheat. Returns 0 on failure or the number of  **/
 /** cheats on success.                                      **/
 /*************************************************************/
 int AddCheat(const char *Cheat);
-
-/** DelCheat() ***********************************************/
-/** Delete a cheat. Returns 0 on failure, 1 on success.     **/
-/*************************************************************/
-int DelCheat(const char *Cheat);
 
 /** ResetCheats() ********************************************/
 /** Remove all cheats.                                      **/
