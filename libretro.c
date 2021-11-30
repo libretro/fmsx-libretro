@@ -617,30 +617,11 @@ static void check_variables(void)
 
 void set_image_buffer_size(byte screen_mode)
 {
-   static Image fMSX_image;
-
    if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
        image_buffer_width = WIDTH<<1;
    else
        image_buffer_width = WIDTH;
    image_buffer_height = HEIGHT;
-
-   fMSX_image.Cropped = 0;
-#if defined(BPP24)
-   fMSX_image.D = 24;
-#elif defined(BPP16)
-   fMSX_image.D = 16;
-#elif defined(BPP8)
-   fMSX_image.D = 8;
-#else
-   fMSX_image.D = 32;
-#endif
-   fMSX_image.Data = image_buffer;
-   fMSX_image.W = image_buffer_width;
-   fMSX_image.H = image_buffer_height;
-   fMSX_image.L = image_buffer_width;
-
-   GenericSetVideo(&fMSX_image,0,0,image_buffer_width,image_buffer_height);
 }
 
 void replace_ext(char *fname, const char *ext)
@@ -748,11 +729,6 @@ void SetColor(byte N,byte R,byte G,byte B)
      XPal0=PIXEL(R,G,B);
 }
 
-int PauseAudio(int Switch)
-{
-   return 1;
-}
-
 unsigned int GetFreeAudio(void)
 {
   return 1024;
@@ -778,18 +754,10 @@ unsigned int Joystick(void)
    return joystate;
 }
 
-void Keyboard(void)
-{
-}
-
 unsigned int Mouse(byte N)
 {
+   // not implemented yet
    return 0;
-}
-
-unsigned int GetJoystick(void)
-{
-   return 1;
 }
 
 bool retro_load_game_special(unsigned a,

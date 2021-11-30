@@ -209,7 +209,7 @@ Some changes are applied to the fMSX core in order to make fmsx-libretro portabl
 * portability refactorings, e.g. `register` flags removed, PS Vita file support, etc.
 * (verbose) logging removed, including startup info & some debugging statements
 * some whitespace
-* `EMULib.c` `WaitJoystick()` is empty; implemented another way in `libretro.c`
+* `EMULib.c` `WaitJoystick()` removed; implemented another way in `libretro.c`
 * RetroArch VFS (Virtual FileSystem) used (`rfopen` etc.); ZLIB code removed
 * removed various pieces of code intended for older ports, like Borland C, Meego, etc.
 * removed various pieces of code intended for other platforms (fMSX is part of a suite of emulators)
@@ -221,7 +221,7 @@ Some changes are applied to the fMSX core in order to make fmsx-libretro portabl
     * drop invocation of `PlayAllSound()`  
     * `MSX.c` `LoopZ80()`: move `if(ExitNow) return(INT_QUIT)` downwards to support `autospace` option.
 
-### non-ported fMSX features
+### non-ported/dropped fMSX features
 Mostly because RetroArch supports this out of the box, or because it falls out of scope.
 
 * built-in debugger
@@ -234,11 +234,13 @@ Mostly because RetroArch supports this out of the box, or because it falls out o
 * record & playback
 * support for touch devices
 * mouse in both joystick & real mode
+* serial COM
+* printer
 
 The following fMSX code is not present in this core:
 * fMSX/Unix-related code
-* EMULib: `Console(Mux).c/h, Hunt.c/h, Image.c, ImageMux.h, IPS.c/h, MIDIFreq.h, NetPlay.c/h, Record.c/h, Touch(Mux).c/h`
-* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, Patch.c`
+* EMULib: `EMULib.c, Console(Mux).c/h, Hunt.c/h, Image.c, ImageMux.h, IPS.c/h, MIDIFreq.h, NetPlay.c/h, Record.c/h, Touch(Mux).c/h`
+* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, Patch.c, I8251.c/h`
 
 ### non-ported/supported fMSX cmdline options
 * all of these options:

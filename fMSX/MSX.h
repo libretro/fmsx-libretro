@@ -20,10 +20,10 @@
 #include "YM2413.h"         /* YM2413 OPLL emulation         */
 #include "SCC.h"            /* Konami SCC chip emulation     */
 #include "I8255.h"          /* Intel 8255 PPI emulation      */
-#include "I8251.h"          /* Intel 8251 UART emulation     */
 #include "WD1793.h"         /* WD1793 FDC emulation          */
 
 #include <stdint.h>
+#include <stdio.h> // TODO remove after merging PR 81 (CasStream)
 
 /** INLINE ***************************************************/
 /** C99 standard has "inline", but older compilers've used  **/
@@ -263,10 +263,8 @@ extern byte SSLReg[4];                /* Secondary slot reg. */
 extern const char *ProgDir;           /* Program directory   */
 extern const char *ROMName[MAXCARTS]; /* Cart A/B ROM files  */
 extern const char *DSKName[MAXDRIVES];/* Disk A/B images     */
-extern const char *PrnName;           /* Printer redir. file */
 extern const char *CasName;           /* Tape image file     */
-extern const char *ComName;           /* Serial redir. file  */
-extern const char *FNTName;           /* Font file for text  */ 
+extern const char *FNTName;           /* Font file for text  */
 
 extern FDIDisk FDD[4];                /* Floppy disk images  */
 extern FILE *CasStream;               /* Cassette I/O stream */
@@ -296,12 +294,6 @@ void TrashMSX(void);
 /** modes, possibly not the same as NewMode.                **/
 /*************************************************************/
 int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages);
-
-/** LoadFile() ***********************************************/
-/** Simple utility function to load cartridge, state, font  **/
-/** or a disk image, based on the file extension, etc.      **/
-/*************************************************************/
-int LoadFile(const char *FileName);
 
 /** LoadCart() ***********************************************/
 /** Load cartridge into given slot. Returns cartridge size  **/

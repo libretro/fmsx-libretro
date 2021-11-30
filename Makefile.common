@@ -21,11 +21,9 @@ endif
 SOURCES_C := \
 	$(CORE_DIR)/libretro.c \
 	$(CORE_DIR)/Missing.c \
-	$(EMULIB)/EMULib.c \
 	$(EMULIB)/Sound.c \
 	$(FMSXDIR)/MSX.c \
 	$(FMSXDIR)/V9938.c \
-	$(FMSXDIR)/I8251.c \
 	$(EMULIB)/SHA1.c \
 	$(EMULIB)/Floppy.c \
 	$(EMULIB)/FDIDisk.c \
