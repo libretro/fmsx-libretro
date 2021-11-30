@@ -23,7 +23,7 @@
 
 #include <retro_dirent.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 #define DSK_RESERVED_SECS 0
 #define DSK_FATS_PER_DISK 2
@@ -53,14 +53,6 @@
 + DSK_SECTOR_SIZE*DSK_SECS_PER_FAT*DSK_FATS_PER_DISK \
 + ((ID)*32) \
 )
-
-/* Forward declarations */
-RFILE* rfopen(const char *path, const char *mode);
-int rfclose(RFILE* stream);
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
 
 /** FindFreeCluster() ****************************************/
 /** Finds first free cluster starting from the given one.   **/
