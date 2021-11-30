@@ -792,17 +792,15 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   CPU.IPeriod    = CPU_H240;
   CPU.IAutoReset = 0;
 
-  /* Numbers of RAM/VRAM pages should be power of 2 */
+  /* Numbers of RAM pages should be power of 2 */
   for(J=1;J<NewRAMPages;J<<=1);
   NewRAMPages=J;
-  for(J=1;J<NewVRAMPages;J<<=1);
-  NewVRAMPages=J;
 
   /* Correct RAM and VRAM sizes */
   if((NewRAMPages<(MODEL(MSX_MSX1)? 4:8))||(NewRAMPages>256))
-    NewRAMPages=MODEL(MSX_MSX1)? 4:8;
-  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>8))
-    NewVRAMPages=MODEL(MSX_MSX1)? 2:8;
+    NewRAMPages=MODEL(MSX_MSX1)? 4:8; // MSX1 min&default: 64KiB, MSX2(+) min&default: 128KiB. Max 4MiB
+  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>12))
+    NewVRAMPages=MODEL(MSX_MSX1)? 2:8; // MSX1 min&default: 32KiB, MSX2(+) min&default: 128KiB. Max 192KiB (nonstandard)
 
   /* If changing amount of RAM... */
   if(NewRAMPages!=RAMPages)
