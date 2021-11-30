@@ -13,6 +13,7 @@
 #include "EMULib.h"
 #include "Sound.h"
 
+static unsigned frame_number=0;
 static unsigned fps;
 static uint16_t* image_buffer;
 static unsigned image_buffer_width;
@@ -24,6 +25,9 @@ static uint16_t XPal0;
 static byte PaletteFrozen=0;
 
 static char FntName_buffer[1024];
+static char AutoType_buffer[1024];
+char *autotype=0;
+#define BOOT_FRAME_COUNT 400  // a guesstimate when diskless boot is done
 
 extern byte *RAMData;
 extern int RAMPages ;
@@ -160,8 +164,6 @@ keymap_t keymap[] = // only need to map basic keys; not SHIFTed ones
 
 int joystate;
 #define JOY_SET(K, port) joystate |= K << (8 * port)
-// TODO: Use a less hacky method than hard-coding an offset into the joymap.
-const int joy_keyboard_begin = 6;
 
 keymap_t keybemu0_map[] =
 {
@@ -222,7 +224,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_version  = "6.0" GIT_VERSION;
    info->need_fullpath    = true;
    info->block_extract    = false;
-   info->valid_extensions = "rom|mx1|mx2|dsk|cas";
+   info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -365,8 +367,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
-            "Guess Mapper Type A|"
-            "Guess Mapper Type B|"
+            "Guess|"
             "Generic 8kB|"
             "Generic 16kB|"
             "Konami5 8kB|"
@@ -421,6 +422,7 @@ static void update_fps(void)
 void retro_reset(void)
 {
    ResetMSX(Mode,RAMPages,VRAMPages);
+   frame_number=0;
    update_fps();
 }
 
@@ -513,10 +515,8 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "Guess Mapper Type A") == 0)
+      if (strcmp(var.value, "Guess") == 0)
          Mode |= MSX_GUESSA;
-      else if (strcmp(var.value, "Guess Mapper Type B") == 0)
-         Mode |= MSX_GUESSB; // applies to cartridge B, which fmsx-libretro does not support
       else if (strcmp(var.value, "Generic 8kB") == 0)
          SETROMTYPE(0,MAP_GEN8);
       else if (strcmp(var.value, "Generic 16kB") == 0)
@@ -655,6 +655,30 @@ void replace_ext(char *fname, const char *ext)
     }
 }
 
+void setup_tape_autotype()
+{
+   switch (tape_type)
+   {
+   case ASCII_TAPE: // LOAD"CAS:",R
+      if(MODEL(MSX_MSX2P))
+         strcpy(AutoType_buffer, "\05l\05o\05a\05d\05""2\05c\05a\05s'\01\05""2,\01\05r\x0d\01");
+      else
+         strcpy(AutoType_buffer, "\05l\05o\05a\05d\05'\05c\05a\05s\05:\05',\01\05r\x0d\01");
+      break;
+   case BINARY_TAPE: // BLOAD"CAS:",R
+      if(MODEL(MSX_MSX2P))
+         strcpy(AutoType_buffer, "\05b\05l\05o\05a\05d\05""2\05c\05a\05s'\01\05""2,\01\05r\x0d\01");
+      else
+         strcpy(AutoType_buffer, "\05b\05l\05o\05a\05d\05'\05c\05a\05s\05:\05',\01\05r\x0d\01");
+      break;
+   case BASIC_TAPE: // CLOAD <enter> RUN
+      strcpy(AutoType_buffer, "\05c\05l\05o\05a\05d\x0d\01\05r\05u\05n\x0d\01");
+      break;
+   }
+   if (tape_type != NO_TAPE)
+      autotype = (char*)&AutoType_buffer;
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
@@ -690,7 +714,7 @@ bool retro_load_game(const struct retro_game_info *info)
          strcpy(ROMName_buffer[0], info->path);
          ROMName[0]=ROMName_buffer[0];
       }
-      else if (dot && !strcasecmp(dot, ".dsk"))
+      else if (dot && ( !strcasecmp(dot, ".dsk") || !strcasecmp(dot, ".fdi") ))
       {
          strcpy(DSKName_buffer[0], info->path);
          DSKName[0]=DSKName_buffer[0];
@@ -738,6 +762,7 @@ bool retro_load_game(const struct retro_game_info *info)
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    update_fps();
+   setup_tape_autotype();
    return true;
 }
 
@@ -830,6 +855,32 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
+void show_message(const char* msg, unsigned number_of_frames)
+{
+   struct retro_message message;
+   message.msg = msg;
+   message.frames = number_of_frames;
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+}
+
+void handle_tape_autotype()
+{
+   if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_F6))
+   {
+      RewindTape();
+      show_message("Cassette tape rewound", fps);
+   }
+
+   if (frame_number < BOOT_FRAME_COUNT && autotype)
+      KBD_SET(KBD_SHIFT); // press shift during boot to skip loading DiskROM. Most tape games need the extra memory.
+   else if (frame_number > BOOT_FRAME_COUNT && (frame_number & 3) == 0 && autotype && *autotype)
+   {
+      KBD_SET(*autotype);
+      autotype++;
+      if (*autotype > 1) KBD_SET(*autotype);
+      autotype++;
+   }
+}
 
 #ifdef PSP
 #include <pspgu.h>
@@ -841,7 +892,7 @@ void retro_run(void)
    bool updated = false;
    int16_t joypad_bits[2];
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) 
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated)
          && updated)
       check_variables();
 
@@ -906,6 +957,8 @@ void retro_run(void)
          JOY_SET(joymap[i].fmsx, 1);
    }
 
+   handle_tape_autotype();
+
    currentScreenMode = ScrMode;
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / fps);
@@ -934,6 +987,7 @@ void retro_run(void)
 #else
    video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #endif
+   frame_number++;
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
