@@ -35,7 +35,7 @@
 #include <unistd.h>
 #endif
 
-#include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
 
@@ -110,7 +110,13 @@ byte *FontBuf;                     /* Font for text modes    */
 
 /** Cassette tape ********************************************/
 const char *CasName = "DEFAULT.CAS";  /* Tape image file     */
-FILE *CasStream;
+RFILE *CasStream;
+byte tape_type = NO_TAPE;
+#define TAPE_HEADER_LEN 10
+// header values copied from openMSX CasImage.cc
+const char ASCII_HEADER[TAPE_HEADER_LEN]  = { 0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA };
+const char BINARY_HEADER[TAPE_HEADER_LEN] = { 0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0 };
+const char BASIC_HEADER[TAPE_HEADER_LEN]  = { 0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3 };
 
 /** Kanji font ROM *******************************************/
 byte *Kanji;                       /* Kanji ROM 4096x32      */
@@ -294,19 +300,6 @@ static int hasext(const char *FileName,const char *Ext);
 static byte *GetMemory(int Size); /* Get memory chunk                */
 static void FreeMemory(const void *Ptr); /* Free memory chunk        */
 static void FreeAllMemory(void);  /* Free all memory chunks          */
-
-/* Forward declarations */
-RFILE* rfopen(const char *path, const char *mode);
-char *rfgets(char *buffer, int maxCount, RFILE* stream);
-int rfclose(RFILE* stream);
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int64_t rfseek(RFILE* stream, int64_t offset, int origin);
-int64_t rftell(RFILE* stream);
-int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int rfgetc(RFILE* stream);
-int rfeof(RFILE* stream);
 
 /** hasext() *************************************************/
 /** Check if file name has given extension.                 **/
@@ -760,17 +753,15 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   CPU.IPeriod    = CPU_H240;
   CPU.IAutoReset = 0;
 
-  /* Numbers of RAM/VRAM pages should be power of 2 */
+  /* Numbers of RAM pages should be power of 2 */
   for(J=1;J<NewRAMPages;J<<=1);
   NewRAMPages=J;
-  for(J=1;J<NewVRAMPages;J<<=1);
-  NewVRAMPages=J;
 
   /* Correct RAM and VRAM sizes */
   if((NewRAMPages<(MODEL(MSX_MSX1)? 4:8))||(NewRAMPages>256))
-    NewRAMPages=MODEL(MSX_MSX1)? 4:8;
-  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>8))
-    NewVRAMPages=MODEL(MSX_MSX1)? 2:8;
+    NewRAMPages=MODEL(MSX_MSX1)? 4:8; // MSX1 min&default: 64KiB, MSX2(+) min&default: 128KiB. Max 4MiB
+  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>12))
+    NewVRAMPages=MODEL(MSX_MSX1)? 2:8; // MSX1 min&default: 32KiB, MSX2(+) min&default: 128KiB. Max 192KiB (nonstandard)
 
   /* If changing amount of RAM... */
   if(NewRAMPages!=RAMPages)
@@ -2232,15 +2223,52 @@ char *MakeFileName(const char *Name,const char *Ext)
 /*************************************************************/
 byte ChangeTape(const char *FileName)
 {
+  tape_type = NO_TAPE;
+
   /* Close previous tape image, if open */
-  if(CasStream) { fclose(CasStream);CasStream=0; }
+  if(CasStream) { rfclose(CasStream);CasStream=0; }
 
   /* If opening a new tape image... */
   if(FileName)
   {
     /* Try read+append first, then read-only */
-    CasStream = fopen(FileName,"r+b");
-    CasStream = CasStream? CasStream:fopen(FileName,"rb");
+    CasStream = rfopen(FileName,"r+b");
+    CasStream = CasStream? CasStream:rfopen(FileName,"rb");
+
+    if (CasStream)
+    {
+        rfseek(CasStream,0,SEEK_END);
+        int tape_len = rftell(CasStream);
+        filestream_rewind(CasStream);
+        char *tape_contents = (char*)malloc(tape_len);
+        if (rfread(tape_contents, 1, tape_len, CasStream) != tape_len)
+        {
+           free(tape_contents);
+           return 0;
+        }
+        int pos = 0;
+        while (pos + TAPE_HEADER_LEN <= tape_len)
+        {
+           if (!memcmp(&tape_contents[pos], ASCII_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = ASCII_TAPE;
+              break;
+           }
+           else if (!memcmp(&tape_contents[pos], BINARY_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = BINARY_TAPE;
+              break;
+           }
+           else if (!memcmp(&tape_contents[pos], BASIC_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = BASIC_TAPE;
+              break;
+           }
+           pos++;
+        }
+        free(tape_contents);
+    }
+    RewindTape();
   }
 
   /* Done */
@@ -2248,9 +2276,9 @@ byte ChangeTape(const char *FileName)
 }
 
 /** RewindTape() *********************************************/
-/** Rewind currenly open tape.                              **/
+/** Rewind currently open tape.                              **/
 /*************************************************************/
-void RewindTape(void) { if(CasStream) rewind(CasStream); }
+void RewindTape(void) { if(CasStream) filestream_rewind(CasStream); }
 
 /** ChangePrinter() ******************************************/
 /** Change printer output to a given file. The previous     **/
