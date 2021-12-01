@@ -108,10 +108,6 @@ const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
 byte *FontBuf;                     /* Font for text modes    */
 
-/** Printer **************************************************/
-const char *PrnName = 0;           /* Printer redirect. file */
-FILE *PrnStream;
-
 /** Cassette tape ********************************************/
 const char *CasName = "DEFAULT.CAS";  /* Tape image file     */
 RFILE *CasStream;
@@ -121,11 +117,6 @@ byte tape_type = NO_TAPE;
 const char ASCII_HEADER[TAPE_HEADER_LEN]  = { 0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA };
 const char BINARY_HEADER[TAPE_HEADER_LEN] = { 0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0 };
 const char BASIC_HEADER[TAPE_HEADER_LEN]  = { 0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3 };
-
-/** Serial port **********************************************/
-const char *ComName = 0;           /* Serial redirect. file  */
-FILE *ComIStream;
-FILE *ComOStream;
 
 /** Kanji font ROM *******************************************/
 byte *Kanji;                       /* Kanji ROM 4096x32      */
@@ -154,9 +145,6 @@ YM2413 OPLL;                       /* OPLL registers & state */
 SCC  SCChip;                       /* SCC registers & state  */
 byte SCCOn[2];                     /* 1 = SCC page active    */
 word FMPACKey;                     /* MAGIC = SRAM active    */
-
-/** Serial I/O hardware: i8251+i8253 *************************/
-I8251 SIO;                         /* SIO registers & state  */
 
 /** Real-time clock ******************************************/
 byte RTCReg,RTCMode;               /* RTC register numbers   */
@@ -424,8 +412,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 #endif
 
   /* Zero everyting */
-  CasStream=0;
-  PrnStream=ComIStream=ComOStream=0;
+  CasStream   = 0;
   FontBuf     = 0;
   RAMData     = 0;
   VRAM        = 0;
@@ -532,19 +519,6 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
 
-  /* Open stream for a printer */
-  /* Redirecting printer output to ... */
-  ChangePrinter(PrnName);
-
-  /* Open streams for serial IO */
-  if(!ComName) { ComIStream=stdin;ComOStream=stdout; }
-  else
-  {
-    /* Redirecting serial I/O to ... */
-    if(!(ComOStream = ComIStream = fopen(ComName,"r+b")))
-    { ComIStream=stdin;ComOStream=stdout; }
-  }
-
   /* Open casette image */
   if(CasName && ChangeTape(CasName)) { }
 
@@ -596,15 +570,8 @@ void TrashMSX(void)
   /* Eject disks, free disk buffers */
   Reset1793(&FDC,FDD,WD1793_EJECT);
 
-  /* Close printer output */
-  ChangePrinter(0);
-
   /* Close tape */
   ChangeTape(0);
-
-  /* Close all IO streams */
-  if(ComOStream&&(ComOStream!=stdout)) fclose(ComOStream);
-  if(ComIStream&&(ComIStream!=stdin))  fclose(ComIStream);
 
   /* Eject all cartridges (will save SRAM) */
   for(J=0;J<MAXSLOTS;++J) LoadCart(0,J,ROMType[J]);
@@ -860,9 +827,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   Sync8910(&PSG,AY8910_SYNC);
   SyncSCC(&SCChip,SCC_SYNC);
   Sync2413(&OPLL,YM2413_SYNC);
-
-  /* Reset serial I/O */
-  Reset8251(&SIO,ComIStream,ComOStream);
 
   /* Reset PPI chips and slot selectors */
   Reset8255(&PPI);
@@ -1834,12 +1798,6 @@ void VDPOut(byte R,byte V)
 /*************************************************************/
 void Printer(byte V)
 {
-  if(!PrnStream)
-  {
-    PrnStream = PrnName?   fopen(PrnName,"ab"):0;
-    PrnStream = PrnStream? PrnStream:stdout;
-  }
-  fputc(V,PrnStream);
 }
 
 /** PPIOut() *************************************************/
@@ -2072,9 +2030,6 @@ word LoopZ80(Z80 *R)
 
     /* Check joystick */
     JoyState=Joystick();
-
-    /* Check keyboard */
-    Keyboard();
 
     /* Check mouse in joystick port #1 */
     if(JOYTYPE(0)>=JOY_MOUSTICK)
@@ -2332,9 +2287,6 @@ void RewindTape(void) { if(CasStream) filestream_rewind(CasStream); }
 /*************************************************************/
 void ChangePrinter(const char *FileName)
 {
-  if(PrnStream&&(PrnStream!=stdout)) fclose(PrnStream);
-  PrnName   = FileName;
-  PrnStream = 0;
 }
 
 /** ChangeDisk() *********************************************/
@@ -2371,43 +2323,6 @@ byte ChangeDisk(byte N,const char *FileName)
 
   /* Done */
   return(!!P);
-}
-
-/** LoadFile() ***********************************************/
-/** Simple utility function to load cartridge, state, font  **/
-/** or a disk image, based on the file extension, etc.      **/
-/*************************************************************/
-int LoadFile(const char *FileName)
-{
-  int J;
-
-  /* Try loading as a disk */
-  if(hasext(FileName,".DSK")||hasext(FileName,".FDI"))
-  {
-    /* Change disk image in drive A: */
-    if(!ChangeDisk(0,FileName)) return(0);
-    /* Eject all user cartridges if successful */
-    for(J=0;J<MAXCARTS;++J) LoadCart(0,J,ROMType[J]);
-    /* Done */
-    return(1);
-  }
-
-  /* Try loading as a cartridge */
-  if(hasext(FileName,".ROM")||hasext(FileName,".MX1")||hasext(FileName,".MX2"))
-    return(!!LoadCart(FileName,0,ROMGUESS(0)|ROMTYPE(0)));
-
-  /* Try loading as a tape */
-  if(hasext(FileName,".CAS")) return(!!ChangeTape(FileName));
-  /* Try loading as a font */
-  if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
-  /* Try loading as palette */
-  if(hasext(FileName,".PAL")) return(!!LoadPAL(FileName));
-  /* Try loading as cheats */
-  if(hasext(FileName,".CHT")) return(!!LoadCHT(FileName));
-  if(hasext(FileName,".MCF")) return(!!LoadMCF(FileName));
-
-  /* Unknown file type */
-  return(0);
 }
 
 /** ApplyMCFCheat() ******************************************/
