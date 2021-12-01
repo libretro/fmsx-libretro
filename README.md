@@ -12,6 +12,12 @@ Source : http://fms.komkon.org/fMSX/
 * .cas .CAS - for fMSX tape files
 
 
+## Tape (cassette) software
+Tapes are automatically started based on their detected type (binary, ASCII or BASIC).
+
+Press F6 to rewind the tape, if that's needed.
+
+
 ## Configuration options
 
 Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
@@ -20,7 +26,7 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 |---|---|---
 |`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2
 |`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL
-|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess Mapper Type A*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
+|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
 |`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
 |`fmsx_simbdos`|Simulate BDOS DiskROM access calls|No*&vert;Yes
@@ -240,7 +246,8 @@ Mostly because RetroArch supports this out of the box, or because it falls out o
 The following fMSX code is not present in this core:
 * fMSX/Unix-related code
 * EMULib: `EMULib.c, Console(Mux).c/h, Hunt.c/h, Image.c, ImageMux.h, IPS.c/h, MIDIFreq.h, NetPlay.c/h, Record.c/h, Touch(Mux).c/h`
-* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, Patch.c, I8251.c/h`
+* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, I8251.c/h`
+* Z80: `(Con)Debug.c`
 
 ### non-ported/supported fMSX cmdline options
 * all of these options:
