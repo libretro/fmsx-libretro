@@ -21,7 +21,7 @@
 #endif
 #include <ctype.h>
 
-#include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 #define IMAGE_SIZE(Fmt) \
   (Formats[Fmt].Sides*Formats[Fmt].Tracks*    \
@@ -74,16 +74,6 @@ static const byte TRDDiskInfo[] =
   0x20,0x00,0x00,0x64,0x69,0x73,0x6B,0x6E,
   0x61,0x6D,0x65,0x00,0x00,0x00,0x46,0x55
 };
-
-/* Forward declarations */
-RFILE* rfopen(const char *path, const char *mode);
-int rfclose(RFILE* stream);
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int64_t rftell(RFILE* stream);
-int64_t rfseek(RFILE* stream, int64_t offset, int origin);
-int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
 
 static int stricmpn(const char *S1,const char *S2,int Limit)
 {

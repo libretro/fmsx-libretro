@@ -8,8 +8,14 @@ Source : http://fms.komkon.org/fMSX/
 
 ## Recognized file extension
 * .rom .mx1 .mx2 .ROM .MX1 .MX2 - for ROM images
-* .dsk .DSK - for FAT12 360/720kB disk images
+* .dsk .DSK .fdi .FDI - for FAT12 360/720kB disk images
 * .cas .CAS - for fMSX tape files
+
+
+## Tape (cassette) software
+Tapes are automatically started based on their detected type (binary, ASCII or BASIC).
+
+Press F6 to rewind the tape, if that's needed.
 
 
 ## Cheats
@@ -34,8 +40,8 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 |---|---|---
 |`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2
 |`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL
-|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess Mapper Type A*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
-|`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB
+|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
+|`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
 |`fmsx_simbdos`|Simulate BDOS DiskROM access calls|No*&vert;Yes
 |`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes
@@ -57,7 +63,7 @@ Optional; loaded when found:
 * FMPAC.ROM
 * KANJI.ROM
 * MSXDOS2.ROM (MSX2/2+)
-* PAINTER.ROM (MSX2/2+)
+* PAINTER.ROM (MSX2/2+) - press space during boot to start
 * RS232.ROM
 * CMOS.ROM
 * GMASTER2.ROM, GMASTER.ROM
@@ -224,19 +230,19 @@ Some changes are applied to the fMSX core in order to make fmsx-libretro portabl
 * portability refactorings, e.g. `register` flags removed, PS Vita file support, etc.
 * (verbose) logging removed, including startup info & some debugging statements
 * some whitespace
-* `EMULib.c` `WaitJoystick()` is empty; implemented another way in `libretro.c`
+* `EMULib.c` `WaitJoystick()` removed; implemented another way in `libretro.c`
 * RetroArch VFS (Virtual FileSystem) used (`rfopen` etc.); ZLIB code removed
 * removed various pieces of code intended for older ports, like Borland C, Meego, etc.
 * removed various pieces of code intended for other platforms (fMSX is part of a suite of emulators)
 * removed `SndDriver`; implemented another way in `libretro.c`
 * reimplemented state loading/saving
 * switched MSB first/LSB first
-* due to the fact that fmsx-libretro renders audio&video per scanline:
+* due to the fact that fmsx-libretro renders audio&video per frame:
     * delay invocation of `SyncSCC()`/`Sync2413()` to fix a sound interference bug
-    * drop invocation of `PlayAllSound()`  
+    * drop invocation of `PlayAllSound()`
     * `MSX.c` `LoopZ80()`: move `if(ExitNow) return(INT_QUIT)` downwards to support `autospace` option.
 
-### non-ported fMSX features
+### non-ported/dropped fMSX features
 Mostly because RetroArch supports this out of the box, or because it falls out of scope.
 
 * built-in debugger
@@ -249,11 +255,14 @@ Mostly because RetroArch supports this out of the box, or because it falls out o
 * record & playback
 * support for touch devices
 * mouse in both joystick & real mode
+* serial COM
+* printer
 
 The following fMSX code is not present in this core:
 * fMSX/Unix-related code
-* EMULib: `Console(Mux).c/h, Hunt.c/h, Image.c, ImageMux.h, IPS.c/h, MIDIFreq.h, NetPlay.c/h, Record.c/h, Touch(Mux).c/h`
-* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, Patch.c`
+* EMULib: `EMULib.c, Console(Mux).c/h, Hunt.c/h, Image.c, ImageMux.h, IPS.c/h, MIDIFreq.h, NetPlay.c/h, Record.c/h, Touch(Mux).c/h`
+* fMSX: `fMSX.c, fMSX.html, Help.h, Menu.c, I8251.c/h`
+* Z80: `(Con)Debug.c`
 
 ### non-ported/supported fMSX cmdline options
 * all of these options:

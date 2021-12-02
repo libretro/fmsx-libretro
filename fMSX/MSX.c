@@ -35,7 +35,7 @@
 #include <unistd.h>
 #endif
 
-#include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
 
@@ -108,18 +108,15 @@ const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
 byte *FontBuf;                     /* Font for text modes    */
 
-/** Printer **************************************************/
-const char *PrnName = 0;           /* Printer redirect. file */
-FILE *PrnStream;
-
 /** Cassette tape ********************************************/
 const char *CasName = "DEFAULT.CAS";  /* Tape image file     */
-FILE *CasStream;
-
-/** Serial port **********************************************/
-const char *ComName = 0;           /* Serial redirect. file  */
-FILE *ComIStream;
-FILE *ComOStream;
+RFILE *CasStream;
+byte tape_type = NO_TAPE;
+#define TAPE_HEADER_LEN 10
+// header values copied from openMSX CasImage.cc
+const char ASCII_HEADER[TAPE_HEADER_LEN]  = { 0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA };
+const char BINARY_HEADER[TAPE_HEADER_LEN] = { 0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0 };
+const char BASIC_HEADER[TAPE_HEADER_LEN]  = { 0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3 };
 
 /** Kanji font ROM *******************************************/
 byte *Kanji;                       /* Kanji ROM 4096x32      */
@@ -148,9 +145,6 @@ YM2413 OPLL;                       /* OPLL registers & state */
 SCC  SCChip;                       /* SCC registers & state  */
 byte SCCOn[2];                     /* 1 = SCC page active    */
 word FMPACKey;                     /* MAGIC = SRAM active    */
-
-/** Serial I/O hardware: i8251+i8253 *************************/
-I8251 SIO;                         /* SIO registers & state  */
 
 /** Real-time clock ******************************************/
 byte RTCReg,RTCMode;               /* RTC register numbers   */
@@ -307,19 +301,6 @@ static byte *GetMemory(int Size); /* Get memory chunk                */
 static void FreeMemory(const void *Ptr); /* Free memory chunk        */
 static void FreeAllMemory(void);  /* Free all memory chunks          */
 
-/* Forward declarations */
-RFILE* rfopen(const char *path, const char *mode);
-char *rfgets(char *buffer, int maxCount, RFILE* stream);
-int rfclose(RFILE* stream);
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int64_t rfseek(RFILE* stream, int64_t offset, int origin);
-int64_t rftell(RFILE* stream);
-int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
-int rfgetc(RFILE* stream);
-int rfeof(RFILE* stream);
-
 /** hasext() *************************************************/
 /** Check if file name has given extension.                 **/
 /*************************************************************/
@@ -431,7 +412,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 #endif
 
   /* Zero everything */
-  CasStream=PrnStream=ComIStream=ComOStream=0;
+  /* Zero everyting */
+  CasStream   = 0;
   FontBuf     = 0;
   RAMData     = 0;
   VRAM        = 0;
@@ -538,19 +520,6 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
 
-  /* Open stream for a printer */
-  /* Redirecting printer output to ... */
-  ChangePrinter(PrnName);
-
-  /* Open streams for serial IO */
-  if(!ComName) { ComIStream=stdin;ComOStream=stdout; }
-  else
-  {
-    /* Redirecting serial I/O to ... */
-    if(!(ComOStream = ComIStream = fopen(ComName,"r+b")))
-    { ComIStream=stdin;ComOStream=stdout; }
-  }
-
   /* Open casette image */
   if(CasName && ChangeTape(CasName)) { }
 
@@ -602,15 +571,8 @@ void TrashMSX(void)
   /* Eject disks, free disk buffers */
   Reset1793(&FDC,FDD,WD1793_EJECT);
 
-  /* Close printer output */
-  ChangePrinter(0);
-
   /* Close tape */
   ChangeTape(0);
-
-  /* Close all IO streams */
-  if(ComOStream&&(ComOStream!=stdout)) fclose(ComOStream);
-  if(ComIStream&&(ComIStream!=stdin))  fclose(ComIStream);
 
   /* Eject all cartridges (will save SRAM) */
   for(J=0;J<MAXSLOTS;++J) LoadCart(0,J,ROMType[J]);
@@ -792,17 +754,15 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   CPU.IPeriod    = CPU_H240;
   CPU.IAutoReset = 0;
 
-  /* Numbers of RAM/VRAM pages should be power of 2 */
+  /* Numbers of RAM pages should be power of 2 */
   for(J=1;J<NewRAMPages;J<<=1);
   NewRAMPages=J;
-  for(J=1;J<NewVRAMPages;J<<=1);
-  NewVRAMPages=J;
 
   /* Correct RAM and VRAM sizes */
   if((NewRAMPages<(MODEL(MSX_MSX1)? 4:8))||(NewRAMPages>256))
-    NewRAMPages=MODEL(MSX_MSX1)? 4:8;
-  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>8))
-    NewVRAMPages=MODEL(MSX_MSX1)? 2:8;
+    NewRAMPages=MODEL(MSX_MSX1)? 4:8; // MSX1 min&default: 64KiB, MSX2(+) min&default: 128KiB. Max 4MiB
+  if((NewVRAMPages<(MODEL(MSX_MSX1)? 2:8))||(NewVRAMPages>12))
+    NewVRAMPages=MODEL(MSX_MSX1)? 2:8; // MSX1 min&default: 32KiB, MSX2(+) min&default: 128KiB. Max 192KiB (nonstandard)
 
   /* If changing amount of RAM... */
   if(NewRAMPages!=RAMPages)
@@ -868,9 +828,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   Sync8910(&PSG,AY8910_SYNC);
   SyncSCC(&SCChip,SCC_SYNC);
   Sync2413(&OPLL,YM2413_SYNC);
-
-  /* Reset serial I/O */
-  Reset8251(&SIO,ComIStream,ComOStream);
 
   /* Reset PPI chips and slot selectors */
   Reset8255(&PPI);
@@ -1842,12 +1799,6 @@ void VDPOut(byte R,byte V)
 /*************************************************************/
 void Printer(byte V)
 {
-  if(!PrnStream)
-  {
-    PrnStream = PrnName?   fopen(PrnName,"ab"):0;
-    PrnStream = PrnStream? PrnStream:stdout;
-  }
-  fputc(V,PrnStream);
 }
 
 /** PPIOut() *************************************************/
@@ -2081,9 +2032,6 @@ word LoopZ80(Z80 *R)
     /* Check joystick */
     JoyState=Joystick();
 
-    /* Check keyboard */
-    Keyboard();
-
     /* Check mouse in joystick port #1 */
     if(JOYTYPE(0)>=JOY_MOUSTICK)
     {
@@ -2276,15 +2224,52 @@ char *MakeFileName(const char *Name,const char *Ext)
 /*************************************************************/
 byte ChangeTape(const char *FileName)
 {
+  tape_type = NO_TAPE;
+
   /* Close previous tape image, if open */
-  if(CasStream) { fclose(CasStream);CasStream=0; }
+  if(CasStream) { rfclose(CasStream);CasStream=0; }
 
   /* If opening a new tape image... */
   if(FileName)
   {
     /* Try read+append first, then read-only */
-    CasStream = fopen(FileName,"r+b");
-    CasStream = CasStream? CasStream:fopen(FileName,"rb");
+    CasStream = rfopen(FileName,"r+b");
+    CasStream = CasStream? CasStream:rfopen(FileName,"rb");
+
+    if (CasStream)
+    {
+        rfseek(CasStream,0,SEEK_END);
+        int tape_len = rftell(CasStream);
+        filestream_rewind(CasStream);
+        char *tape_contents = (char*)malloc(tape_len);
+        if (rfread(tape_contents, 1, tape_len, CasStream) != tape_len)
+        {
+           free(tape_contents);
+           return 0;
+        }
+        int pos = 0;
+        while (pos + TAPE_HEADER_LEN <= tape_len)
+        {
+           if (!memcmp(&tape_contents[pos], ASCII_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = ASCII_TAPE;
+              break;
+           }
+           else if (!memcmp(&tape_contents[pos], BINARY_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = BINARY_TAPE;
+              break;
+           }
+           else if (!memcmp(&tape_contents[pos], BASIC_HEADER, TAPE_HEADER_LEN))
+           {
+              tape_type = BASIC_TAPE;
+              break;
+           }
+           pos++;
+        }
+        free(tape_contents);
+    }
+    RewindTape();
   }
 
   /* Done */
@@ -2292,9 +2277,9 @@ byte ChangeTape(const char *FileName)
 }
 
 /** RewindTape() *********************************************/
-/** Rewind currenly open tape.                              **/
+/** Rewind currently open tape.                              **/
 /*************************************************************/
-void RewindTape(void) { if(CasStream) rewind(CasStream); }
+void RewindTape(void) { if(CasStream) filestream_rewind(CasStream); }
 
 /** ChangePrinter() ******************************************/
 /** Change printer output to a given file. The previous     **/
@@ -2303,9 +2288,6 @@ void RewindTape(void) { if(CasStream) rewind(CasStream); }
 /*************************************************************/
 void ChangePrinter(const char *FileName)
 {
-  if(PrnStream&&(PrnStream!=stdout)) fclose(PrnStream);
-  PrnName   = FileName;
-  PrnStream = 0;
 }
 
 /** ChangeDisk() *********************************************/
@@ -2342,43 +2324,6 @@ byte ChangeDisk(byte N,const char *FileName)
 
   /* Done */
   return(!!P);
-}
-
-/** LoadFile() ***********************************************/
-/** Simple utility function to load cartridge, state, font  **/
-/** or a disk image, based on the file extension, etc.      **/
-/*************************************************************/
-int LoadFile(const char *FileName)
-{
-  int J;
-
-  /* Try loading as a disk */
-  if(hasext(FileName,".DSK")||hasext(FileName,".FDI"))
-  {
-    /* Change disk image in drive A: */
-    if(!ChangeDisk(0,FileName)) return(0);
-    /* Eject all user cartridges if successful */
-    for(J=0;J<MAXCARTS;++J) LoadCart(0,J,ROMType[J]);
-    /* Done */
-    return(1);
-  }
-
-  /* Try loading as a cartridge */
-  if(hasext(FileName,".ROM")||hasext(FileName,".MX1")||hasext(FileName,".MX2"))
-    return(!!LoadCart(FileName,0,ROMGUESS(0)|ROMTYPE(0)));
-
-  /* Try loading as a tape */
-  if(hasext(FileName,".CAS")) return(!!ChangeTape(FileName));
-  /* Try loading as a font */
-  if(hasext(FileName,".FNT")) return(!!LoadFNT(FileName));
-  /* Try loading as palette */
-  if(hasext(FileName,".PAL")) return(!!LoadPAL(FileName));
-  /* Try loading as cheats */
-  if(hasext(FileName,".CHT")) return(!!LoadCHT(FileName));
-  if(hasext(FileName,".MCF")) return(!!LoadMCF(FileName));
-
-  /* Unknown file type */
-  return(0);
 }
 
 /** ApplyMCFCheat() ******************************************/

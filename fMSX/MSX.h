@@ -20,15 +20,18 @@
 #include "YM2413.h"         /* YM2413 OPLL emulation         */
 #include "SCC.h"            /* Konami SCC chip emulation     */
 #include "I8255.h"          /* Intel 8255 PPI emulation      */
-#include "I8251.h"          /* Intel 8251 UART emulation     */
 #include "WD1793.h"         /* WD1793 FDC emulation          */
 
 #include <stdint.h>
+#include <stdio.h> // TODO remove after merging PR 81 (CasStream)
+
+#include <streams/file_stream.h>
 
 /** INLINE ***************************************************/
 /** C99 standard has "inline", but older compilers've used  **/
 /** __inline for the same purpose.                          **/
 /*************************************************************/
+#undef INLINE
 #ifdef __C99__
 #define INLINE static inline
 #else
@@ -203,6 +206,15 @@ extern volatile byte KeyState[16];
 #define KBD_NUMPAD9  0x81
 /*************************************************************/
 
+/** Cassette Tapes *******************************************/
+extern byte tape_type;
+
+#define NO_TAPE      0
+#define ASCII_TAPE   1
+#define BINARY_TAPE  2
+#define BASIC_TAPE   3
+/*************************************************************/
+
 /** Cheats() arguments ***************************************/
 #define CHTS_OFF      0               /* Turn all cheats off */
 #define CHTS_ON       1               /* Turn all cheats on  */
@@ -263,13 +275,11 @@ extern byte SSLReg[4];                /* Secondary slot reg. */
 extern const char *ProgDir;           /* Program directory   */
 extern const char *ROMName[MAXCARTS]; /* Cart A/B ROM files  */
 extern const char *DSKName[MAXDRIVES];/* Disk A/B images     */
-extern const char *PrnName;           /* Printer redir. file */
 extern const char *CasName;           /* Tape image file     */
-extern const char *ComName;           /* Serial redir. file  */
-extern const char *FNTName;           /* Font file for text  */ 
+extern const char *FNTName;           /* Font file for text  */
 
 extern FDIDisk FDD[4];                /* Floppy disk images  */
-extern FILE *CasStream;               /* Cassette I/O stream */
+extern RFILE *CasStream;               /* Cassette I/O stream */
 
 typedef struct
 {
@@ -296,12 +306,6 @@ void TrashMSX(void);
 /** modes, possibly not the same as NewMode.                **/
 /*************************************************************/
 int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages);
-
-/** LoadFile() ***********************************************/
-/** Simple utility function to load cartridge, state, font  **/
-/** or a disk image, based on the file extension, etc.      **/
-/*************************************************************/
-int LoadFile(const char *FileName);
 
 /** LoadCart() ***********************************************/
 /** Load cartridge into given slot. Returns cartridge size  **/
@@ -413,16 +417,6 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /** on success, 0 on failure.                               **/
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
-
-/** InitMachine() ********************************************/
-/** Allocate resources needed by the machine-dependent code.**/
-/************************************ TO BE WRITTEN BY USER **/
-int InitMachine(void);
-
-/** TrashMachine() *******************************************/
-/** Deallocate all resources taken by InitMachine().        **/
-/************************************ TO BE WRITTEN BY USER **/
-void TrashMachine(void);
 
 /** Keyboard() ***********************************************/
 /** This function is periodically called to poll keyboard.  **/
