@@ -18,6 +18,20 @@ Tapes are automatically started based on their detected type (binary, ASCII or B
 Press F6 to rewind the tape, if that's needed.
 
 
+## Cheats
+"To make cheat codes for `Game.rom`, create `Game.cht` containing codes in `00AAAAAA-DD` and `00AAAAAA-DDDD` formats, one per line. 
+Where `AAAAAA` is the ROM address and `DD` is the value to write there. For 16bit values, use `DDDD`.
+The cheat file will be loaded automatically." ([fMSX site](https://fms.komkon.org/fMSX/fMSX.html#LABB), section "New in fMSX 4.0")
+Press F7 to activate cheats; press F7 again to deactivate. 
+
+Note: this .cht format is specific to fMSX and differs from [RetroArch's CHT files](https://github.com/libretro/libretro-database/blob/master/cht/Microsoft%20-%20MSX%20-%20MSX2%20-%20MSX2P%20-%20MSX%20Turbo%20R/)!
+This core does not (yet) support [RetroArch cheat codes](https://docs.libretro.com/guides/cheat-codes/).
+Neither Emulator Handled (lr-db for MSX does not even contain any that would apply; no `code` values) 
+nor RetroArch Handled (would probably require support for loading content from memory and/or memory mapping).
+
+A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repeatedly to active cheats one by one, or disable cheats.  
+
+
 ## Configuration options
 
 Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
@@ -36,7 +50,8 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 
 
 ## BIOS
-BIOS ROMs are loading from RetroArch's `system_directory`.
+
+BIOS ROMs are loaded from RetroArch's `system_directory`. The screen will remain black if required ROMs are missing.
 
 These BIOS ROMs are required for execution:
 * MSX1: MSX.ROM

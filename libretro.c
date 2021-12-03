@@ -24,10 +24,15 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 static byte PaletteFrozen=0;
 
+static char PathName_buffer[1024];
 static char FntName_buffer[1024];
+
 static char AutoType_buffer[1024];
 char *autotype=0;
 #define BOOT_FRAME_COUNT 400  // a guesstimate when diskless boot is done
+
+extern int MCFCount;
+int current_cheat;
 
 extern byte *RAMData;
 extern int RAMPages ;
@@ -448,7 +453,7 @@ bool retro_unserialize(const void *data, size_t size)
 }
 
 void retro_cheat_reset(void) {}
-void retro_cheat_set(unsigned a, bool b, const char * c) {}
+void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
 void PutImage(void)
 {
@@ -660,13 +665,98 @@ void setup_tape_autotype()
       autotype = (char*)&AutoType_buffer;
 }
 
+void set_extension(char *buffer, int maxidx, const char *path, const char *ext)
+{
+   strncpy(buffer, path, maxidx);
+   PathName_buffer[maxidx]=0;
+   replace_ext(buffer, ext);
+}
+
+bool try_loading_cht(const char *path, const char *ext)
+{
+   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
+   return (filestream_exists(PathName_buffer) && LoadCHT(PathName_buffer) > 0);
+}
+
+bool try_loading_mcf(const char *path, const char *ext)
+{
+   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
+   return (filestream_exists(PathName_buffer) && LoadMCF(PathName_buffer) > 0);
+}
+
+bool try_loading_palette(const char *path, const char *ext)
+{
+   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
+   if (filestream_exists(PathName_buffer) && LoadPAL(PathName_buffer) == 16)
+   {
+      PaletteFrozen=1;
+      return true;
+   }
+   return false;
+}
+
+void show_message(const char* msg, unsigned number_of_frames)
+{
+   struct retro_message message;
+   message.msg = msg;
+   message.frames = number_of_frames;
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+}
+
+RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+{
+   if (down)
+   {
+      switch(keycode)
+      {
+      case RETROK_F6:
+         RewindTape();
+         show_message("Cassette tape rewound", fps);
+         break;
+
+      case RETROK_F7:
+         if (MCFCount > 0)
+         {
+            // cycle through MCF cheats
+            current_cheat=(++current_cheat)%(MCFCount+1);
+            if (current_cheat==0)
+            {
+               Cheats(CHTS_OFF);
+               show_message("Disabled cheats", fps);
+            }
+            else if (ApplyMCFCheat(current_cheat-1))
+            {
+               Cheats(CHTS_ON);
+               int value;
+               char *note = GetMCFNoteAndValue(current_cheat-1, &value);
+               char msg[1024];
+               snprintf(msg, sizeof(msg), "Enabled cheat %s: %d", note, value);
+               show_message(msg, fps);
+            }
+         }
+         else // just toggle CHT cheats on/off all at once
+            Cheats(!Cheats(CHTS_QUERY));
+         break;
+      }
+   }
+}
+
+void load_core_specific_cheats(const char* path)
+{
+   current_cheat=0;
+
+   if (try_loading_cht(path, "cht")
+    || try_loading_cht(path, "CHT")
+    || try_loading_mcf(path, "mcf")
+    || try_loading_mcf(path, "MCF")) {}
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
    static char ROMName_buffer[MAXCARTS][1024];
    static char DSKName_buffer[MAXDRIVES][1024];
    static char CasName_buffer[1024];
-   static char PalName_buffer[1024];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -679,6 +769,10 @@ bool retro_load_game(const struct retro_game_info *info)
    image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
+
+   struct retro_keyboard_callback keyboard_event_callback;
+   keyboard_event_callback.callback = keyboard_event;
+   environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_event_callback);
 
    check_variables();
    set_input_descriptors();
@@ -706,16 +800,7 @@ bool retro_load_game(const struct retro_game_info *info)
          CasName=CasName_buffer;
       }
 
-      /* Try loading as palette: <basename>.pal */
-      strncpy(PalName_buffer, info->path, sizeof(PalName_buffer)-1);
-      PalName_buffer[sizeof(PalName_buffer)-1]=0;
-      replace_ext(PalName_buffer, "pal");
-      if(filestream_exists(PalName_buffer) && LoadPAL(PalName_buffer) == 16) PaletteFrozen=1;
-      else
-      {
-         replace_ext(PalName_buffer, "PAL");
-         if(filestream_exists(PalName_buffer) && LoadPAL(PalName_buffer) == 16) PaletteFrozen=1;
-      }
+      if (try_loading_palette(info->path, "pal") || try_loading_palette(info->path, "PAL")) {}
    }
    else
    {
@@ -742,6 +827,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
+   if (info) load_core_specific_cheats(info->path);
    update_fps();
    setup_tape_autotype();
    return true;
@@ -823,22 +909,8 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-void show_message(const char* msg, unsigned number_of_frames)
-{
-   struct retro_message message;
-   message.msg = msg;
-   message.frames = number_of_frames;
-   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
-}
-
 void handle_tape_autotype()
 {
-   if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_F6))
-   {
-      RewindTape();
-      show_message("Cassette tape rewound", fps);
-   }
-
    if (frame_number < BOOT_FRAME_COUNT && autotype)
       KBD_SET(KBD_SHIFT); // press shift during boot to skip loading DiskROM. Most tape games need the extra memory.
    else if (frame_number > BOOT_FRAME_COUNT && (frame_number & 3) == 0 && autotype && *autotype)

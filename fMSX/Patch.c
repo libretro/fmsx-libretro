@@ -12,8 +12,11 @@
 /**     changes to this file.                               **/
 /*************************************************************/
 
+#include "libretro.h"
+
 #include "MSX.h"
 #include "Boot.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +26,8 @@
 
 void SSlot(byte Value); /* Used to switch secondary slots */
 void PSlot(byte Value); /* Used to switch primary slots   */
+
+extern retro_log_printf_t log_cb;
 
 /** DiskPresent() ********************************************/
 /** Return 1 if disk drive with a given ID is present.      **/
@@ -119,9 +124,10 @@ case 0x4010:
 *** 6 Seek error                                              ***
 ****************************************************************/
 {
-  if(Verbose&0x04)
-    printf
+  if(Verbose&0x04 && log_cb)
+    log_cb
     (
+      RETRO_LOG_INFO,
       "%s DISK %c: %d sectors starting from %04Xh [buffer at %04Xh]\n",
       R->AF.B.l&C_FLAG? "WRITE":"READ",R->AF.B.h+'A',R->BC.B.h,
       R->DE.W,R->HL.W
@@ -199,7 +205,7 @@ case 0x4013:
 *** media descriptor and transfer a new DPB as with GETDPB.   ***
 ****************************************************************/
 {
-  if(Verbose&0x04) printf("CHECK DISK %c\n",R->AF.B.h+'A');
+  if(Verbose&0x04 && log_cb) log_cb(RETRO_LOG_INFO,"CHECK DISK %c\n",R->AF.B.h+'A');
 
   R->IFF|=1;
 
@@ -367,7 +373,7 @@ case 0x00E1:
 {
   long Pos;
 
-  if(Verbose&0x04) printf("TAPE: Looking for header...");
+  if(Verbose&0x04 && log_cb) log_cb(RETRO_LOG_INFO,"TAPE: Looking for header...");
 
   R->AF.B.l|=C_FLAG;
   if(CasStream)
@@ -464,7 +470,6 @@ case 0x00F3:
   return;
 
 default:
-  printf("Unknown BIOS trap called at PC=%04Xh\n",R->PC.W-2);
-
+  if(log_cb) log_cb(RETRO_LOG_INFO,"Unknown BIOS trap called at PC=%04Xh\n",R->PC.W-2);
   }
 }

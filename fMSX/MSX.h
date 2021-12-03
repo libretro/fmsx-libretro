@@ -23,7 +23,6 @@
 #include "WD1793.h"         /* WD1793 FDC emulation          */
 
 #include <stdint.h>
-#include <stdio.h> // TODO remove after merging PR 81 (CasStream)
 
 #include <streams/file_stream.h>
 
@@ -384,16 +383,16 @@ int SetScreenDepth(int Depth);
 /*************************************************************/
 int ApplyMCFCheat(int N);
 
+/** GetMCFNoteAndValue() *********************************************/
+/** Returns cheat description and value.                    **/
+/*************************************************************/
+char* GetMCFNoteAndValue(int N, int *Value);
+
 /** AddCheat() ***********************************************/
 /** Add a new cheat. Returns 0 on failure or the number of  **/
 /** cheats on success.                                      **/
 /*************************************************************/
 int AddCheat(const char *Cheat);
-
-/** DelCheat() ***********************************************/
-/** Delete a cheat. Returns 0 on failure, 1 on success.     **/
-/*************************************************************/
-int DelCheat(const char *Cheat);
 
 /** ResetCheats() ********************************************/
 /** Remove all cheats.                                      **/
