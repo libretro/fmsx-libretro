@@ -11,7 +11,11 @@
 /**     commercially. Please, notify me, if you make any    **/
 /**     changes to this file.                               **/
 /*************************************************************/
+
+#include "libretro.h"
+
 #include "FDIDisk.h"
+
 #include <string.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -22,6 +26,8 @@
 #include <ctype.h>
 
 #include <streams/file_stream_transforms.h>
+
+extern retro_log_printf_t log_cb;
 
 #define IMAGE_SIZE(Fmt) \
   (Formats[Fmt].Sides*Formats[Fmt].Tracks*    \
@@ -376,9 +382,8 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
       L = (L-0x100+N-1)/N;
       /* Round up to the next power of two */
       for(J=1;J<L;J<<=1);
-//printf("Tracks=%d, Heads=%d, Sectors=%d, SectorSize=%d<%d\n",I,K,N,L,J);
-      if(D->Verbose && (L!=J))
-        printf("LoadFDI(): Adjusted %d-byte CPC disk sectors to %d bytes.\n",L,J);
+      if(D->Verbose && (L!=J) && log_cb)
+        log_cb(RETRO_LOG_INFO,"LoadFDI(): Adjusted %d-byte CPC disk sectors to %d bytes.\n",L,J);
       L = J;
       /* Check geometry */
       if(!K||!N||!L||!I) { rfclose(F);return(0); }
@@ -578,8 +583,8 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
       return(0);
   }
 
-  if(D->Verbose)
-    printf(
+  if(D->Verbose && log_cb)
+    log_cb(RETRO_LOG_INFO,
       "LoadFDI(): Loaded '%s', %d sides x %d tracks x %d sectors x %d bytes\n",
       FileName,D->Sides,D->Tracks,D->Sectors,D->SecSize
     );

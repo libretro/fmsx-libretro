@@ -2368,7 +2368,7 @@ int ApplyMCFCheat(int N)
   return(CheatCount);
 }
 
-char* GetMCFNote(int N, int *Value)
+char* GetMCFNoteAndValue(int N, int *Value)
 {
   if (Value) *Value = MCFEntries[N].Data;
   return MCFEntries[N].Note;

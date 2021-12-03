@@ -695,27 +695,49 @@ bool try_loading_palette(const char *path, const char *ext)
    return false;
 }
 
+void show_message(const char* msg, unsigned number_of_frames)
+{
+   struct retro_message message;
+   message.msg = msg;
+   message.frames = number_of_frames;
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+}
+
 RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
-   if (down && keycode == RETROK_F7)
+   if (down)
    {
-      if (MCFCount > 0)
+      switch(keycode)
       {
-         // cycle through MCF cheats
-         current_cheat=(++current_cheat)%(MCFCount+1);
-         if (current_cheat==0)
-            Cheats(CHTS_OFF);
-         else if (ApplyMCFCheat(current_cheat-1))
+      case RETROK_F6:
+         RewindTape();
+         show_message("Cassette tape rewound", fps);
+         break;
+
+      case RETROK_F7:
+         if (MCFCount > 0)
          {
-            Cheats(CHTS_ON);
-            int value;
-            char *note = GetMCFNote(current_cheat-1, &value);
-            // TODO rewrite to show_message() once PR 81 is merged
-            printf("Enabled %s: %d\n", note, value);
+            // cycle through MCF cheats
+            current_cheat=(++current_cheat)%(MCFCount+1);
+            if (current_cheat==0)
+            {
+               Cheats(CHTS_OFF);
+               show_message("Disabled cheats", fps);
+            }
+            else if (ApplyMCFCheat(current_cheat-1))
+            {
+               Cheats(CHTS_ON);
+               int value;
+               char *note = GetMCFNoteAndValue(current_cheat-1, &value);
+               char msg[1024];
+               snprintf(msg, sizeof(msg), "Enabled cheat %s: %d", note, value);
+               show_message(msg, fps);
+            }
          }
+         else // just toggle CHT cheats on/off all at once
+            Cheats(!Cheats(CHTS_QUERY));
+         break;
       }
-      else // just toggle CHT cheats on/off all at once
-         Cheats(!Cheats(CHTS_QUERY));
    }
 }
 
@@ -887,22 +909,8 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-void show_message(const char* msg, unsigned number_of_frames)
-{
-   struct retro_message message;
-   message.msg = msg;
-   message.frames = number_of_frames;
-   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
-}
-
 void handle_tape_autotype()
 {
-   if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_F6))
-   {
-      RewindTape();
-      show_message("Cassette tape rewound", fps);
-   }
-
    if (frame_number < BOOT_FRAME_COUNT && autotype)
       KBD_SET(KBD_SHIFT); // press shift during boot to skip loading DiskROM. Most tape games need the extra memory.
    else if (frame_number > BOOT_FRAME_COUNT && (frame_number & 3) == 0 && autotype && *autotype)
