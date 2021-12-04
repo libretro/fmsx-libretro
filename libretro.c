@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 
 #include <compat/posix_string.h>
-#include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 #include "MSX.h"
 #include "EMULib.h"
@@ -24,9 +25,20 @@ static uint16_t BPal[256];
 static uint16_t XPal0;
 static byte PaletteFrozen=0;
 
-static char PathName_buffer[1024];
-static char FntName_buffer[1024];
+#ifndef PATH_MAX
+#define PATH_MAX  4096
+#endif
 
+#ifdef _WIN32
+#define SLASH '\\'
+#else
+#define SLASH '/'
+#endif
+
+static char base_dir[PATH_MAX];
+static char PathName_buffer[PATH_MAX];
+static char DSKName_buffer[PATH_MAX];
+static char FntName_buffer[PATH_MAX];
 static char AutoType_buffer[1024];
 char *autotype=0;
 #define BOOT_FRAME_COUNT 400  // a guesstimate when diskless boot is done
@@ -38,6 +50,7 @@ extern byte *RAMData;
 extern int RAMPages ;
 
 #define SND_RATE 48000
+#define AUDIO_BUFFER_SIZE 1024 // .78 frames at 60Hz, .94 frames at 50Hz
 
 // in screen mode 6 & 7 (512px wide), Wide.h doubles WIDTH
 #define BORDER 8
@@ -229,7 +242,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_version  = "6.0" GIT_VERSION;
    info->need_fullpath    = true;
    info->block_extract    = false;
-   info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas";
+   info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas|m3u";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -412,6 +425,149 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
       set_input_descriptors();
    }
 }
+
+/* .dsk swap support */
+struct retro_disk_control_callback dskcb;
+unsigned disk_index = 0;
+unsigned disk_images = 0;
+char disk_paths[MAXDISKS][PATH_MAX];
+bool disk_inserted = false;
+
+bool set_eject_state(bool ejected)
+{
+   disk_inserted = !ejected;
+   if (!disk_inserted) ChangeDisk(0, NULL);
+   return true;
+}
+
+bool get_eject_state(void)
+{
+   return !disk_inserted;
+}
+
+unsigned get_image_index(void)
+{
+   return disk_index;
+}
+
+bool set_image_index(unsigned index)
+{
+   disk_index = index;
+
+   if(disk_index == disk_images)
+   {
+      //retroarch is trying to set "no disk in tray"
+      ChangeDisk(0, NULL);
+      return true;
+   }
+
+   strncpy(DSKName_buffer, disk_paths[disk_index], PATH_MAX-1);
+   DSKName_buffer[PATH_MAX-1] = 0;
+   DSKName[0]=DSKName_buffer;
+   if(!ChangeDisk(0,DSKName[0]) && log_cb) {
+      log_cb(RETRO_LOG_ERROR, "%s %s\n", "could not load", disk_paths[disk_index]);
+      return false;
+   }
+
+   return true;
+}
+
+unsigned get_num_images(void)
+{
+   return disk_images;
+}
+
+bool add_image_index(void)
+{
+   if (disk_images >= MAXDISKS)
+      return false;
+
+   disk_images++;
+   return true;
+}
+
+bool replace_image_index(unsigned index, const struct retro_game_info *info)
+{
+   char *dot = strrchr(info->path, '.');
+   if (!dot || strcasecmp(dot, ".dsk"))
+      return false; /* can't swap a cart or tape into a disk slot */
+
+   strcpy(disk_paths[index], info->path);
+   return true;
+}
+
+void attach_disk_swap_interface(void)
+{
+   dskcb.set_eject_state = set_eject_state;
+   dskcb.get_eject_state = get_eject_state;
+   dskcb.set_image_index = set_image_index;
+   dskcb.get_image_index = get_image_index;
+   dskcb.get_num_images  = get_num_images;
+   dskcb.add_image_index = add_image_index;
+   dskcb.replace_image_index = replace_image_index;
+
+   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &dskcb);
+}
+
+static bool read_m3u(const char *file)
+{
+   char line[PATH_MAX];
+   char name[PATH_MAX];
+   RFILE *f = rfopen(file, "r");
+
+   if (!f)
+      return false;
+
+   while (rfgets(line, sizeof(line), f) && disk_images < MAXDISKS)
+   {
+      char *carriage_return = NULL;
+      char *newline         = NULL;
+
+      if (line[0] == '#')
+         continue;
+
+      carriage_return = strchr(line, '\r');
+      if (carriage_return)
+         *carriage_return = '\0';
+
+      newline = strchr(line, '\n');
+      if (newline) *newline = '\0';
+
+      if (line[0] != '\0')
+      {
+#ifdef _WIN32
+         if (isalpha(line[0]) && line[1] == ':')
+#else
+         if (line[0] == SLASH)
+#endif
+            strncpy(name, line, sizeof(name));
+         else if (snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line) < 0)
+            name[sizeof(name)-1] = 0;
+         strcpy(disk_paths[disk_images++], name);
+      }
+   }
+
+   rfclose(f);
+   return (disk_images != 0);
+}
+
+static void extract_directory(char *buf, const char *path, size_t size)
+{
+   char *base = NULL;
+
+   strncpy(buf, path, size - 1);
+   buf[size - 1] = '\0';
+
+   base = strrchr(buf, '/');
+   if (!base)
+      base = strrchr(buf, '\\');
+
+   if (base)
+      *base = '\0';
+   else
+      buf[0] = '\0';
+}
+/* end .dsk swap support */
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t unused) { }
@@ -754,9 +910,8 @@ void load_core_specific_cheats(const char* path)
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
-   static char ROMName_buffer[MAXCARTS][1024];
-   static char DSKName_buffer[MAXDRIVES][1024];
-   static char CasName_buffer[1024];
+   static char ROMName_buffer[PATH_MAX];
+   static char CasName_buffer[PATH_MAX];
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -769,6 +924,11 @@ bool retro_load_game(const struct retro_game_info *info)
    image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
+
+   if (info) extract_directory(base_dir, info->path, sizeof(base_dir));
+   disk_index = 0;
+   disk_images = 0;
+   disk_inserted = false;
 
    struct retro_keyboard_callback keyboard_event_callback;
    keyboard_event_callback.callback = keyboard_event;
@@ -786,18 +946,29 @@ bool retro_load_game(const struct retro_game_info *info)
       char *dot = strrchr(info->path, '.');
       if (dot && ( !strcasecmp(dot, ".rom") || !strcasecmp(dot, ".mx1") || !strcasecmp(dot, ".mx2") ))
       {
-         strcpy(ROMName_buffer[0], info->path);
-         ROMName[0]=ROMName_buffer[0];
+         strcpy(ROMName_buffer, info->path);
+         ROMName[0]=ROMName_buffer;
       }
       else if (dot && ( !strcasecmp(dot, ".dsk") || !strcasecmp(dot, ".fdi") ))
       {
-         strcpy(DSKName_buffer[0], info->path);
-         DSKName[0]=DSKName_buffer[0];
+         strcpy(DSKName_buffer, info->path);
+         DSKName[0]=DSKName_buffer;
       }
       else if (dot && !strcasecmp(dot, ".cas"))
       {
          strcpy(CasName_buffer, info->path);
          CasName=CasName_buffer;
+      }
+      else if (dot && !strcasecmp(dot, ".m3u"))
+      {
+         if (!read_m3u(info->path))
+         {
+            if (log_cb) log_cb(RETRO_LOG_ERROR, "%s %s\n", "failed to read", info->path);
+            return false;
+         }
+         set_image_index(0);
+         disk_inserted = true;
+         attach_disk_swap_interface();
       }
 
       if (try_loading_palette(info->path, "pal") || try_loading_palette(info->path, "PAL")) {}
@@ -844,15 +1015,15 @@ void SetColor(byte N,byte R,byte G,byte B)
 
 unsigned int GetFreeAudio(void)
 {
-  return 1024;
+  return AUDIO_BUFFER_SIZE;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)
 {
-   static uint16_t audio_buf[1024 * 2];
+   static uint16_t audio_buf[AUDIO_BUFFER_SIZE * 2];
    int i;
-   if (Length > 1024)
-      Length = 1024;
+   if (Length > AUDIO_BUFFER_SIZE)
+      Length = AUDIO_BUFFER_SIZE;
    for (i=0; i < Length; i++)
    {
       audio_buf[i << 1]       = Data[i];
