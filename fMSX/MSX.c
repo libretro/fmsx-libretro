@@ -2238,16 +2238,19 @@ byte ChangeTape(const char *FileName)
 
     if (CasStream)
     {
+        int tape_len, pos = 0;
+        char *tape_contents;
+
         rfseek(CasStream,0,SEEK_END);
-        int tape_len = rftell(CasStream);
+        tape_len = rftell(CasStream);
         filestream_rewind(CasStream);
-        char *tape_contents = (char*)malloc(tape_len);
+
+        tape_contents = (char*)malloc(tape_len);
         if (rfread(tape_contents, 1, tape_len, CasStream) != tape_len)
         {
            free(tape_contents);
            return 0;
         }
-        int pos = 0;
         while (pos + TAPE_HEADER_LEN <= tape_len)
         {
            if (!memcmp(&tape_contents[pos], ASCII_HEADER, TAPE_HEADER_LEN))

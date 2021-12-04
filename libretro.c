@@ -882,10 +882,10 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
             }
             else if (ApplyMCFCheat(current_cheat-1))
             {
-               Cheats(CHTS_ON);
+               char msg[1024], *note;
                int value;
-               char *note = GetMCFNoteAndValue(current_cheat-1, &value);
-               char msg[1024];
+               Cheats(CHTS_ON);
+               note = GetMCFNoteAndValue(current_cheat-1, &value);
                snprintf(msg, sizeof(msg), "Enabled cheat %s: %d", note, value);
                show_message(msg, fps);
             }
@@ -912,6 +912,7 @@ bool retro_load_game(const struct retro_game_info *info)
    int i;
    static char ROMName_buffer[PATH_MAX];
    static char CasName_buffer[PATH_MAX];
+   struct retro_keyboard_callback keyboard_event_callback;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -930,7 +931,6 @@ bool retro_load_game(const struct retro_game_info *info)
    disk_images = 0;
    disk_inserted = false;
 
-   struct retro_keyboard_callback keyboard_event_callback;
    keyboard_event_callback.callback = keyboard_event;
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_event_callback);
 
