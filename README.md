@@ -10,12 +10,34 @@ Source : http://fms.komkon.org/fMSX/
 * .rom .mx1 .mx2 .ROM .MX1 .MX2 - for ROM images
 * .dsk .DSK .fdi .FDI - for FAT12 360/720kB disk images
 * .cas .CAS - for fMSX tape files
+* .m3u .M3U - for multidisk software
 
 
 ## Tape (cassette) software
 Tapes are automatically started based on their detected type (binary, ASCII or BASIC).
 
 Press F6 to rewind the tape, if that's needed.
+
+
+## Multidisk software
+Create a textfile with extension `.m3u` and list one `.dsk` filename per line.
+The file will be resolved relative to the directory location of the `.m3u`-file.
+Absolute files are also supported; start the full path with `<drive>:` on Windows or '/' on other OSes.
+
+Navigate through the disk images using RetroArch hotkeys; configure these settings:
+
+    # keyboard settings
+    input_disk_eject_toggle = ".."
+    input_disk_prev = ".."
+    input_disk_next = ".."
+and/or
+
+    # RetroPad settings
+    input_disk_eject_toggle_btn = ".."
+    input_disk_prev_btn = ".."
+    input_disk_next_btn = ".."
+
+Note: images can only be swapped in the 'eject' state.
 
 
 ## Cheats
