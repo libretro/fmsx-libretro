@@ -40,7 +40,7 @@ void Reset1793(WD1793 *D,FDIDisk *Disks,byte Eject)
   D->Rsrvd2   = 0;
 
   /* For all drives... */
-  for(J=0;J<4;++J)
+  for(J=0;J<NUM_FDI_DRIVES;++J)
   {
     /* Reset drive-dependent state */
     D->Disk[J]  = Disks? &Disks[J]:0;
