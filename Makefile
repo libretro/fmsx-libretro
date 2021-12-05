@@ -8,7 +8,7 @@ ifneq ($(GIT_VERSION)," unknown")
 endif
 
 DEBUG     = 0
-PATCH_Z80 = 0
+PATCH_Z80 = 1
 LIBS =
 
 ifeq ($(platform),)

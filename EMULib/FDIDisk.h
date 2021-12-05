@@ -43,6 +43,8 @@ extern "C" {
 
 #define DataFDI(D) ((D)->Data+(D)->Data[10]+((int)((D)->Data[11])<<8))
 
+#define NUM_FDI_DRIVES 4
+
 #ifndef BYTE_TYPE_DEFINED
 #define BYTE_TYPE_DEFINED
 typedef unsigned char byte;

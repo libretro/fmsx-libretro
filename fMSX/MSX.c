@@ -37,6 +37,8 @@
 
 #include <streams/file_stream_transforms.h>
 
+extern retro_log_printf_t log_cb;
+
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
 
 /* MSDOS chdir() is broken and has to be replaced :( */
@@ -60,6 +62,7 @@ int  VPeriod     = CPU_VPERIOD;    /* CPU cycles per VBlank  */
 int  HPeriod     = CPU_HPERIOD;    /* CPU cycles per HBlank  */
 int  RAMPages    = 4;              /* Number of RAM pages    */
 int  VRAMPages   = 2;              /* Number of VRAM pages   */
+int  VRAMPageMask = 0x01;                  /* VRAM page mask */
 byte ExitNow     = 0;              /* 1 = Exit the emulator  */
 
 /** Main hardware: CPU, RAM, VRAM, mappers *******************/
@@ -91,7 +94,7 @@ int NChunks;                       /* Number of memory blcks */
 
 /** Working directory names **********************************/
 const char *ProgDir = 0;           /* Program directory      */
-const char *WorkDir;               /* Working directory      */
+char *WorkDir = 0;                 /* Working directory      */
 
 /** Cartridge files used by fMSX *****************************/
 const char *ROMName[MAXCARTS] = { "CARTA.ROM","CARTB.ROM" };
@@ -137,7 +140,7 @@ byte IOReg;                        /* Storage for AAh port   */
 
 /** Disk controller: WD1793 **********************************/
 WD1793 FDC;                        /* WD1793 at 7FF8h-7FFFh  */
-FDIDisk FDD[4];                    /* Floppy disk images     */
+FDIDisk FDD[NUM_FDI_DRIVES];       /* Floppy disk images     */
 
 /** Sound hardware: PSG, SCC, OPLL ***************************/
 AY8910 PSG;                        /* PSG registers & state  */
@@ -393,8 +396,6 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
 
-  char cwd[1024];
-
   int *T,I,J,K;
   byte *P;
   word A;
@@ -453,8 +454,10 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         MemMap[I][J][K]=EmptyRAM;
 
   /* Save current directory */
-  if((ProgDir&&(WorkDir = getcwd(cwd, sizeof(cwd))))) Chunks[NChunks++]=(void *)WorkDir;
-    
+  WorkDir = GetMemory(1024);
+  if(ProgDir && !getcwd(WorkDir, 1024) && log_cb)
+     log_cb(RETRO_LOG_ERROR,"StartMSX(): getcwd() failed\n");
+
   /* Set invalid modes and RAM/VRAM sizes before calling ResetMSX() */
   Mode      = ~NewMode;
   RAMPages  = 0;
@@ -785,8 +788,10 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     {
       memset(P1,0x00,NewVRAMPages*0x4000);
       FreeMemory(VRAM);
-      VRAMPages = NewVRAMPages;
-      VRAM      = P1;
+      VRAMPages    = NewVRAMPages;
+      VRAM         = P1;
+      for(J=1;J<VRAMPages;J<<=1);
+      VRAMPageMask = J-1;
     }
   }
 
@@ -1022,7 +1027,7 @@ case 0x98: /* VRAM read port */
   /* If rolled over, modify VRAM page# */
   if(!VAddr&&(ScrMode>3))
   {
-    VDP[14]=(VDP[14]+1)&(VRAMPages-1);
+    VDP[14]=(VDP[14]+1)&VRAMPageMask;
     VPAGE=VRAM+((int)VDP[14]<<14);
   }
   return(Port);
@@ -1161,7 +1166,7 @@ case 0x98: /* VDP Data */
   /* If VAddr rolled over, modify VRAM page# */
   if(!VAddr&&(ScrMode>3))
   {
-    VDP[14]=(VDP[14]+1)&(VRAMPages-1);
+    VDP[14]=(VDP[14]+1)&VRAMPageMask;
     VPAGE=VRAM+((int)VDP[14]<<14);
   }
   return;
@@ -1188,7 +1193,7 @@ case 0x99: /* VDP Address Latch */
           VAddr=(VAddr+1)&0x3FFF;
           if(!VAddr&&(ScrMode>3))
           {
-            VDP[14]=(VDP[14]+1)&(VRAMPages-1);
+            VDP[14]=(VDP[14]+1)&VRAMPageMask;
             VPAGE=VRAM+((int)VDP[14]<<14);
           }
         }
@@ -1778,7 +1783,7 @@ void VDPOut(byte R,byte V)
     case 11: V&=0x03;
              SprTab=VRAM+((int)(VDP[5]&MSK[ScrMode].R5)<<7)+((int)V<<15);
              break;
-    case 14: V&=VRAMPages-1;VPAGE=VRAM+((int)V<<14);
+    case 14: V&=VRAMPageMask;VPAGE=VRAM+((int)V<<14);
              break;
     case 15: V&=0x0F;break;
     case 16: V&=0x0F;PKey=1;break;

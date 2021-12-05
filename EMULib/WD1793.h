@@ -82,7 +82,7 @@ typedef unsigned char byte;
 #pragma pack(4)
 typedef struct
 {
-  int  Rsrvd1[4]; /* Reserved, do not touch */
+  int  Rsrvd1[4];   /* Reserved, do not touch */
 
   byte R[5];        /* Registers */
   byte Drive;       /* Current disk # */
@@ -95,14 +95,14 @@ typedef struct
 
   int  WRLength;    /* Data left to write */
   int  RDLength;    /* Data left to read */
-  int  Rsrvd2;    /* Reserved, do not touch */
+  int  Rsrvd2;      /* Reserved, do not touch */
 
   byte Verbose;     /* 1: Print debugging messages */
 
   /*--- Save1793() will save state above this line ----*/
 
   byte *Ptr;        /* Pointer to data */
-  FDIDisk *Disk[4]; /* Disk images */
+  FDIDisk *Disk[NUM_FDI_DRIVES]; /* Disk images */
 } WD1793;
 #pragma pack()
 

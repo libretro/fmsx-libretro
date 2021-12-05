@@ -242,9 +242,10 @@ extern byte tape_type;
 /*************************************************************/
 
 /** Variables used to control emulator behavior **************/
-extern byte Verbose;                  /* Debug msgs ON/OFF   */
+extern byte Verbose;                  /* Debug msgs 0x04=FDD */
 extern int  Mode;                     /* ORed MSX_* bits     */
-extern int  RAMPages,VRAMPages;       /* Number of RAM pages */
+extern int  RAMPages,VRAMPages;    /* Number of (V)RAM pages */
+extern int  VRAMPageMask;                  /* VRAM page mask */
 extern byte UPeriod;                  /* % of frames to draw */
 /*************************************************************/
 
@@ -277,8 +278,8 @@ extern const char *DSKName[MAXDRIVES];/* Disk A/B images     */
 extern const char *CasName;           /* Tape image file     */
 extern const char *FNTName;           /* Font file for text  */
 
-extern FDIDisk FDD[4];                /* Floppy disk images  */
-extern RFILE *CasStream;               /* Cassette I/O stream */
+extern FDIDisk FDD[NUM_FDI_DRIVES];   /* Floppy disk images  */
+extern RFILE *CasStream;              /* Cassette I/O stream */
 
 typedef struct
 {

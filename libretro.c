@@ -1058,6 +1058,8 @@ void retro_unload_game(void)
    image_buffer = NULL;
    image_buffer_width = 0;
    image_buffer_height = 0;
+
+   TrashMSX();
 }
 
 unsigned retro_get_region(void)
