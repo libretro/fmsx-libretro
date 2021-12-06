@@ -249,9 +249,7 @@ void Loop8910(AY8910 *D,int uSec)
 /** Flush all accumulated changes by issuing Sound() calls  **/
 /** and set the synchronization on/off. The second argument **/
 /** should be AY8910_SYNC/AY8910_ASYNC to set/reset sync,   **/
-/** or AY8910_FLUSH to leave sync mode as it is. To emulate **/
-/** noise channels with MIDI drums, OR second argument with **/
-/** AY8910_DRUMS.                                           **/
+/** or AY8910_FLUSH to leave sync mode as it is.            **/
 /*************************************************************/
 void Sync8910(AY8910 *D,byte Sync)
 {
@@ -259,11 +257,10 @@ void Sync8910(AY8910 *D,byte Sync)
   int Freq,Volume,Drums;
 
   /* Update sync/async mode */
-  I = Sync&~AY8910_DRUMS;
+  I = Sync;
   if(I!=AY8910_FLUSH) D->Sync=I;
 
-  /* If hitting drums, always compute noise channels */
-  I = D->Changed|(Sync&AY8910_DRUMS? 0x38:0x00);
+  I = D->Changed;
 
   /* For every changed channel... */
   for(J=0,Drums=0;I&&(J<AY8910_CHANNELS);++J,I>>=1)

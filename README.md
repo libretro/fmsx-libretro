@@ -191,8 +191,8 @@ Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 sc
 - horizontal: 256 or 512 (textmode: 32, 40 or 80 columns)
 - vertical: 192 or 212
 
-Audio: rendered in 48kHz 16b mono.
-fMSX emulates PSG, SCC and FM-PAC.
+Audio: rendered in 48kHz 16b signed mono.
+fMSX emulates PSG, SCC and FM-PAC (without drums & instruments).
 
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
 

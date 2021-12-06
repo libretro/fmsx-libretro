@@ -156,7 +156,7 @@ extern "C" {
 #define MSX_AUTOFIREA 0x01000000 /* Autofire joystick FIRE-A */
 #define MSX_AUTOFIREB 0x02000000 /* Autofire joystick FIRE-B */
 #define MSX_AUTOSPACE 0x04000000 /* Autofire SPACE button    */
-#define MSX_DRUMS     0x08000000 /* Hit MIDI drums for noise */
+#define MSX_OBSOLETE  0x08000000 /* - removed from fmsx-lr - */
 #define MSX_PATCHBDOS 0x10000000 /* Patch DiskROM routines   */
 #define MSX_FIXEDFONT 0x20000000 /* Use fixed 8x8 text font  */
 #define MSX_MSXDOS2   0x40000000 /* Load MSXDOS2 ROM on boot */
