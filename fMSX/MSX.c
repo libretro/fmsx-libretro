@@ -2011,8 +2011,8 @@ word LoopZ80(Z80 *R)
     /* Update AY8910 state */
     Loop8910(&PSG,J);
 
-    /* Flush changes to sound channels, only hit drums once a frame */
-    Sync8910(&PSG,AY8910_FLUSH|(!ScanLine&&OPTION(MSX_DRUMS)? AY8910_DRUMS:0));
+    /* Flush changes to sound channels */
+    Sync8910(&PSG,AY8910_FLUSH);
 
     // fmsx-libretro: do not sync SCC & FM-PAC every 8 scanlines; causes interference
   }
@@ -3328,8 +3328,6 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
   SCChip.Changed  = (1<<SCC_CHANNELS)-1;
   SCChip.WChanged = (1<<SCC_CHANNELS)-1;
   OPLL.Changed    = (1<<YM2413_CHANNELS)-1;
-  OPLL.PChanged   = (1<<YM2413_CHANNELS)-1;
-  OPLL.DChanged   = (1<<YM2413_CHANNELS)-1;
 
   /* Return amount of data read */
   return(Size);

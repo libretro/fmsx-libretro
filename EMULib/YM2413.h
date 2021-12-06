@@ -42,8 +42,8 @@ typedef struct
   int Volume[YM2413_CHANNELS]; /* Volumes (0..255)           */
   int First;                   /* First used Sound() channel */
   int Changed;                 /* Bitmap of changed channels */
-  int PChanged;                /* Bitmap of changed patches  */
-  int DChanged;                /* Bitmap of changed drums    */
+  int _old1;                   /* unused                     */
+  int _old2;                   /* unused                     */
   byte Sync;                   /* YM2413_SYNC/YM2413_ASYNC   */
   byte Latch;                  /* Latch for the register num */
 } YM2413;

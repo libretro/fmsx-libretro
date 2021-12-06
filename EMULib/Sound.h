@@ -26,23 +26,9 @@ extern "C" {
 #define SND_NOISE       2      /* White noise                */
 #define SND_PERIODIC    3      /* Periodic noise (not im-ed) */
 #define SND_WAVE        4      /* Wave sound set by SetWave()*/
-#define SND_MIDI        0x100  /* MIDI instrument (ORable)   */
 
                                /* Drum() arguments:          */
 #define DRM_CLICK       0      /* Click (default)            */
-#define DRM_MIDI        0x100  /* MIDI drum (ORable)         */
-
-                               /* MIDI characteristics:      */
-#define MIDI_CHANNELS   16     /* Number of MIDI channels    */
-#define MIDI_MINFREQ    9      /* Min MIDI frequency (Hz)    */
-#define MIDI_MAXFREQ    12285  /* Max MIDI frequency (Hz)    */
-#define MIDI_DIVISIONS  1000   /* Number of ticks per second */
-
-                               /* MIDILogging() arguments:   */
-#define MIDI_OFF        0      /* Turn MIDI logging off      */
-#define MIDI_ON         1      /* Turn MIDI logging on       */
-#define MIDI_TOGGLE     2      /* Toggle MIDI logging        */
-#define MIDI_QUERY      3      /* Query MIDI logging status  */
 
 /** InitSound() **********************************************/
 /** Initialize RenderSound() with given parameters.         **/
@@ -117,10 +103,6 @@ const signed char *GetWave(int Channel);
 /** Get current sampling rate used for synthesis.           **/
 /*************************************************************/
 unsigned int GetSndRate(void);
-
-#if !defined(MSDOS) & !defined(UNIX) & !defined(MAEMO) & !defined(WINDOWS) & !defined(S60) & !defined(UIQ) && !defined(ANDROID)
-#define SND_CHANNELS MIDI_CHANNELS         /* Default number */
-#endif
 
 #ifdef __cplusplus
 }

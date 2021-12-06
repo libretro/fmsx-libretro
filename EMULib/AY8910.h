@@ -22,7 +22,6 @@ extern "C" {
 #define AY8910_ASYNC    0      /* Asynchronous emulation     */
 #define AY8910_SYNC     1      /* Synchronous emulation      */
 #define AY8910_FLUSH    2      /* Flush buffers only         */
-#define AY8910_DRUMS    0x80   /* Hit drums for noise chnls  */
 
 #ifndef BYTE_TYPE_DEFINED
 #define BYTE_TYPE_DEFINED
@@ -83,9 +82,7 @@ byte RdData8910(AY8910 *D);
 /** Flush all accumulated changes by issuing Sound() calls  **/
 /** and set the synchronization on/off. The second argument **/
 /** should be AY8910_SYNC/AY8910_ASYNC to set/reset sync,   **/
-/** or AY8910_FLUSH to leave sync mode as it is. To emulate **/
-/** noise channels with MIDI drums, OR second argument with **/
-/** AY8910_DRUMS.                                           **/
+/** or AY8910_FLUSH to leave sync mode as it is.            **/
 /*************************************************************/
 void Sync8910(AY8910 *D,byte Sync);
 
