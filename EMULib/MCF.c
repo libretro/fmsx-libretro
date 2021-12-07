@@ -12,7 +12,6 @@
 /*************************************************************/
 #include "MCF.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include <streams/file_stream_transforms.h>
