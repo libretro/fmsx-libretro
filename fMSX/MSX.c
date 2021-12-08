@@ -251,7 +251,7 @@ const byte Keys[][2] =
   { 6,0x10 },{ 7,0x10 },{ 6,0x20 },{ 6,0x40 }, /* COUNTRY,STOP,F1,F2 */
   { 6,0x80 },{ 7,0x01 },{ 7,0x02 },{ 9,0x08 }, /* F3,F4,F5,PAD0 */
   { 9,0x10 },{ 9,0x20 },{ 9,0x40 },{ 7,0x04 }, /* PAD1,PAD2,PAD3,ESCAPE */
-  { 9,0x80 },{ 10,0x01 },{ 10,0x02 },{ 10,0x04 }, /* PAD4,PAD5,PAD6,PAD7 */
+  { 9,0x80 },{10,0x01 },{10,0x02 },{10,0x04 }, /* PAD4,PAD5,PAD6,PAD7 */
   { 8,0x01 },{ 0,0x02 },{ 2,0x01 },{ 0,0x08 }, /* SPACE,[!],["],[#] */
   { 0,0x10 },{ 0,0x20 },{ 0,0x80 },{ 2,0x01 }, /* [$],[%],[&],['] */
   { 1,0x02 },{ 0,0x01 },{ 1,0x01 },{ 1,0x08 }, /* [(],[)],[*],[=] */
@@ -276,7 +276,15 @@ const byte Keys[][2] =
   { 5,0x02 },{ 5,0x04 },{ 5,0x08 },{ 5,0x10 }, /* t,u,v,w */
   { 5,0x20 },{ 5,0x40 },{ 5,0x80 },{ 1,0x20 }, /* x,y,z,[{] */
   { 1,0x10 },{ 1,0x40 },{ 2,0x02 },{ 8,0x08 }, /* [|],[}],[~],DEL */
-  { 10,0x08 },{ 10,0x10 }                      /* PAD8,PAD9 */
+  {10,0x08 },{10,0x10 },                       /* PAD8,PAD9 */
+  /* these 7 mappings are missing in fMSX */
+  { 2,0x20 }, /* Int'l: DEAD / JP: _ and ろ */
+  { 9,0x01 }, /* NUM* */
+  { 9,0x02 }, /* NUM+ */
+  { 9,0x04 }, /* NUM/ */
+  {10,0x20 }, /* NUM- */
+  {10,0x40 }, /* NUM, (not present on modern numeric pads!) */
+  {10,0x80 }  /* NUM. */
 };
 
 /** Internal Functions ***************************************/
@@ -2329,6 +2337,8 @@ byte ChangeDisk(byte N,const char *FileName)
   /* If FileName not empty, treat it as directory, otherwise new disk */
   if(P&&!(*FileName? DSKLoad(FileName,P,"MSX-DISK"):DSKCreate(P,"MSX-DISK")))
   { EjectFDI(&FDD[N]);return(0); }
+
+  FDD[N].Dirty = 1;
 
   /* Done */
   return(!!P);

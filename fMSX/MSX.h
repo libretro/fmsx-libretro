@@ -163,7 +163,7 @@ extern "C" {
 /*************************************************************/
 
 /** Keyboard codes and macros ********************************/
-extern const byte Keys[130][2];
+extern const byte Keys[137][2];
 extern volatile byte KeyState[16];
 
 #define KBD_SET(K)   KeyState[Keys[K][0]]&=~Keys[K][1]
@@ -201,8 +201,18 @@ extern volatile byte KeyState[16];
 #define KBD_NUMPAD6  0x1E
 #define KBD_NUMPAD7  0x1F
 #define KBD_SPACE    0x20
+/* range 0x21-0x7F: 47 regular keys (a-z, 0-9 & 11 punctuation etc.) represented by their ASCII encoding */
 #define KBD_NUMPAD8  0x80
 #define KBD_NUMPAD9  0x81
+/* these 7 mappings are missing in fMSX */
+#define KBD_DEAD     0x82  /* Int'l: DEAD (accents `, ´, ^ and ¨) / JP: _ (underscore) or ろ */
+#define KBD_NUMMUL   0x83
+#define KBD_NUMPLUS  0x84
+#define KBD_NUMDIV   0x85
+#define KBD_NUMMINUS 0x86
+#define KBD_NUMCOMMA 0x87
+#define KBD_NUMDOT   0x88
+
 /*************************************************************/
 
 /** Cassette Tapes *******************************************/

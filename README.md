@@ -12,6 +12,9 @@ Source : http://fms.komkon.org/fMSX/
 * .cas .CAS - for fMSX tape files
 * .m3u .M3U - for multidisk software
 
+The supplied location must exist and must be a readable file with one of the listed extensions. If, e.g., it points to a directory or non-existent file, 
+no image is loaded and this core will boot into MSX-BASIC. It is not possible to insert a disk into a running core.
+
 
 ## Tape (cassette) software
 Tapes are automatically started based on their detected type (binary, ASCII or BASIC).
@@ -22,7 +25,7 @@ Press F6 to rewind the tape, if that's needed.
 ## Multidisk software
 Create a textfile with extension `.m3u` and list one `.dsk` filename per line.
 The file will be resolved relative to the directory location of the `.m3u`-file.
-Absolute files are also supported; start the full path with `<drive>:` on Windows or '/' on other OSes.
+Absolute files are also supported; start the full path with `<drive>:` on Windows or `/` on other OSes.
 
 Navigate through the disk images using RetroArch hotkeys; configure these settings:
 
@@ -37,7 +40,9 @@ and/or
     input_disk_prev_btn = ".."
     input_disk_next_btn = ".."
 
-Note: images can only be swapped in the 'eject' state.
+Note: 
+* these hotkeys are by default _unmapped_
+* images can only be swapped in the 'eject' state
 
 
 ## Cheats
@@ -65,10 +70,11 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 |`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
 |`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
-|`fmsx_simbdos`|Simulate BDOS DiskROM access calls|No*&vert;Yes
+|`fmsx_simbdos`|Simulate BDOS DiskROM access calls (faster, but does not support CALL FORMAT)|No*&vert;Yes
 |`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes
 |`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes
 |`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT
+|`fmsx_flush_disk`|Save changes to .dsk image|Never*&vert;Immediate&vert;On close
 
 
 ## BIOS
@@ -145,10 +151,10 @@ User 1:
 |R2    |       Ctrl
 |L3    |         F5 *
 |R3    |     Escape
-* "Keyboard": maps host keyboard to MSX keyboard. Only on (RetroArch) platforms with a real keyboard (Linux, Windows, etc). Don't forget to press Scroll Lock to enter Game Focus Mode!
+* "Keyboard": maps host keyboard to 88-key MSX keyboard. Only on (RetroArch) platforms with a real keyboard (Linux, Windows, etc). Don't forget to press Scroll Lock to enter Game Focus Mode!
   * MSX1 & 2: US/European keyboard map, cursors, numeric pad, F1-F5
-  * MSX2+: Japanese keyboard map - see below
-  * with these special keys for all 3 MSX models:
+  * MSX2+: Japanese JIS keyboard map - see below
+  * with these special keys:
 
 |Host             | MSX
 |---|---
@@ -159,30 +165,46 @@ User 1:
 |del              |DELETE
 |home             |HOME/CLS
 |end              |SELECT
-|pageup or pause  |STOP/BREAK
-|pagedown         |COUNTRY
-
+|pause            |STOP/BREAK
+|pagedown         |CODE/COUNTRY
+|pageup           |International: DEAD-key; accents `, ´, ^ and ¨<br/>JIS: _ (underscore) and ろ
+|numpad enter     |numpad comma
 
 User 2:
 * "Joystick": map RetroPad to MSX joystick B
 
 ### MSX1/2 US/European keyboard map
-Enter accented characters (like &eacute;) with COUNTRY (page down) and graphical symbols with GRAPH (left alt).
+Enter accented characters (like &eacute;) by holding CODE/COUNTRY (page down) together with a key or by preceding a key with DEAD (page up).
+Enter graphical symbols by holding GRAPH (left alt) together with a key.
+
+There is [more information about the MSX keymap](http://map.grauw.nl/articles/keymatrix.php).
 
 ### MSX2+ Japanese keyboard map
-This is a typical MSX2+ with Japanese keyboard:
+This is a typical MSX2+ with Japanese (JIS) keyboard layout:
 ![Japanese keyboard](Japanese-MSX2+-keyboard.jpg)
 
 How to use this:
 * normal: bottomleft Roman letter/symbol
 * shift: topleft symbol
-* alt: topright symbol (without the box)
+* left alt ('GRAPH'): topright symbol (without the box)
 * KANA LOCK active: bottomright Japanese character
 * KANA LOCK active with shift: middleright Japanese character
 
 To (de)activate KANA LOCK, press page down (COUNTRY). It works just like caps lock: press and release to enable.
 
 Best enable SCREEN 1 to appreciate the full 8px width of the Japanese characters; in screen 0 characters are only 6px wide.
+
+
+## Limitations
+Not supported:
+* Turbo-R (fMSX does not implement that platform)
+* Drive B
+* Cartridge slot 2
+* Printer 
+* RS-232 serial COM
+* Mouse
+* FM-PAC drums 
+* FM-PAC instruments are replaced by triangle waves
 
 
 ## Technical details
@@ -192,7 +214,7 @@ Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 sc
 - vertical: 192 or 212
 
 Audio: rendered in 48kHz 16b signed mono.
-fMSX emulates PSG, SCC and FM-PAC (without drums & instruments).
+fMSX emulates PSG, SCC and FM-PAC.
 
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
 
