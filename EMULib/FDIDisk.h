@@ -41,8 +41,6 @@ extern "C" {
 
 #define SEEK_DELETED (0x40000000)
 
-#define DataFDI(D) ((D)->Data+(D)->Data[10]+((int)((D)->Data[11])<<8))
-
 #define NUM_FDI_DRIVES 4
 
 #ifndef BYTE_TYPE_DEFINED
@@ -67,6 +65,7 @@ typedef struct
 
   byte Header[6];  /* Current header, result of SeekFDI() */
   byte Verbose;    /* 1: Print debugging messages */
+  byte Dirty;      /* 1: Data to be flushed */
 } FDIDisk;
 
 /** InitFDI() ************************************************/

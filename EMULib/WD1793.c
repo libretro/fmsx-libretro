@@ -261,6 +261,7 @@ byte Write1793(WD1793 *D,byte A,byte V)
             D->R[0]    |= F_BUSY|F_DRQ;
             D->IRQ      = WD1793_DRQ;
             D->Wait     = 255;
+            D->Disk[D->Drive]->Dirty = 1;
           }
           break;
 
@@ -296,7 +297,18 @@ byte Write1793(WD1793 *D,byte A,byte V)
         case 0xE0: /* READ-TRACK */
           break;
 
-        case 0xF0: /* WRITE-TRACK */
+        case 0xF0: /* WRITE-TRACK, i.e., format */
+          // not implementing the full protocol (involves parsing lead-in & lead-out); simply setting track data to 0xe5
+          if(D->Ptr=SeekFDI(D->Disk[D->Drive],0,D->Track[D->Drive],0,D->R[1],1))
+          {
+            memset(D->Ptr, 0xe5, D->Disk[D->Drive]->SecSize * D->Disk[D->Drive]->Sectors);
+            D->Disk[D->Drive]->Dirty = 1;
+          }
+          if(D->Disk[D->Drive]->Sides>1 && (D->Ptr=SeekFDI(D->Disk[D->Drive],1,D->Track[D->Drive],1,D->R[1],1)))
+          {
+            memset(D->Ptr, 0xe5, D->Disk[D->Drive]->SecSize * D->Disk[D->Drive]->Sectors);
+            D->Disk[D->Drive]->Dirty = 1;
+          }
           break;
 
         default: /* UNKNOWN */
@@ -327,6 +339,7 @@ byte Write1793(WD1793 *D,byte A,byte V)
       {
         /* Write data */
         *D->Ptr++=V;
+        D->Disk[D->Drive]->Dirty=1;
         /* Decrement length */
         if(--D->WRLength)
         {

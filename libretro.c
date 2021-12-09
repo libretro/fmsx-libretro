@@ -9,6 +9,7 @@
 
 #include <compat/posix_string.h>
 #include <streams/file_stream_transforms.h>
+#include <file/file_path.h>
 
 #include "MSX.h"
 #include "EMULib.h"
@@ -43,6 +44,11 @@ static char AutoType_buffer[1024];
 char *autotype=0;
 #define BOOT_FRAME_COUNT 400  // a guesstimate when diskless boot is done
 
+#define FLUSH_NEVER     0
+#define FLUSH_IMMEDIATE 1
+#define FLUSH_ON_CLOSE  2
+int disk_flush=FLUSH_NEVER;
+
 extern int MCFCount;
 int current_cheat;
 
@@ -70,10 +76,6 @@ extern int RAMPages ;
 #include "CommonMux.h"
 #include "Missing.h"
 
-uint8_t XKeyState[20];
-#define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
-#define XKBD_RES(K) XKeyState[Keys[K][0]]|=Keys[K][1]
-
 retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t input_poll_cb = NULL;
@@ -92,7 +94,7 @@ typedef struct
    int retro;
    int fmsx;
 }keymap_t;
-keymap_t keymap[] = // only need to map basic keys; not SHIFTed ones
+keymap_t keymap[] = // only need to map the 88 basic keys; not SHIFTed ones
 {
    { RETROK_LEFT,       KBD_LEFT     },
    { RETROK_UP,         KBD_UP       },
@@ -114,7 +116,7 @@ keymap_t keymap[] = // only need to map basic keys; not SHIFTed ones
    { RETROK_DELETE,     KBD_DELETE   },
    { RETROK_INSERT,     KBD_INSERT   },
    { RETROK_PAGEDOWN,   KBD_COUNTRY  },
-   { RETROK_PAGEUP,     KBD_STOP     },
+   { RETROK_PAGEUP,     KBD_DEAD     },
    { RETROK_PAUSE,      KBD_STOP     },
    { RETROK_F1,         KBD_F1       },
    { RETROK_F2,         KBD_F2       },
@@ -131,6 +133,12 @@ keymap_t keymap[] = // only need to map basic keys; not SHIFTed ones
    { RETROK_KP7,        KBD_NUMPAD7  },
    { RETROK_KP8,        KBD_NUMPAD8  },
    { RETROK_KP9,        KBD_NUMPAD9  },
+   { RETROK_KP_MULTIPLY,KBD_NUMMUL   },
+   { RETROK_KP_PLUS,    KBD_NUMPLUS  },
+   { RETROK_KP_DIVIDE,  KBD_NUMDIV   },
+   { RETROK_KP_MINUS,   KBD_NUMMINUS },
+   { RETROK_KP_ENTER,   KBD_NUMCOMMA },
+   { RETROK_KP_PERIOD,  KBD_NUMDOT   }, // KP_PERIOD seem unreachable from RA host keyboard under Linux (KEY_KPDOT == 83)?
    { RETROK_BACKQUOTE,  '`' },
    { RETROK_MINUS,      '-' },
    { RETROK_EQUALS,     '=' },
@@ -401,6 +409,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
       { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
+      { "fmsx_flush_disk", "Save changes to .dsk; Never|Immediate|On close" },
       { NULL, NULL },
    };
 
@@ -708,6 +717,19 @@ static void check_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_PATCHBDOS;
 
+   var.key = "fmsx_flush_disk";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Never") == 0)
+         disk_flush=FLUSH_NEVER;
+      else if (strcmp(var.value, "Immediate") == 0)
+         disk_flush=FLUSH_IMMEDIATE;
+      else if (strcmp(var.value, "On close") == 0)
+         disk_flush=FLUSH_ON_CLOSE;
+   }
+
    var.key = "fmsx_autospace";
    var.value = NULL;
 
@@ -941,7 +963,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    UPeriod=100;
 
-   if (info)
+   if (info && path_is_valid(info->path))
    {
       char *dot = strrchr(info->path, '.');
       if (dot && ( !strcasecmp(dot, ".rom") || !strcasecmp(dot, ".mx1") || !strcasecmp(dot, ".mx2") ))
@@ -990,8 +1012,6 @@ bool retro_load_game(const struct retro_game_info *info)
 
    for(i = 0; i < 256; i++)
      BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
-
-   memset((void *)XKeyState,0xFF,sizeof(XKeyState));
 
    InitSound(SND_RATE, 0);
    SetChannels(255/MAXCHANNELS, (1<<MAXCHANNELS)-1);
@@ -1059,6 +1079,12 @@ void retro_unload_game(void)
    image_buffer_width = 0;
    image_buffer_height = 0;
 
+   if(disk_flush==FLUSH_ON_CLOSE && FDD[0].Dirty)
+   {
+      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
+      FDD[0].Dirty = 0;
+   }
+
    TrashMSX();
 }
 
@@ -1125,7 +1151,7 @@ void retro_run(void)
       }
    }
 
-   for (i=0; i < 130; i++)
+   for (i=0; i < sizeof(Keys)/2; i++)
       if(i != KBD_SPACE || !(OPTION(MSX_AUTOSPACE)))
          KBD_RES(i);
 
@@ -1180,6 +1206,13 @@ void retro_run(void)
    }
 
    fflush(stdout);
+
+   // debounce 1s before flushing to .dsk
+   if(disk_flush==FLUSH_IMMEDIATE && FDD[0].Dirty && ++FDD[0].Dirty >= fps)
+   {
+      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
+      FDD[0].Dirty = 0;
+   }
 
 #ifdef PSP
    static unsigned int __attribute__((aligned(16))) d_list[32];

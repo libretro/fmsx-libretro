@@ -69,7 +69,11 @@ byte DiskWrite(byte ID,const byte *Buf,int N)
     /* Get data pointer to requested sector */
     P = LinearFDI(&FDD[ID],N);
     /* If seek operation succeeded, write sector */
-    if(P) memcpy(P,Buf,FDD[ID].SecSize);
+    if(P)
+    {
+      memcpy(P,Buf,FDD[ID].SecSize);
+      FDD[ID].Dirty = 1;
+    }
     /* Done */
     return(!!P);
   }

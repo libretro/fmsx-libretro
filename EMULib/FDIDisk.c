@@ -99,6 +99,7 @@ void InitFDI(FDIDisk *D)
   D->Tracks   = 0;
   D->Sectors  = 0;
   D->SecSize  = 0;
+  D->Dirty    = 0;
 }
 
 /** EjectFDI() ***********************************************/
@@ -920,6 +921,7 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
   }
 
   /* Done */
+  D->Dirty=0;
   rfclose(F);
   return(Result);
 }
