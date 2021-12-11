@@ -396,12 +396,13 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   };
 
   /*** CMOS ROM default values: ***/
-  static const byte RTCInit[4][13]  =
-  {
-    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    {  0, 0, 0, 0,40,80,15, 4, 4, 0, 0, 0, 0 },
-    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  static const byte RTCInit[4][13]  = // 4*13 _nibbles_ - only b3-0 are used
+  { // see https://www.msx.org/wiki/Ricoh_RP-5C01
+    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // Current Time and Day - bypassed in RTCIn()
+    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // Alarm, Hour Mode, Year Type
+//  {0xa, 0, 0, 1,0xd,1,15, 4, 7, 3, 0, 0, 0 }, // explicitly & correctly set Adjust, Screen, Beep, Logo color, Language & others, or ..
+    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },  // .. will be initialized to default when zeroed - store with SET SCREEN
+    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }  // Title, Password, Prompt
   };
 
   int *T,I,J,K;
@@ -421,7 +422,6 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 #endif
 
   /* Zero everything */
-  /* Zero everyting */
   CasStream   = 0;
   FontBuf     = 0;
   RAMData     = 0;
@@ -447,7 +447,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     SaveSRAM[J] = 0;
   }
 
-  /* UPeriod has ot be in 1%..100% range */
+  /* UPeriod has to be in 1%..100% range */
   UPeriod=UPeriod<1? 1:UPeriod>100? 100:UPeriod;
 
   /* Allocate 16kB for the empty space (scratch RAM) */
@@ -1276,7 +1276,7 @@ case 0xB5: /* RTC Data */
     /* J = register bank# now */
     J=RTCMode&0x03;
     /* Store the value */
-    RTC[J][RTCReg]=Value;
+    RTC[J][RTCReg]=Value&0x0f;
     /* If CMOS modified, we need to save it */
     if(J>1) SaveCMOS=1;
     return;
