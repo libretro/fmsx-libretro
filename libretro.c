@@ -93,105 +93,106 @@ typedef struct
 {
    int retro;
    int fmsx;
+   char *name;
 }keymap_t;
 keymap_t keymap[] = // only need to map the 88 basic keys; not SHIFTed ones
 {
-   { RETROK_LEFT,       KBD_LEFT     },
-   { RETROK_UP,         KBD_UP       },
-   { RETROK_RIGHT,      KBD_RIGHT    },
-   { RETROK_DOWN,       KBD_DOWN     },
-   { RETROK_LSHIFT,     KBD_SHIFT    },
-   { RETROK_RSHIFT,     KBD_SHIFT    },
-   { RETROK_LCTRL,      KBD_CONTROL  },
-   { RETROK_RCTRL,      KBD_CONTROL  },
-   { RETROK_LALT,       KBD_GRAPH    },
-   { RETROK_BACKSPACE,  KBD_BS       },
-   { RETROK_TAB,        KBD_TAB      },
-   { RETROK_ESCAPE,     KBD_ESCAPE   },
-   { RETROK_SPACE,      KBD_SPACE    },
-   { RETROK_CAPSLOCK,   KBD_CAPSLOCK },
-   { RETROK_END,        KBD_SELECT   },
-   { RETROK_HOME,       KBD_HOME     },
-   { RETROK_RETURN,     KBD_ENTER    },
-   { RETROK_DELETE,     KBD_DELETE   },
-   { RETROK_INSERT,     KBD_INSERT   },
-   { RETROK_PAGEDOWN,   KBD_COUNTRY  },
-   { RETROK_PAGEUP,     KBD_DEAD     },
-   { RETROK_PAUSE,      KBD_STOP     },
-   { RETROK_F1,         KBD_F1       },
-   { RETROK_F2,         KBD_F2       },
-   { RETROK_F3,         KBD_F3       },
-   { RETROK_F4,         KBD_F4       },
-   { RETROK_F5,         KBD_F5       },
-   { RETROK_KP0,        KBD_NUMPAD0  },
-   { RETROK_KP1,        KBD_NUMPAD1  },
-   { RETROK_KP2,        KBD_NUMPAD2  },
-   { RETROK_KP3,        KBD_NUMPAD3  },
-   { RETROK_KP4,        KBD_NUMPAD4  },
-   { RETROK_KP5,        KBD_NUMPAD5  },
-   { RETROK_KP6,        KBD_NUMPAD6  },
-   { RETROK_KP7,        KBD_NUMPAD7  },
-   { RETROK_KP8,        KBD_NUMPAD8  },
-   { RETROK_KP9,        KBD_NUMPAD9  },
-   { RETROK_KP_MULTIPLY,KBD_NUMMUL   },
-   { RETROK_KP_PLUS,    KBD_NUMPLUS  },
-   { RETROK_KP_DIVIDE,  KBD_NUMDIV   },
-   { RETROK_KP_MINUS,   KBD_NUMMINUS },
-   { RETROK_KP_ENTER,   KBD_NUMCOMMA },
-   { RETROK_KP_PERIOD,  KBD_NUMDOT   }, // KP_PERIOD seem unreachable from RA host keyboard under Linux (KEY_KPDOT == 83)?
-   { RETROK_BACKQUOTE,  '`' },
-   { RETROK_MINUS,      '-' },
-   { RETROK_EQUALS,     '=' },
-   { RETROK_LEFTBRACKET,'[' },
-   { RETROK_RIGHTBRACKET,']' },
-   { RETROK_BACKSLASH,  '\\' },
-   { RETROK_SEMICOLON,  ';' },
-   { RETROK_QUOTE,      '\'' },
-   { RETROK_COMMA,      ',' },
-   { RETROK_PERIOD,     '.' },
-   { RETROK_SLASH,      '/' },
-   { RETROK_0,          '0' },
-   { RETROK_1,          '1' },
-   { RETROK_2,          '2' },
-   { RETROK_3,          '3' },
-   { RETROK_4,          '4' },
-   { RETROK_5,          '5' },
-   { RETROK_6,          '6' },
-   { RETROK_7,          '7' },
-   { RETROK_8,          '8' },
-   { RETROK_9,          '9' },
-   { RETROK_a,          'a' },
-   { RETROK_b,          'b' },
-   { RETROK_c,          'c' },
-   { RETROK_d,          'd' },
-   { RETROK_e,          'e' },
-   { RETROK_f,          'f' },
-   { RETROK_g,          'g' },
-   { RETROK_h,          'h' },
-   { RETROK_i,          'i' },
-   { RETROK_j,          'j' },
-   { RETROK_k,          'k' },
-   { RETROK_l,          'l' },
-   { RETROK_m,          'm' },
-   { RETROK_n,          'n' },
-   { RETROK_o,          'o' },
-   { RETROK_p,          'p' },
-   { RETROK_q,          'q' },
-   { RETROK_r,          'r' },
-   { RETROK_s,          's' },
-   { RETROK_t,          't' },
-   { RETROK_u,          'u' },
-   { RETROK_v,          'v' },
-   { RETROK_w,          'w' },
-   { RETROK_x,          'x' },
-   { RETROK_y,          'y' },
-   { RETROK_z,          'z' }
+   { RETROK_LEFT,       KBD_LEFT     , "left"},
+   { RETROK_UP,         KBD_UP       , "up"},
+   { RETROK_RIGHT,      KBD_RIGHT    , "right"},
+   { RETROK_DOWN,       KBD_DOWN     , "down"},
+   { RETROK_LSHIFT,     KBD_SHIFT    , "shift"},
+   { RETROK_RSHIFT,     KBD_SHIFT    , "shift"},
+   { RETROK_LCTRL,      KBD_CONTROL  , "ctrl"},
+   { RETROK_RCTRL,      KBD_CONTROL  , "ctrl"},
+   { RETROK_LALT,       KBD_GRAPH    , "graph"},
+   { RETROK_BACKSPACE,  KBD_BS       , "backspace"},
+   { RETROK_TAB,        KBD_TAB      , "tab"},
+   { RETROK_ESCAPE,     KBD_ESCAPE   , "escape"},
+   { RETROK_SPACE,      KBD_SPACE    , "space"},
+   { RETROK_CAPSLOCK,   KBD_CAPSLOCK , "capslock"},
+   { RETROK_END,        KBD_SELECT   , "select"},
+   { RETROK_HOME,       KBD_HOME     , "home"},
+   { RETROK_RETURN,     KBD_ENTER    , "enter"},
+   { RETROK_DELETE,     KBD_DELETE   , "del"},
+   { RETROK_INSERT,     KBD_INSERT   , "insert"},
+   { RETROK_PAGEDOWN,   KBD_COUNTRY  , "country"},
+   { RETROK_PAGEUP,     KBD_DEAD     , "dead"},
+   { RETROK_PAUSE,      KBD_STOP     , "stop"},
+   { RETROK_F1,         KBD_F1       , "f1"},
+   { RETROK_F2,         KBD_F2       , "f2"},
+   { RETROK_F3,         KBD_F3       , "f3"},
+   { RETROK_F4,         KBD_F4       , "f4"},
+   { RETROK_F5,         KBD_F5       , "f5"},
+   { RETROK_KP0,        KBD_NUMPAD0  , "keypad0"},
+   { RETROK_KP1,        KBD_NUMPAD1  , "keypad1"},
+   { RETROK_KP2,        KBD_NUMPAD2  , "keypad2"},
+   { RETROK_KP3,        KBD_NUMPAD3  , "keypad3"},
+   { RETROK_KP4,        KBD_NUMPAD4  , "keypad4"},
+   { RETROK_KP5,        KBD_NUMPAD5  , "keypad5"},
+   { RETROK_KP6,        KBD_NUMPAD6  , "keypad6"},
+   { RETROK_KP7,        KBD_NUMPAD7  , "keypad7"},
+   { RETROK_KP8,        KBD_NUMPAD8  , "keypad8"},
+   { RETROK_KP9,        KBD_NUMPAD9  , "keypad9"},
+   { RETROK_KP_MULTIPLY,KBD_NUMMUL   , "kp_multiply"},
+   { RETROK_KP_PLUS,    KBD_NUMPLUS  , "kp_plus"},
+   { RETROK_KP_DIVIDE,  KBD_NUMDIV   , "kp_divide"},
+   { RETROK_KP_MINUS,   KBD_NUMMINUS , "kp_minus"},
+   { RETROK_KP_ENTER,   KBD_NUMCOMMA , "kp_comma"},
+   { RETROK_KP_PERIOD,  KBD_NUMDOT   , "kp_period"}, // KP_PERIOD seem unreachable from RA host keyboard under Linux (KEY_KPDOT == 83)?
+   { RETROK_BACKQUOTE,  '`'          , "backquote"},
+   { RETROK_MINUS,      '-'          , "minus"},
+   { RETROK_EQUALS,     '='          , "equals"},
+   { RETROK_LEFTBRACKET,'['          , "leftbracket"},
+   { RETROK_RIGHTBRACKET,']'         , "rightbracket"},
+   { RETROK_BACKSLASH,  '\\'         , "backslash"},
+   { RETROK_SEMICOLON,  ';'          , "semicolon"},
+   { RETROK_QUOTE,      '\''         , "quote"},
+   { RETROK_COMMA,      ','          , "comma"},
+   { RETROK_PERIOD,     '.'          , "period"},
+   { RETROK_SLASH,      '/'          , "slash"},
+   { RETROK_0,          '0'          , "0"},
+   { RETROK_1,          '1'          , "1"},
+   { RETROK_2,          '2'          , "2"},
+   { RETROK_3,          '3'          , "3"},
+   { RETROK_4,          '4'          , "4"},
+   { RETROK_5,          '5'          , "5"},
+   { RETROK_6,          '6'          , "6"},
+   { RETROK_7,          '7'          , "7"},
+   { RETROK_8,          '8'          , "8"},
+   { RETROK_9,          '9'          , "9"},
+   { RETROK_a,          'a'          , "a"},
+   { RETROK_b,          'b'          , "b"},
+   { RETROK_c,          'c'          , "c"},
+   { RETROK_d,          'd'          , "d"},
+   { RETROK_e,          'e'          , "e"},
+   { RETROK_f,          'f'          , "f"},
+   { RETROK_g,          'g'          , "g"},
+   { RETROK_h,          'h'          , "h"},
+   { RETROK_i,          'i'          , "i"},
+   { RETROK_j,          'j'          , "j"},
+   { RETROK_k,          'k'          , "k"},
+   { RETROK_l,          'l'          , "l"},
+   { RETROK_m,          'm'          , "m"},
+   { RETROK_n,          'n'          , "n"},
+   { RETROK_o,          'o'          , "o"},
+   { RETROK_p,          'p'          , "p"},
+   { RETROK_q,          'q'          , "q"},
+   { RETROK_r,          'r'          , "r"},
+   { RETROK_s,          's'          , "s"},
+   { RETROK_t,          't'          , "t"},
+   { RETROK_u,          'u'          , "u"},
+   { RETROK_v,          'v'          , "v"},
+   { RETROK_w,          'w'          , "w"},
+   { RETROK_x,          'x'          , "x"},
+   { RETROK_y,          'y'          , "y"},
+   { RETROK_z,          'z'          , "z"}
 };
 
 int joystate;
 #define JOY_SET(K, port) joystate |= K << (8 * port)
 
-keymap_t keybemu0_map[] =
+keymap_t keybemu0_map[] = // Joystick + emulated keyboard
 {
 { RETRO_DEVICE_ID_JOYPAD_UP,       JST_UP },
 { RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
@@ -211,7 +212,7 @@ keymap_t keybemu0_map[] =
 { RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
 };
 
-keymap_t keybemu1_map[] =
+keymap_t keybemu1_map[] = // Emulated keyboard with a fixed mapping
 {
 { RETRO_DEVICE_ID_JOYPAD_UP,       KBD_UP },
 { RETRO_DEVICE_ID_JOYPAD_DOWN,   KBD_DOWN },
@@ -231,7 +232,27 @@ keymap_t keybemu1_map[] =
 { RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
 };
 
-keymap_t joymap[] =
+keymap_t keybemu2_map[] = // Custom keyboard; all keyboard keys are possible
+{
+{ RETRO_DEVICE_ID_JOYPAD_UP,       KBD_UP },
+{ RETRO_DEVICE_ID_JOYPAD_DOWN,   KBD_DOWN },
+{ RETRO_DEVICE_ID_JOYPAD_LEFT,   KBD_LEFT },
+{ RETRO_DEVICE_ID_JOYPAD_RIGHT, KBD_RIGHT },
+{ RETRO_DEVICE_ID_JOYPAD_B,     KBD_ENTER },
+{ RETRO_DEVICE_ID_JOYPAD_A,     KBD_SPACE },
+{ RETRO_DEVICE_ID_JOYPAD_X,           'n' },
+{ RETRO_DEVICE_ID_JOYPAD_Y,           'm' },
+{ RETRO_DEVICE_ID_JOYPAD_SELECT,   KBD_F4 },
+{ RETRO_DEVICE_ID_JOYPAD_START,    KBD_F1 },
+{ RETRO_DEVICE_ID_JOYPAD_L,        KBD_F2 },
+{ RETRO_DEVICE_ID_JOYPAD_R,        KBD_F3 },
+{ RETRO_DEVICE_ID_JOYPAD_L2,    KBD_GRAPH },
+{ RETRO_DEVICE_ID_JOYPAD_R2,  KBD_CONTROL },
+{ RETRO_DEVICE_ID_JOYPAD_L3,       KBD_F5 },
+{ RETRO_DEVICE_ID_JOYPAD_R3,   KBD_ESCAPE },
+};
+
+keymap_t joymap[] = // MSX joystick
 {
 { RETRO_DEVICE_ID_JOYPAD_UP,       JST_UP },
 { RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
@@ -240,6 +261,24 @@ keymap_t joymap[] =
 { RETRO_DEVICE_ID_JOYPAD_A,     JST_FIREA },
 { RETRO_DEVICE_ID_JOYPAD_B,     JST_FIREB },
 };
+
+int custom_keyboard_name_to_fmsx(const char *name)
+{
+    int i;
+    for(i=0; i<sizeof(keymap)/sizeof(keymap_t);i++)
+       if(!strcmp(name, keymap[i].name))
+          return keymap[i].fmsx;
+    return 0;
+}
+
+char* custom_keyboard_fmsx_to_name(int fmsx)
+{
+    int i;
+    for(i=0; i<sizeof(keymap)/sizeof(keymap_t);i++)
+       if(fmsx==keymap[i].fmsx)
+          return keymap[i].name;
+    return "";
+}
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -325,6 +364,25 @@ static void set_input_descriptors(void)
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,         "Escape" },
       { 0 },
    };
+   struct retro_input_descriptor descriptors_keyb_emu2[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     custom_keyboard_fmsx_to_name(keybemu2_map[0].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   custom_keyboard_fmsx_to_name(keybemu2_map[1].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   custom_keyboard_fmsx_to_name(keybemu2_map[2].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  custom_keyboard_fmsx_to_name(keybemu2_map[3].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      custom_keyboard_fmsx_to_name(keybemu2_map[4].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      custom_keyboard_fmsx_to_name(keybemu2_map[5].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,      custom_keyboard_fmsx_to_name(keybemu2_map[6].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      custom_keyboard_fmsx_to_name(keybemu2_map[7].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, custom_keyboard_fmsx_to_name(keybemu2_map[8].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  custom_keyboard_fmsx_to_name(keybemu2_map[9].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      custom_keyboard_fmsx_to_name(keybemu2_map[10].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      custom_keyboard_fmsx_to_name(keybemu2_map[11].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     custom_keyboard_fmsx_to_name(keybemu2_map[12].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     custom_keyboard_fmsx_to_name(keybemu2_map[13].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,     custom_keyboard_fmsx_to_name(keybemu2_map[14].fmsx) },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,     custom_keyboard_fmsx_to_name(keybemu2_map[15].fmsx) },
+      { 0 },
+   };
    struct retro_input_descriptor descriptors_joystick0[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Stick Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,       "Stick Up" },
@@ -351,6 +409,8 @@ static void set_input_descriptors(void)
       in_ptr = descriptors_keyb_emu0;
    else if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1))
       in_ptr = descriptors_keyb_emu1;
+   else if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2))
+      in_ptr = descriptors_keyb_emu2;
    else if (port0_device == RETRO_DEVICE_JOYPAD)
       in_ptr = descriptors_joystick0;
    else
@@ -371,6 +431,23 @@ static void set_input_descriptors(void)
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
 }
 
+char* custom_keyboard_values(char *prefix, char *def)
+{
+    int i;
+    char values[4096];
+    values[0]=0;
+    strcat(values, prefix);
+    strcat(values, def);
+    for(i=0; i<sizeof(keymap)/sizeof(keymap_t);i++)
+    {
+        if ((i > 0 && !strcmp(keymap[i-1].name, keymap[i].name)) || !strcmp(keymap[i].name, def))
+           continue;
+        strcat(values, "|");
+        strcat(values, keymap[i].name);
+    }
+    return strdup(values);
+}
+
 void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
@@ -378,6 +455,7 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port0[] = {
    { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
    { "Emulated Keyboard",              RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+   { "Custom Keyboard",                RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2) },
    { "Keyboard",                       RETRO_DEVICE_KEYBOARD },
    { "Joystick",                       RETRO_DEVICE_JOYPAD },
    };
@@ -385,11 +463,27 @@ void retro_set_environment(retro_environment_t cb)
    { "Joystick",                       RETRO_DEVICE_JOYPAD}
    };
    static const struct retro_controller_info ports[] = {
-      { port0, 4 },
+      { port0, 5 },
       { port1, 1 },
       { 0 },
    };
-   static const struct retro_variable vars[] = {
+   char* up_value = custom_keyboard_values("Custom keyboard RetroPad up; ",         custom_keyboard_fmsx_to_name(keybemu1_map[ 0].fmsx));
+   char* down_value = custom_keyboard_values("Custom keyboard RetroPad down; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 1].fmsx));
+   char* left_value = custom_keyboard_values("Custom keyboard RetroPad left; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 2].fmsx));
+   char* right_value = custom_keyboard_values("Custom keyboard RetroPad right; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 3].fmsx));
+   char* b_value = custom_keyboard_values("Custom keyboard RetroPad b; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 4].fmsx));
+   char* a_value = custom_keyboard_values("Custom keyboard RetroPad a; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 5].fmsx));
+   char* x_value = custom_keyboard_values("Custom keyboard RetroPad x; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 6].fmsx));
+   char* y_value = custom_keyboard_values("Custom keyboard RetroPad y; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 7].fmsx));
+   char* select_value = custom_keyboard_values("Custom keyboard RetroPad select; ", custom_keyboard_fmsx_to_name(keybemu1_map[ 8].fmsx));
+   char* start_value = custom_keyboard_values("Custom keyboard RetroPad start; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 9].fmsx));
+   char* l_value = custom_keyboard_values("Custom keyboard RetroPad l; ",           custom_keyboard_fmsx_to_name(keybemu1_map[10].fmsx));
+   char* r_value = custom_keyboard_values("Custom keyboard RetroPad r; ",           custom_keyboard_fmsx_to_name(keybemu1_map[11].fmsx));
+   char* l2_value = custom_keyboard_values("Custom keyboard RetroPad l2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[12].fmsx));
+   char* r2_value = custom_keyboard_values("Custom keyboard RetroPad r2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[13].fmsx));
+   char* l3_value = custom_keyboard_values("Custom keyboard RetroPad l3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[14].fmsx));
+   char* r3_value = custom_keyboard_values("Custom keyboard RetroPad r3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[15].fmsx));
+   const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
@@ -410,6 +504,22 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
       { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
       { "fmsx_flush_disk", "Save changes to .dsk; Never|Immediate|On close" },
+      { "fmsx_custom_keyboard_up", up_value},
+      { "fmsx_custom_keyboard_down", down_value},
+      { "fmsx_custom_keyboard_left", left_value},
+      { "fmsx_custom_keyboard_right", right_value},
+      { "fmsx_custom_keyboard_a", a_value},
+      { "fmsx_custom_keyboard_b", b_value},
+      { "fmsx_custom_keyboard_y", y_value},
+      { "fmsx_custom_keyboard_x", x_value},
+      { "fmsx_custom_keyboard_start", start_value},
+      { "fmsx_custom_keyboard_select", select_value},
+      { "fmsx_custom_keyboard_l", l_value},
+      { "fmsx_custom_keyboard_r", r_value},
+      { "fmsx_custom_keyboard_l2", l2_value},
+      { "fmsx_custom_keyboard_r2", r2_value},
+      { "fmsx_custom_keyboard_l3", l3_value},
+      { "fmsx_custom_keyboard_r3", r3_value},
       { NULL, NULL },
    };
 
@@ -424,6 +534,23 @@ void retro_set_environment(retro_environment_t cb)
    vfs_iface_info.iface                      = NULL;
    if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
       filestream_vfs_init(&vfs_iface_info);
+
+   free(up_value);
+   free(down_value);
+   free(left_value);
+   free(right_value);
+   free(a_value);
+   free(b_value);
+   free(y_value);
+   free(x_value);
+   free(start_value);
+   free(select_value);
+   free(l_value);
+   free(r_value);
+   free(l2_value);
+   free(r2_value);
+   free(l3_value);
+   free(r3_value);
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -796,6 +923,39 @@ static void check_variables(void)
         FNTName=FntName_buffer;
         Mode |= MSX_FIXEDFONT;
    }
+
+   var.key = "fmsx_custom_keyboard_up"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[0].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_down"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[1].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_left"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[2].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_right"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[3].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_b"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[4].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_a"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[5].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_x"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[6].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_y"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[7].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_select"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[8].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_start"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[9].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_l"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[10].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_r"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[11].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_l2"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[12].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_r2"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[13].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_l3"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[14].fmsx = custom_keyboard_name_to_fmsx(var.value);
+   var.key = "fmsx_custom_keyboard_r3"; var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[15].fmsx = custom_keyboard_name_to_fmsx(var.value);
 
    update_fps();
 }
@@ -1175,6 +1335,12 @@ void retro_run(void)
       for (; i < sizeof(keybemu1_map) / sizeof(keymap_t); i++)
          if (joypad_bits[0] & (1 << keybemu1_map[i].retro))
             KBD_SET(keybemu1_map[i].fmsx);
+      break;
+
+   case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2):
+      for (i = 0; i < sizeof(keybemu2_map) / sizeof(keymap_t); i++)
+         if (joypad_bits[0] & (1 << keybemu2_map[i].retro))
+            KBD_SET(keybemu2_map[i].fmsx);
       break;
 
    case RETRO_DEVICE_JOYPAD:
