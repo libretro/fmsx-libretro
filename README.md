@@ -41,7 +41,7 @@ and/or
     input_disk_next_btn = ".."
 
 Note: 
-* these hotkeys are by default _unmapped_
+* these hotkeys are by default _unmapped_ in RetroArch
 * images can only be swapped in the 'eject' state
 
 
@@ -75,6 +75,7 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 |`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes
 |`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT
 |`fmsx_flush_disk`|Save changes to .dsk image|Never*&vert;Immediate&vert;On close
+|`fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3`|For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key|left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br>
 
 
 ## BIOS
@@ -151,6 +152,7 @@ User 1:
 |R2    |       Ctrl
 |L3    |         F5 *
 |R3    |     Escape
+* "Custom Keyboard": maps 16 RetroPad buttons to any of the 88 keys of the MSX keyboard. Configure this in the Options.
 * "Keyboard": maps host keyboard to 88-key MSX keyboard. Only on (RetroArch) platforms with a real keyboard (Linux, Windows, etc). Don't forget to press Scroll Lock to enter Game Focus Mode!
   * MSX1 & 2: US/European keyboard map, cursors, numeric pad, F1-F5
   * MSX2+: Japanese JIS keyboard map - see below
@@ -203,7 +205,7 @@ Not supported:
 * Printer 
 * RS-232 serial COM
 * Mouse
-* FM-PAC drums 
+* FM-PAC drums
 * FM-PAC instruments are replaced by triangle waves
 
 
