@@ -194,12 +194,14 @@ int joystate;
 
 keymap_t keybemu0_map[] = // Joystick + emulated keyboard
 {
+// first 6: joystick
 { RETRO_DEVICE_ID_JOYPAD_UP,       JST_UP },
 { RETRO_DEVICE_ID_JOYPAD_DOWN,   JST_DOWN },
 { RETRO_DEVICE_ID_JOYPAD_LEFT,   JST_LEFT },
 { RETRO_DEVICE_ID_JOYPAD_RIGHT, JST_RIGHT },
 { RETRO_DEVICE_ID_JOYPAD_A,     JST_FIREA },
 { RETRO_DEVICE_ID_JOYPAD_B,     JST_FIREB },
+// rest: keyboard
 { RETRO_DEVICE_ID_JOYPAD_X,        KBD_F3 },
 { RETRO_DEVICE_ID_JOYPAD_Y,     KBD_SPACE },
 { RETRO_DEVICE_ID_JOYPAD_START,    KBD_F1 },
@@ -562,6 +564,15 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
    }
 }
 
+void disk_flush_on_close(void)
+{
+   if(disk_flush==FLUSH_ON_CLOSE && FDD[0].Dirty)
+   {
+      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
+      FDD[0].Dirty = 0;
+   }
+}
+
 /* .dsk swap support */
 struct retro_disk_control_callback dskcb;
 unsigned disk_index = 0;
@@ -572,7 +583,11 @@ bool disk_inserted = false;
 bool set_eject_state(bool ejected)
 {
    disk_inserted = !ejected;
-   if (!disk_inserted) ChangeDisk(0, NULL);
+   if (!disk_inserted)
+   {
+      disk_flush_on_close();
+      ChangeDisk(0, NULL);
+   }
    return true;
 }
 
@@ -1239,11 +1254,7 @@ void retro_unload_game(void)
    image_buffer_width = 0;
    image_buffer_height = 0;
 
-   if(disk_flush==FLUSH_ON_CLOSE && FDD[0].Dirty)
-   {
-      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
-      FDD[0].Dirty = 0;
-   }
+   disk_flush_on_close();
 
    TrashMSX();
 }
@@ -1329,10 +1340,7 @@ void retro_run(void)
       break;
 
    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
-      for (i = 0; i < sizeof(joymap) / sizeof(keymap_t); i++)
-         if (joypad_bits[0] & (1 << keybemu1_map[i].retro))
-            JOY_SET(keybemu1_map[i].fmsx, 0);
-      for (; i < sizeof(keybemu1_map) / sizeof(keymap_t); i++)
+      for (i = 0; i < sizeof(keybemu1_map) / sizeof(keymap_t); i++)
          if (joypad_bits[0] & (1 << keybemu1_map[i].retro))
             KBD_SET(keybemu1_map[i].fmsx);
       break;

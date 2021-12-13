@@ -428,11 +428,6 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize);
 /*************************************************************/
 unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize);
 
-/** Keyboard() ***********************************************/
-/** This function is periodically called to poll keyboard.  **/
-/************************************ TO BE WRITTEN BY USER **/
-void Keyboard(void);
-
 /** Joystick() ***********************************************/
 /** Query positions of two joystick connected to ports 0/1. **/
 /** Returns 0.0.B2.A2.R2.L2.D2.U2.0.0.B1.A1.R1.L1.D1.U1.    **/
