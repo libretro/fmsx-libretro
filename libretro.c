@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
@@ -74,7 +75,6 @@ extern int RAMPages ;
 #define XBuf image_buffer
 #define WBuf image_buffer
 #include "CommonMux.h"
-#include "Missing.h"
 
 retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;

@@ -20,7 +20,6 @@ endif
 # EMULib sound, console, and other utility functions
 SOURCES_C := \
 	$(CORE_DIR)/libretro.c \
-	$(CORE_DIR)/Missing.c \
 	$(EMULIB)/Sound.c \
 	$(FMSXDIR)/MSX.c \
 	$(FMSXDIR)/V9938.c \
