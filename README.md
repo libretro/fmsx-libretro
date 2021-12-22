@@ -63,10 +63,12 @@ A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repea
 
 Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
 
+A restart is required after changing most of these options.  
+
 |setting|meaning|choices<br>(*) indicates the default setting
 |---|---|---
 |`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2
-|`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL
+|`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL&vert;Dynamic
 |`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
 |`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
@@ -77,6 +79,22 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 |`fmsx_flush_disk`|Save changes to .dsk image|Never*&vert;Immediate&vert;On close
 |`fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3`|For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key|left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br>
 
+
+## PAL vs. NTSC
+Selecting `fmsx_video_mode` 'PAL' or 'NTSC', as stated in the fMSX manual, will _"set PAL/NTSC HBlank/VBlank periods"_ at startup.
+Also, the RetroArch framerate will be set to 50 resp. 60Hz.
+
+However, those two settings do not take into account the internal VDP (Video Display Processor) behaviour related to 
+the maximum number of scanlines and the line coincidence threshold. Also, some games may request to switch the mode.
+
+To synchronize that, select 'Dynamic'. Models MSX1 and MSX2+ will then start up at 60Hz and adapt when a game switches to 50Hz.
+MSX2 by default starts up at 50Hz and likewise will switch to 60Hz.
+
+In 'Dynamic' mode, press F8 to toggle between 50/PAL and 60/NTSC.
+
+When switching modes, a notification will be shown.
+
+The displayed number of scanlines (192 or 212) remains the same for PAL or NTSC. 
 
 ## BIOS
 
@@ -207,13 +225,17 @@ Not supported:
 * Mouse
 * FM-PAC drums
 * FM-PAC instruments are replaced by triangle waves
+* .. and anything that requires accurate timing, like the MSX2+ boot screen.
 
 
 ## Technical details
 
-Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). This includes an 8px (16px) border; MSX native screen resolutions are:
-- horizontal: 256 or 512 (textmode: 32, 40 or 80 columns)
-- vertical: 192 or 212
+Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). 
+This includes an 8px border (16px horizontal in 512px modes).
+
+MSX native screen resolutions are:
+- horizontal: 240, 256 or 512 (textmode: 32, 40 or 80 columns)
+- vertical: 192 or 212 (192-line mode adds 10px to vertical border top+bottom)
 
 Audio: rendered in 48kHz 16b signed mono.
 fMSX emulates PSG, SCC and FM-PAC.

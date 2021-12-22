@@ -421,7 +421,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     return(0);
 #endif
 
-  /* Zero everything */
+  /* Zero (almost) everything */
   CasStream   = 0;
   FontBuf     = 0;
   RAMData     = 0;
@@ -430,7 +430,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   WorkDir     = 0;
   SaveCMOS    = 0;
   FMPACKey    = 0x0000;
-  ExitNow     = 0;
+  ExitNow     = 1; // libretro-fmsx: exit LoopZ80() always at scanline 192 to process a.o. controller inputs
   NChunks     = 0;
   CheatsON    = 0;
   CheatCount  = 0;
@@ -531,7 +531,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
 
-  /* Open casette image */
+  /* Open cassette image */
   if(CasName && ChangeTape(CasName)) { }
 
   /* Initialize floppy disk controller */
@@ -2029,7 +2029,7 @@ word LoopZ80(Z80 *R)
   /* This way, it can't be shut off by overscan tricks (Maarten) */
   if(ScanLine==192)
   {
-    /* Clear 5thSprite fields (wrong place to do it?) */
+    /* Clear 5th Sprite fields (wrong place to do it?) */
     VDPStatus[0]=(VDPStatus[0]&~0x40)|0x1F;
 
     /* Check sprites and set Collision bit */
@@ -2684,7 +2684,7 @@ byte LoadFNT(const char *FileName)
 
 /** LoadROM() ************************************************/
 /** Load a file, allocating memory as needed. Returns addr. **/
-/** of the alocated space or 0 if failed.                   **/
+/** of the allocated space or 0 if failed.                  **/
 /*************************************************************/
 byte *LoadROM(const char *Name,int Size,byte *Buf)
 {
