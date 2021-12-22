@@ -16,6 +16,7 @@
 #include "EMULib.h"
 #include "Sound.h"
 
+static bool video_mode_dynamic=false;
 static unsigned frame_number=0;
 static unsigned fps;
 static uint16_t* image_buffer;
@@ -25,7 +26,7 @@ static unsigned image_buffer_height;
 static uint16_t XPal[80];
 static uint16_t BPal[256];
 static uint16_t XPal0;
-static byte PaletteFrozen=0;
+static bool PaletteFrozen=false;
 
 #ifndef PATH_MAX
 #define PATH_MAX  4096
@@ -38,7 +39,7 @@ static byte PaletteFrozen=0;
 #endif
 
 static char base_dir[PATH_MAX];
-static char PathName_buffer[PATH_MAX];
+static char temp_buffer[PATH_MAX];
 static char DSKName_buffer[PATH_MAX];
 static char FntName_buffer[PATH_MAX];
 static char AutoType_buffer[1024];
@@ -55,6 +56,8 @@ int current_cheat;
 
 extern byte *RAMData;
 extern int RAMPages ;
+
+extern int VPeriod;
 
 #define SND_RATE 48000
 #define AUDIO_BUFFER_SIZE 1024 // .78 frames at 60Hz, .94 frames at 50Hz
@@ -487,7 +490,7 @@ void retro_set_environment(retro_environment_t cb)
    char* r3_value = custom_keyboard_values("Custom keyboard RetroPad r3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[15].fmsx));
    const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
-      { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
+      { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL|Dynamic" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
             "Guess|"
             "Generic 8kB|"
@@ -726,9 +729,34 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 
+void show_message(const char* msg, unsigned number_of_frames)
+{
+   struct retro_message message;
+   message.msg = msg;
+   message.frames = number_of_frames;
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+}
+
 static void update_fps(void)
 {
-   fps = (Mode & MSX_PAL) ? 50 : 60;
+   int freq;
+
+   if (video_mode_dynamic)
+   {
+      Mode&=~MSX_PAL;
+      if (PALVideo) Mode|=MSX_PAL;
+
+      VPeriod = (VIDEO(MSX_PAL)? VPERIOD_PAL:VPERIOD_NTSC)/6;
+
+      freq = VIDEO(MSX_PAL) ? 50 : 60;
+      if (fps != freq)
+      {
+         snprintf(temp_buffer, sizeof(temp_buffer), "switched to %dHz", freq);
+         show_message(temp_buffer, fps);
+      }
+   }
+
+   fps = VIDEO(MSX_PAL) ? 50 : 60;
 }
 
 void retro_reset(void)
@@ -764,7 +792,28 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
 void PutImage(void)
 {
-   ExitNow = 1;
+#ifdef PSP
+   static unsigned int __attribute__((aligned(16))) d_list[32];
+   void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
+
+   sceKernelDcacheWritebackRange(XBuf, 256*240 );
+   sceGuStart(GU_DIRECT, d_list);
+   sceGuCopyImage(GU_PSM_5650, 0, 0, image_buffer_width, image_buffer_height, image_buffer_width, image_buffer, 0, 0, image_buffer_width, texture_vram_p);
+
+   sceGuTexSync();
+   sceGuTexImage(0, 512, 256, image_buffer_width, texture_vram_p);
+   sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuDisable(GU_BLEND);
+   sceGuFinish();
+
+   video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#else
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#endif
+   frame_number++;
+
+   update_fps();
 }
 
 static void check_variables(void)
@@ -816,6 +865,15 @@ static void check_variables(void)
          Mode |= MSX_NTSC;
       else if (strcmp(var.value, "PAL") == 0)
          Mode |= MSX_PAL;
+      else if (strcmp(var.value, "Dynamic") == 0)
+      {
+         video_mode_dynamic = true;
+         if (MODEL(MSX_MSX2))
+            Mode |= MSX_PAL;
+         else
+            Mode |= MSX_NTSC;
+         fps = VIDEO(MSX_PAL) ? 50 : 60;
+      }
    }
    else
    {
@@ -1021,39 +1079,37 @@ void setup_tape_autotype()
 void set_extension(char *buffer, int maxidx, const char *path, const char *ext)
 {
    strncpy(buffer, path, maxidx);
-   PathName_buffer[maxidx]=0;
+   buffer[maxidx]=0;
    replace_ext(buffer, ext);
 }
 
 bool try_loading_cht(const char *path, const char *ext)
 {
-   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
-   return (filestream_exists(PathName_buffer) && LoadCHT(PathName_buffer) > 0);
+   set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
+   return (filestream_exists(temp_buffer) && LoadCHT(temp_buffer) > 0);
 }
 
 bool try_loading_mcf(const char *path, const char *ext)
 {
-   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
-   return (filestream_exists(PathName_buffer) && LoadMCF(PathName_buffer) > 0);
+   set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
+   return (filestream_exists(temp_buffer) && LoadMCF(temp_buffer) > 0);
 }
 
 bool try_loading_palette(const char *path, const char *ext)
 {
-   set_extension(PathName_buffer, sizeof(PathName_buffer)-1, path, ext);
-   if (filestream_exists(PathName_buffer) && LoadPAL(PathName_buffer) == 16)
+   set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
+   if (filestream_exists(temp_buffer) && LoadPAL(temp_buffer) == 16)
    {
-      PaletteFrozen=1;
-      return true;
+      PaletteFrozen=true;
    }
-   return false;
+   return PaletteFrozen;
 }
 
-void show_message(const char* msg, unsigned number_of_frames)
+void toggle_frequency()
 {
-   struct retro_message message;
-   message.msg = msg;
-   message.frames = number_of_frames;
-   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+   VDP[9] = VDP[9] ^ 0x02;
+   WrZ80(0xFFE8, RdZ80(0xFFE8) ^ 0x02);
+   update_fps();
 }
 
 RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
@@ -1089,6 +1145,10 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
          }
          else // just toggle CHT cheats on/off all at once
             Cheats(!Cheats(CHTS_QUERY));
+         break;
+
+      case RETROK_F8:
+         if (video_mode_dynamic) toggle_frequency();
          break;
       }
    }
@@ -1191,7 +1251,6 @@ bool retro_load_game(const struct retro_game_info *info)
    InitSound(SND_RATE, 0);
    SetChannels(255/MAXCHANNELS, (1<<MAXCHANNELS)-1);
 
-   ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);
    if (info) load_core_specific_cheats(info->path);
    update_fps();
@@ -1387,27 +1446,6 @@ void retro_run(void)
       SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
       FDD[0].Dirty = 0;
    }
-
-#ifdef PSP
-   static unsigned int __attribute__((aligned(16))) d_list[32];
-   void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
-
-   sceKernelDcacheWritebackRange(XBuf, 256*240 );
-   sceGuStart(GU_DIRECT, d_list);
-   sceGuCopyImage(GU_PSM_5650, 0, 0, image_buffer_width, image_buffer_height, image_buffer_width, image_buffer, 0, 0, image_buffer_width, texture_vram_p);
-
-   sceGuTexSync();
-   sceGuTexImage(0, 512, 256, image_buffer_width, texture_vram_p);
-   sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
-   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
-   sceGuDisable(GU_BLEND);
-   sceGuFinish();
-
-   video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
-#else
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
-#endif
-   frame_number++;
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }

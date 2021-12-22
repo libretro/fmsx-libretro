@@ -583,7 +583,7 @@ void IntZ80(Z80 *R,word Vector)
 }
 
 /** RunZ80() *************************************************/
-/** This function will run Z80 code until an LoopZ80() call **/
+/** This function will run Z80 code until a LoopZ80()  call **/
 /** returns INT_QUIT. It will return the PC at which        **/
 /** emulation stopped, and current register values in R.    **/
 /*************************************************************/
