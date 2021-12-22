@@ -12,6 +12,10 @@
 #include <streams/file_stream_transforms.h>
 #include <file/file_path.h>
 
+#ifdef PSP
+#include <pspgu.h>
+#endif
+
 #include "MSX.h"
 #include "EMULib.h"
 #include "Sound.h"
@@ -1351,9 +1355,6 @@ void handle_tape_autotype()
    }
 }
 
-#ifdef PSP
-#include <pspgu.h>
-#endif
 void retro_run(void)
 {
    byte currentScreenMode;
