@@ -79,16 +79,17 @@ extern int VPeriod;
 #define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
 #endif
 
-#define XBuf image_buffer
-#define WBuf image_buffer
-#include "CommonMux.h"
-
+int fmsx_log_level = RETRO_LOG_WARN;
 retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t input_poll_cb = NULL;
 static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
+
+#define XBuf image_buffer
+#define WBuf image_buffer
+#include "CommonMux.h"
 
 static bool libretro_supports_bitmasks = false;
 
@@ -328,7 +329,7 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
-   log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
+   if (log_cb) log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
 
    libretro_supports_bitmasks = false;
 }
@@ -508,6 +509,7 @@ void retro_set_environment(retro_environment_t cb)
       },
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
+      { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
@@ -990,6 +992,25 @@ static void check_variables(void)
       VRAMPages = ModeVRAM;
    }
 
+   var.key = "fmsx_log_level";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Off") == 0)
+         fmsx_log_level = RETRO_LOG_WARN;
+      else if (strcmp(var.value, "Info") == 0)
+         fmsx_log_level = RETRO_LOG_INFO;
+      else if (strcmp(var.value, "Debug") == 0)
+         fmsx_log_level = RETRO_LOG_DEBUG;
+      else if (strcmp(var.value, "Spam") == 0)
+         fmsx_log_level = -1;
+   }
+   else
+   {
+      fmsx_log_level = RETRO_LOG_WARN;
+   }
+
    var.key = "fmsx_font";
    var.value = NULL;
 
@@ -1178,8 +1199,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      if (log_cb)
-         log_cb(RETRO_LOG_INFO, "RGB565 is not supported.\n");
+      if (log_cb) log_cb(RETRO_LOG_ERROR, "RGB565 is not supported.\n");
       return false;
    }
 
@@ -1198,7 +1218,26 @@ bool retro_load_game(const struct retro_game_info *info)
    check_variables();
    set_input_descriptors();
 
-   Verbose=1;
+   switch (fmsx_log_level)
+   {
+   case RETRO_LOG_INFO: // fMSX information logged
+      Verbose=1;
+      CPU.TrapBadOps=0;
+      break;
+   case RETRO_LOG_DEBUG: // fMSX debug details logged
+      Verbose=-1&~0x20;
+      CPU.TrapBadOps=1;
+      break;
+   case -1: // same as RETRO_LOG_DEBUG but also log unknown I/O ports (spams a lot..)
+      Verbose=-1;
+      CPU.TrapBadOps=1;
+      break;
+   case RETRO_LOG_WARN: // only RetroArch/libretro-related messages; no fMSX-specifics
+   default:
+      Verbose=0;
+      CPU.TrapBadOps=0;
+      break;
+   }
 
    UPeriod=100;
 

@@ -29,8 +29,10 @@
 #include "V9938.h"
 #include <string.h>
 
+extern retro_log_printf_t log_cb;
+
 /*************************************************************/
-/** Other usefull defines                                   **/
+/** Other useful defines                                    **/
 /*************************************************************/
 #define VDP_VRMP5(X, Y) (VRAM + ((Y&1023)<<7) + ((X&255)>>1))
 #define VDP_VRMP6(X, Y) (VRAM + ((Y&1023)<<7) + ((X&511)>>2))
@@ -870,6 +872,13 @@ void ReportVdpCommand(byte Op)
   int NY  = (VDP[42]+((int)VDP[43]<<8)) & 1023;
   byte CM = Op>>4;
   byte LO = Op&0x0F;
+
+  if(log_cb) log_cb(RETRO_LOG_DEBUG,"V9938: Opcode %02Xh %s-%s (%d,%d)->(%d,%d),%d [%d,%d]%s\n",
+         Op, Commands[CM], Ops[LO],
+         SX,SY, DX,DY, CL, VDP[45]&0x04? -NX:NX,
+         VDP[45]&0x08? -NY:NY,
+         VDP[45]&0x70? " on ExtVRAM":""
+        );
 }
 
 /** VDPDraw() ************************************************/
@@ -945,6 +954,7 @@ byte VDPDraw(byte Op)
       VdpEngine=HmmcEngine;  
       break;
     default:
+      if(Verbose&0x02 && log_cb) log_cb(RETRO_LOG_WARN,"V9938: Unrecognized opcode %02Xh\n",Op);
         return(0);
   }
 

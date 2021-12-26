@@ -78,6 +78,7 @@ A restart is required after changing most of these options.
 |`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT
 |`fmsx_flush_disk`|Save changes to .dsk image|Never*&vert;Immediate&vert;On close
 |`fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3`|For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key|left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br>
+|`fmsx_log_level`|Configure the amount of fMSX logging|Off*&vert;Info&vert;Debug&vert;Spam
 
 
 ## PAL vs. NTSC
@@ -213,6 +214,33 @@ How to use this:
 To (de)activate KANA LOCK, press page down (COUNTRY). It works just like caps lock: press and release to enable.
 
 Best enable SCREEN 1 to appreciate the full 8px width of the Japanese characters; in screen 0 characters are only 6px wide.
+
+
+## Logging
+When running into problems running a game, you can use logging to collect information.
+
+Setting the `fmsx_log_level` has the following effects:
+* **Off** => (the default) no fMSX-specific logging; only RetroArch/libretro-related messages
+* **Info** => fMSX (startup) information logged
+* **Debug** => fMSX debug details logged
+* **Spam** => same, plus a lot of 'unknown I/O PORT' messages
+
+Note: set the RetroArch log level to **Info** or **Debug** to be able to see these fMSX log messages!
+
+See https://docs.libretro.com/guides/generating-retroarch-logs/ how to do that.
+
+Or do it manually: edit `~/.config/retroarch/retroarch.cfg`
+
+    log_verbosity = "true"    # needs to be true to see logs from a libretro core. Will also enable a lot of RetroArch logging.
+    libretro_log_level = "1"  # 0=debug, 1=info, 2=warn, 3=error
+
+For the curious, here are the bitflags fMSX uses internally for various categories:
+* Info:  `Verbose!=0` => fMSX (startup) info
+* Debug: `Verbose&0x02` => VDP
+* Debug: `Verbose&0x04` => disk & tape incl. FDIDisk.Verbose & WD1793.Verbose
+* Debug: `Verbose&0x08` => RAM/ROM mapper
+* (none) `Verbose&0x10` => n/a
+* Spam:  `Verbose&0x20` => I/O 
 
 
 ## Limitations

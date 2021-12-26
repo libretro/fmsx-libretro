@@ -473,6 +473,6 @@ case 0x00F3:
   return;
 
 default:
-  if(log_cb) log_cb(RETRO_LOG_INFO,"Unknown BIOS trap called at PC=%04Xh\n",R->PC.W-2);
+  if(log_cb) log_cb(RETRO_LOG_WARN,"Unknown BIOS trap called at PC=%04Xh\n",R->PC.W-2);
   }
 }
