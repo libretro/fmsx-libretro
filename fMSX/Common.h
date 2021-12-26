@@ -431,9 +431,20 @@ void ColorSprites(byte Y,byte *ZBuf)
 /*************************************************************/
 void RefreshLineF(byte Y)
 {
-  pixel *P=RefreshBorder(Y,XPal[BGColor]);
-  if(P)
-	  ClearLine(P,XPal[BGColor]);
+  pixel *P;
+
+  if(Verbose>1 && log_cb) log_cb(RETRO_LOG_INFO,
+      "ScrMODE %d: ChrTab=%X ChrGen=%X ColTab=%X SprTab=%X SprGen=%X\n",
+      ScrMode,
+      (int)(ChrTab-VRAM),
+      (int)(ChrGen-VRAM),
+      (int)(ColTab-VRAM),
+      (int)(SprTab-VRAM),
+      (int)(SprGen-VRAM)
+    );
+
+  P=RefreshBorder(Y,XPal[BGColor]);
+  if(P) ClearLine(P,XPal[BGColor]);
 }
 
 /** RefreshLine0() *******************************************/
@@ -447,8 +458,7 @@ void RefreshLine0(byte Y)
   P=RefreshBorder(Y,BC);
   if(!P) return;
 
-  if(!ScreenON)
-     ClearLine(P,BC);
+  if(!ScreenON) ClearLine(P,BC);
   else
   {
     P[0]=P[1]=P[2]=P[3]=P[4]=P[5]=P[6]=P[7]=P[8]=BC;
