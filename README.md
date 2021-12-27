@@ -12,7 +12,8 @@ Source : http://fms.komkon.org/fMSX/
 * .cas .CAS - for fMSX tape files
 * .m3u .M3U - for multidisk software
 
-The supplied location must exist and must be a readable file with one of the listed extensions. If, e.g., it points to a directory or non-existent file, 
+The supplied location must exist and must be a readable file with one of the listed extensions. 
+If, e.g., it points to a directory or non-existent file, 
 no image is loaded and this core will boot into MSX-BASIC. It is not possible to insert a disk into a running core.
 
 
@@ -43,6 +44,27 @@ and/or
 Note: 
 * these hotkeys are by default _unmapped_ in RetroArch
 * images can only be swapped in the 'eject' state
+
+
+## Creating empty disk images
+An MSX computer will boot into an MSX-BASIC prompt when no cartridge or executable disk is inserted.
+By default, attempts to do disk I/O will then result in 'Disk offline' errors.
+
+To create an empty disk image, which can be written to from MSX-BASIC, set both of these options:
+* "Create empty disk image when none loaded": Yes (option `fmsx_phantom_disk`)
+* "Save changes to .dsk": Immediate or On close (option `fmsx_flush_disk`)
+Without the latter setting, changes to the created disk will be lost.
+
+This option can also be used to create User Disks for multi-disk games.
+
+The following situations can arise:
+* _no content selected when starting core_: changes will be lost; no filename is known
+* _non-existent .cas, .rom, .m3u or .fdi selected_: changes will be lost
+* _non-existent .dsk image selected_: .dsk image created on host filesystem
+* _non-existent file listed in .m3u_: .dsk image created on host filesystem
+* _RGUI > Quick Menu > Disk Control > Disk Image Append_: RGUI enforces an _existing_ file to be chosen.
+  However, this can, e.g., be a zero-byte file. 
+  As long as it has a .dsk file extension, a valid .dsk image file will be created & saved.
 
 
 ## Cheats
@@ -77,6 +99,7 @@ A restart is required after changing most of these options.
 |`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes
 |`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT
 |`fmsx_flush_disk`|Save changes to .dsk image|Never*&vert;Immediate&vert;On close
+|`fmsx_phantom_disk`|Create empty disk image when none loaded|No*&vert;Yes
 |`fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3`|For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key|left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br>
 |`fmsx_log_level`|Configure the amount of fMSX logging|Off*&vert;Info&vert;Debug&vert;Spam
 
@@ -107,12 +130,13 @@ These BIOS ROMs are required for execution:
 * MSX2+: MSX2P.ROM, MSX2PEXT.ROM
 
 Optional; loaded when found:
-* DISK.ROM
+* DISK.ROM - required to be able to run .dsk and .m3u images. 
+  A notification will be shown for 10s when loading such an image without a proper DISK.ROM in place.
 * FMPAC.ROM
 * KANJI.ROM
 * MSXDOS2.ROM (MSX2/2+)
 * PAINTER.ROM (MSX2/2+) - press space during boot to start
-* RS232.ROM
+* RS232.ROM - although serial COM I/O is removed in this core
 * CMOS.ROM
 * GMASTER2.ROM, GMASTER.ROM
 
