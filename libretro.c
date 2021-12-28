@@ -774,7 +774,9 @@ void retro_reset(void)
 
 size_t retro_serialize_size(void)
 {
-   return 0x100000;
+   // max 5MiB: 1778B hardware state, <=4MiB RAM, <=192KiB VRAM
+   // Zipped that will be just a few KiB.
+   return 0x500000;
 }
 
 bool retro_serialize(void *data, size_t size)
