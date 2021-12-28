@@ -6,7 +6,7 @@ This is a port of Marat Fayzullin's fMSX 6.0 (21-Feb-2021) to the libretro API.
 Source : http://fms.komkon.org/fMSX/
 
 
-## Recognized file extension
+## Recognized file extensions
 * .rom .mx1 .mx2 .ROM .MX1 .MX2 - for ROM images
 * .dsk .DSK .fdi .FDI - for FAT12 360/720kB disk images
 * .cas .CAS - for fMSX tape files
@@ -14,6 +14,32 @@ Source : http://fms.komkon.org/fMSX/
 
 The supplied location must exist and must be a readable file with one of the listed extensions. If, e.g., it points to a directory or non-existent file, 
 no image is loaded and this core will boot into MSX-BASIC. It is not possible to insert a disk into a running core.
+
+
+## Saving state
+Some state is automatically persisted to these files at shutdown:
+- [RTC](https://www.msx.org/wiki/Ricoh_RP-5C01) (real time clock, screen settings, etc.): to `CMOS.ROM` (system directory, 52B)
+- **SRAM** in **ASCII8** & **ASCII16** mapper ROMs: to `<Game>.sav` (working directory, 8 or 2KiB)
+- **FM-PAC SRAM**: to `FMPAC.sav` (working directory, 8KiB)
+- **Konami Game Master 2 SRAM**: to `GMASTER2.sav` (working directory, 8KiB)
+
+These files will only be created when the RTC resp. SRAM data is actually changed during gameplay.
+
+SRAM only applies when the respective support ROM (FMPAC, GMASTER2) is loaded, and when the selected content 
+supports that type of SRAM. Consult a game's manual to verify if SRAM saving is supported, and if so, what type.
+The `FMPAC.ROM` and/or `GMASTER2.ROM` must be present in the RetroArch system directory and are to be provided by the user.
+
+Many disk-based games, especially multi-disk games, support saving to disk.
+To persist disk saves, set option "Save changes to .dsk image" (`fmsx_flush_disk`) to "Immediate" or "On close".
+
+This core currently does _not_ support saving to RetroArch RTC `Game.rtc` or SRAM `Game.srm` files.
+
+If changing your game disks for savegames is not preferred, opt instead for persisting state; 
+by default Save State button is F2 and Load State is F4. RetroArch will save state to `Game.state` in the
+configured `savestate_directory`.
+
+For the state to be properly restored after a restart, this core must be started with **exactly** the same settings 
+(MSX type, RAM size, etc.) & loaded files (ROMs, DSKs, CMOS, SRAM, etc).
 
 
 ## Tape (cassette) software
@@ -60,7 +86,6 @@ A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repea
 
 
 ## Configuration options
-
 Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
 
 A restart is required after changing most of these options.  
@@ -98,7 +123,6 @@ When switching modes, a notification will be shown.
 The displayed number of scanlines (192 or 212) remains the same for PAL or NTSC. 
 
 ## BIOS
-
 BIOS ROMs are loaded from RetroArch's `system_directory`. The screen will remain black if required ROMs are missing.
 
 These BIOS ROMs are required for execution:
@@ -118,7 +142,6 @@ Optional; loaded when found:
 
 
 ## Mapping of controls
-
 User 1:
 
 * "Joystick": map RetroPad to MSX joystick A
@@ -257,7 +280,6 @@ Not supported:
 
 
 ## Technical details
-
 Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). 
 This includes an 8px border (16px horizontal in 512px modes).
 
@@ -271,7 +293,6 @@ fMSX emulates PSG, SCC and FM-PAC.
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
 
 ### MSX1 colour palette
-
 "To make a custom palette for `Game.rom`, create `Game.pal` [in the same directory] containing 16 #RRGGBB hex values, one per line. 
 This palette file will be loaded automatically." ([fMSX site](https://fms.komkon.org/fMSX/fMSX.html#LABB), section "New in fMSX 4.0")
 
@@ -332,6 +353,9 @@ Some changes are applied to the fMSX core in order to make fmsx-libretro portabl
 * removed various pieces of code intended for other platforms (fMSX is part of a suite of emulators)
 * removed `SndDriver`; implemented another way in `libretro.c`
 * reimplemented state loading/saving
+    * note: Save1793() is never invoked! The WD1793 FDC is supposed to be 'at rest' when saving state.
+      This means: don't save state during disk writes. All other hard- & software state is fully captured.
+      fMSX has the same behaviour.
 * switched MSB first/LSB first
 * due to the fact that fmsx-libretro renders audio&video per frame:
     * delay invocation of `SyncSCC()`/`Sync2413()` to fix a sound interference bug
