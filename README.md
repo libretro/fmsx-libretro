@@ -338,6 +338,11 @@ An [example alternative palette](https://paulwratt.github.io/programmers-palette
 #ffffff
 ```
 
+Colours are rendered as RGB565 (16 bit). Due to rounding down in conversion from RGB888 32 bit, the colours mentioned above
+can lose some detail. E.g., `#2020E0` (blue) is converted for RetroArch to RGB565 (3,7,27) which, when shown on a 32b display, 
+actually displays as `#181cd8`.
+
+
 ## Developers
 Some information for developers wanting to upgrade to newer fMSX versions, or improve this port.
 
