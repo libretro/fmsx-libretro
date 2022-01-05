@@ -152,6 +152,7 @@ extern "C" {
 #define MSX_GUESSB    0x00020000 /* Guess ROM mapper type B  */
 
 #define MSX_OPTIONS   0x7FFC0000 /* Miscellaneous Options:   */
+#define MSX_GMASTER   0x00400000 /* Load Game Master 1/2     */
 #define MSX_ALLSPRITE 0x00800000 /* Show ALL sprites         */
 #define MSX_AUTOFIREA 0x01000000 /* Autofire joystick FIRE-A */
 #define MSX_AUTOFIREB 0x02000000 /* Autofire joystick FIRE-B */

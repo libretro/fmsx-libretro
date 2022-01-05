@@ -97,6 +97,7 @@ A restart is required after changing most of these options.
 |`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
 |`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
+|`fmsx_load_game_master`|Load GMASTER(2).ROM when present (will start Game Master before the game)|No*&vert;Yes
 |`fmsx_simbdos`|Simulate BDOS DiskROM access calls (faster, but does not support CALL FORMAT)|No*&vert;Yes
 |`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes
 |`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes
@@ -108,7 +109,7 @@ A restart is required after changing most of these options.
 
 ## PAL vs. NTSC
 Selecting `fmsx_video_mode` 'PAL' or 'NTSC', as stated in the fMSX manual, will _"set PAL/NTSC HBlank/VBlank periods"_ at startup.
-Also, the RetroArch framerate will be set to 50 resp. 60Hz.
+Also, the RetroArch framerate will be set to 50 resp. 60Hz. The RetroArch region is synchronized with the framerate.
 
 However, those two settings do not take into account the internal VDP (Video Display Processor) behaviour related to 
 the maximum number of scanlines and the line coincidence threshold. Also, some games may request to switch the mode.
@@ -134,11 +135,12 @@ Optional; loaded when found:
 * DISK.ROM
 * FMPAC.ROM
 * KANJI.ROM
-* MSXDOS2.ROM (MSX2/2+)
+* MSXDOS2.ROM (MSX2/2+) - requires DISK.ROM too. When present, activates Disk BASIC 2.01.
 * PAINTER.ROM (MSX2/2+) - press space during boot to start
 * RS232.ROM
-* CMOS.ROM
-* GMASTER2.ROM, GMASTER.ROM
+* CMOS.ROM - not a real ROM; a dump of the RTC contents (Real Time Clock; 52 Bytes)
+* [GMASTER2.ROM](https://www.generation-msx.nl/group/games-with-game-master-2-s-ram-support/25/), 
+  [GMASTER.ROM](https://www.generation-msx.nl/group/games-with-game-master-support/26/) - Konami's Game Master 2 & 1 (only one ROM is loaded; GM2 attempted first)
 
 
 ## Mapping of controls
@@ -280,6 +282,7 @@ Not supported:
 
 
 ## Technical details
+### Audio/Video
 Video: 16bpp RGB565 (PSP: BGR565, PS2: BGR555) 272x228 (544x228 in 512px MSX2 screen modes). 
 This includes an 8px border (16px horizontal in 512px modes).
 
@@ -291,6 +294,60 @@ Audio: rendered in 48kHz 16b signed mono.
 fMSX emulates PSG, SCC and FM-PAC.
 
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
+
+### Memory layout
+Unlike BlueMSX and openMSX, fMSX does not implement any or all specific models sold historically.
+The memory and [slot](https://www.msx.org/wiki/Slots) layout of this 'derivative' MSX model differs for model MSX1 vs. MSX2/2+.
+
+#### MSX1
+|primary slot| |0|1|2|3| | | |Address range
+|---|---|---|---|---|---|---|---|---|---
+|subslot| |n/a     |n/a                                  |n/a |3-0    |3-1        |3-2         |3-3     |
+|page|3|           |ROM content or empty                 |same|       |           |RAM mapper ^|        |0xC000-0xFFFF
+|page|2|           |ROM content, Game Master 2 or empty  |same|FMPAC #|           |RAM mapper ^|        |0x8000-0xBFFF
+|page|1|BASIC ^    |ROM content, Game Master 1/2 or empty|same|FMPAC #|disk ROM *#|RAM mapper  |RS-232 #|0x4000-0x7FFF
+|page|0|BIOS ^     |ROM content or empty                 |same|       |           |RAM mapper  |        |0x0000-0x3FFF
+
+Legend:
+- \^: active page at startup
+- \*: page selected in slot at startup
+- \#: optional; ROM loaded if present
+
+Regarding game ROM contents:
+- In most cases, the game is mapped to slot 1 (external slot A). Slot 2 (B) is unused.
+- [Game Master](https://www.generation-msx.nl/software/konami/game-master/470/), when present, is always mapped to slot 1.
+- [Game Master 2](https://www.msx.org/wiki/Konami_Game_Master_2) (GM2), when present, is mapped to slot 1 except for Contra & Hai no Majutsushi.
+For those 2 games, GMASTER2.ROM is mapped to slot 2. They only use GM2 for SRAM saves.
+- The game (ROM content) is then mapped to the _other_ external slot, i.e., slot 2 or 1. 
+
+#### MSX2/2+
+For these two models, slot 0 is also expanded, and more optional roms are loaded when present.
+
+|primary slot|   |0      |   |   |   |1                                    |2   |3             |               |            |        |Address range
+|---         |---|---    |---|---|---|---                                  |--- |---           |---            |---         |---     |---
+|subslot     |   |0-0    |0-1|0-2|0-3|n/a                                  |n/a |3-0           |3-1            |3-2         |3-3     |
+|page        |3  |       |b  |   |   |ROM content or empty                 |same|a             |               |RAM mapper ^|        |0xC000-0xFFFF
+|page        |2  |       |b  |c  |   |ROM content, Game Master 2 or empty  |same|a / MSXDOS2 *#|               |RAM mapper ^|        |0x8000-0xBFFF
+|page        |1  |BASIC ^|b  |c  |   |ROM content, Game Master 1/2 or empty|same|a / MSXDOS2 *#|disk ROM *#    |RAM mapper  |RS-232 #|0x4000-0x7FFF
+|page        |0  |BIOS ^ |b  |   |   |ROM content or empty                 |same|a             |extended BIOS *|RAM mapper  |        |0x0000-0x3FFF
+
+Legend:
+- \^: active page at startup
+- \*: page selected in slot at startup
+- \#: optional; ROM loaded if present
+- a-c: fMSX loads some optional ROMs, if present. The ROMs are mapped in the order indicated by letters a~c.
+
+If all three optional 'dynamically mapped' ROMs are loaded, they are mapped to the following subslots:
+- \[3-0] MSXDOS2 (64k, mapped to p1-2)
+- \[0-1] PAINTER.ROM (64k, all 4 pages)
+- \[0-2] FMPAC.ROM (64k, mapped to p1-2)
+
+Regarding game ROM contents, the same applies as described for MSX1 above.
+
+The MSXDOS2 ROM (always in 3-0), when loaded, extends the DISK.ROM (in 3-1).
+
+The RS232 ROM, when present, is always mapped to 3-3.
+
 
 ### MSX1 colour palette
 "To make a custom palette for `Game.rom`, create `Game.pal` [in the same directory] containing 16 #RRGGBB hex values, one per line. 

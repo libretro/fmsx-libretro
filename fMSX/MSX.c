@@ -242,6 +242,34 @@ static const char *ROMNames[MAXMAPPERS+1] =
   "GMASTER2/SRAM","FMPAC/SRAM","UNKNOWN"
 };
 
+/** Game Master SHA1s *************************************/
+/* For Contra and Hai no Majutsushi, which need to be     */
+/* inserted into slot 1 when combined with Game Master 2. */
+/* Values taken from openMSX softwaredb.                  */
+static const char *GameMaster2SlotSpecialSHA1s[16] =
+{
+  // Contra
+  "1302d258c952e93666ecec12429d6d2c2f841f43",
+  "90003c78975d00b1e5612fd00dffabb70d616ecd",
+  "7964ba4c3c27b6a32d397157fd38dd1dc2f1e543",
+  "424320762bcbbb6081b1e186e21accf758aeb935",
+  "cc46a737acd729b2839ecd237d38b4a63cfb16cb",
+  "bc06bd3d6f138da8f5d38b47e459b4d1942e49e4",
+
+  // Hai no Majutsushi
+  "14403ca71d287084569e6c2f4124d2712c665219",
+  "25022c4f5cfc805e93026fd5fda781e9a1807474",
+  "3ff54468a5acf1ad44e85bdc993044aaa3165a63",
+  "d08d4e2a8d92c01551ff012a71a1f3e57fe2d09c",
+  "90722d413913ab18462aa741f85b820e751bb50f",
+  "c34a1c225d1a5fc41a998e23d1209b59b3b759bb",
+  "f5e199a5b39bad10256d8e963f0da272ad359517",
+  "4376342bf42334d98dbd3e35ef35460974269c58",
+  "751571d21457d89e5c52c45657bfe9a617ae8e14",
+
+  0
+};
+
 /** Keyboard Mapping *****************************************/
 /** This keyboard mapping is used by KBD_SET()/KBD_RES()    **/
 /** macros to modify KeyState[] bits.                       **/
@@ -412,6 +440,8 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   int *T,I,J,K;
   byte *P;
   word A;
+  char *sha1;
+  int FirstCart=0;
 
   /*** STARTUP CODE starts here: ***/
 
@@ -534,11 +564,28 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((J<MAXSLOTS)&&LoadCart("FMPAC.ROM",J,MAP_FMPAC)) ++J;
 
   /* Load Konami GameMaster2/GameMaster cartridges */
-  for(;(J<MAXSLOTS)&&ROMData[J];++J);
-  if(J<MAXSLOTS)
+  J=0; // by default load GM2&GM in slot A
+  if(OPTION(MSX_GMASTER))
   {
-    if(LoadCart("GMASTER2.ROM",J,MAP_GMASTER2)) ++J;
-    else if(LoadCart("GMASTER.ROM",J,0)) ++J;
+    if(ROMName[0])
+    {
+      sha1 = SHA1Sum(ROMName[0]);
+      for(I=0;sha1 && GameMaster2SlotSpecialSHA1s[I];I++)
+      {
+        if(!strcmp(sha1, GameMaster2SlotSpecialSHA1s[I]))
+        {
+          J=1; // for 2 games, load GM2 in slot B
+          break;
+        }
+      }
+      if (sha1) free(sha1);
+    }
+    if(LoadCart("GMASTER2.ROM",J,MAP_GMASTER2))
+    {
+      if(J==0) FirstCart=1; // if GM2 in slot A then load game in slot B
+    }
+    else if(LoadCart("GMASTER.ROM",0,0))
+      FirstCart=1; // load game in slot B
   }
 
   /* We are now back to working directory */
@@ -546,7 +593,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",WorkDir); }
 
   /* For each user cartridge slot, try loading cartridge */
-  for(J=0;J<MAXCARTS;++J) LoadCart(ROMName[J],J,ROMGUESS(J)|ROMTYPE(J));
+  for(J=0;J+FirstCart<MAXCARTS;++J) LoadCart(ROMName[J],J+FirstCart,ROMGUESS(J)|ROMTYPE(J));
 
   /* Open cassette image */
   if(CasName&&ChangeTape(CasName))
@@ -968,7 +1015,7 @@ byte RdZ80(word A)
   if((A&0x3F88)!=0x3F88) return(RAM[A>>13][A&0x1FFF]);
 
   /* Secondary slot selector */
-  if(A==0xFFFF) return(~SSLReg[PSL[3]]);
+  if(A==0xFFFF /*&& ((PSL[3]==0 && !MODEL(MSX_MSX1)) || PSL[3]==3)*/) return(~SSLReg[PSL[3]]); // might be wrong - should only read back inverse when the primary slot is expanded. Commented code would fix that.
 
   /* Floppy disk controller */
   /* 7FF8h..7FFFh Standard DiskROM  */
@@ -2952,7 +2999,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
   if((Len>=2)&&((C1!='A')||(C2!='B')))
     if(rfseek(F,0x2000*(Len-2),SEEK_SET)>=0)
     {
-      C1 = rfgetc(F);
+      C1=rfgetc(F);
       C2=rfgetc(F);
     }
 
@@ -3072,6 +3119,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
     if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"guessed %s..",ROMNames[Type]);
     if(Slot<MAXCARTS) SETROMTYPE(Slot,Type);
   }
+  else if (Type==MAP_GMASTER2 && Slot<MAXCARTS) SETROMTYPE(Slot,Type); // required to enable GM2 in slot A/B
 
   /* Save MegaROM type */
   ROMType[Slot]=Type;
