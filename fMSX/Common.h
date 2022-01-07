@@ -45,16 +45,20 @@ static void ClearLine(pixel *P,pixel C)
 INLINE pixel YJKColor(int Y,int J,int K)
 {
   int R,G,B;
-		
-  R=Y+J;
-  G=Y+K;
-  B=((5*Y-2*J-K)/4);
 
-  R=R<0? 0:R>31? 31:R;
-  G=G<0? 0:G>31? 31:G;
-  B=B<0? 0:B>31? 31:B;
+  // See http://map.grauw.nl/articles/yjk/
+  // YJK566 (17 bits of information, 131072 values) translates to RGB555 (15 bits, 32768 values)
+  R=(Y+J)<<3;
+  G=(Y+K)<<3;
+  B=(5*Y-2*J-K)<<1;
 
-  return(BPal[(R&0x1C)|((G&0x1C)<<3)|(B>>3)]);
+  // .. but because of overlapping & clipping that results in 16384 + 2884 = 19268 distinct colours
+  // (SCREEN10+11 YJK466, 16bits: 8192 + 4307 = 12499, plus 16 palette colours)
+  R=R<0? 0:R>255? 255:R;
+  G=G<0? 0:G>255? 255:G;
+  B=B<0? 0:B>255? 255:B;
+
+  return PIXEL(R,G,B);
 }
 
 /** RefreshBorder() ******************************************/

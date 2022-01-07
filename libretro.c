@@ -23,13 +23,13 @@
 static bool video_mode_dynamic=false;
 static unsigned frame_number=0;
 static unsigned fps;
-static uint16_t* image_buffer;
+static pixel* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
 
-static uint16_t XPal[80];
-static uint16_t BPal[256];
-static uint16_t XPal0;
+static pixel XPal[80];
+static pixel BPal[256];
+static pixel XPal0;
 static bool PaletteFrozen=false;
 
 #ifndef PATH_MAX
@@ -818,7 +818,7 @@ void PutImage(void)
 
    video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #else
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(pixel));
 #endif
    frame_number++;
 
@@ -1212,7 +1212,7 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
+   image_buffer = (pixel*)malloc(640*480*sizeof(pixel));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -1297,6 +1297,7 @@ bool retro_load_game(const struct retro_game_info *info)
    for(i = 0; i < 80; i++)
       SetColor(i, 0, 0, 0);
 
+   // setup fixed SCREEN 8 palette: RGB332
    for(i = 0; i < 256; i++)
      BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
 
