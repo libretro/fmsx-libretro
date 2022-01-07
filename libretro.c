@@ -510,6 +510,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
+      { "fmsx_game_master", "Support Game Master; No|Yes" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
@@ -834,7 +835,7 @@ static void check_variables(void)
    var.key = "fmsx_mode";
    var.value = NULL;
 
-   Mode = 0;
+   Mode = MSX_MSXDOS2;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -924,6 +925,12 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_PATCHBDOS;
+
+   var.key = "fmsx_game_master";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+      Mode |= MSX_GMASTER;
 
    var.key = "fmsx_flush_disk";
    var.value = NULL;
@@ -1365,7 +1372,8 @@ void retro_unload_game(void)
 
 unsigned retro_get_region(void)
 {
-   return RETRO_REGION_NTSC;
+   if (fps==60) return RETRO_REGION_NTSC;
+   return RETRO_REGION_PAL;
 }
 
 void *retro_get_memory_data(unsigned id)

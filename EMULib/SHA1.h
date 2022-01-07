@@ -15,5 +15,7 @@ void ResetSHA1(SHA1 *State);
 int ComputeSHA1(SHA1 *State);
 int InputSHA1(SHA1 *State,const unsigned char *Data,unsigned int Size);
 const char *OutputSHA1(SHA1 *State,char *Output,unsigned int Size);
+/* convenience method to calculate SHA1 sum of a file. Caller must free the result. Returns 0 on failure. */
+char* SHA1Sum(const char* FileName);
 
 #endif /* SHA1_H */
