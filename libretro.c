@@ -70,6 +70,8 @@ extern int VPeriod;
 #define BORDER 8
 #define WIDTH  (256+(BORDER<<1))
 #define HEIGHT (212+(BORDER<<1))
+#define MAX_HEIGHT      (256+BORDER)
+#define MAX_SCANLINE    (PALVideo?255:242)
 
 #ifdef PSP
 #define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
@@ -87,8 +89,19 @@ static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 
+#define HIRES_OFF           0
+#define HIRES_INTERLACED    1
+#define HIRES_PROGRESSIVE   2
+static int hires_mode = HIRES_OFF;
+static bool overscan = false;
+#define HiResMode           (InterlaceON&&hires_mode!=HIRES_OFF)
+#define InterlacedMode      (hires_mode==HIRES_INTERLACED)
+#define OverscanMode        (overscan)
+#define OddPage             (frame_number&1)
+
 #define XBuf image_buffer
 #define WBuf image_buffer
+int LastScanline;
 #include "CommonMux.h"
 
 static bool libretro_supports_bitmasks = false;
@@ -496,6 +509,8 @@ void retro_set_environment(retro_environment_t cb)
    const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL|Dynamic" },
+      { "fmsx_hires", "Support high resolution; Off|Interlaced|Progressive" },
+      { "fmsx_overscan", "Support overscan; No|Yes" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
             "Guess|"
             "Generic 8kB|"
@@ -799,8 +814,23 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+void set_image_buffer_size(byte screen_mode)
+{
+   image_buffer_height = (LastScanline<HEIGHT || !OverscanMode) ? HEIGHT : (LastScanline+1);
+   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
+      image_buffer_width = WIDTH<<1;
+   else
+      image_buffer_width = WIDTH;
+   if (frame_number==0)
+      image_buffer_height = HEIGHT;
+   else if (HiResMode)
+      image_buffer_height <<= 1;
+}
+
 void PutImage(void)
 {
+   set_image_buffer_size(ScrMode);
+
 #ifdef PSP
    static unsigned int __attribute__((aligned(16))) d_list[32];
    void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
@@ -888,6 +918,22 @@ static void check_variables(void)
    {
       Mode |= MSX_NTSC;
    }
+
+   var.key = "fmsx_hires";
+   var.value = NULL;
+
+   hires_mode = HIRES_OFF;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Interlaced") == 0)
+         hires_mode = HIRES_INTERLACED;
+      else if (strcmp(var.value, "Progressive") == 0)
+         hires_mode = HIRES_PROGRESSIVE;
+   }
+
+   var.key = "fmsx_overscan";
+   var.value = NULL;
+   overscan = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0;
 
    var.key = "fmsx_mapper_type_mode";
    var.value = NULL;
@@ -1065,15 +1111,6 @@ static void check_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) keybemu2_map[15].fmsx = custom_keyboard_name_to_fmsx(var.value);
 
    update_fps();
-}
-
-void set_image_buffer_size(byte screen_mode)
-{
-   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
-       image_buffer_width = WIDTH<<1;
-   else
-       image_buffer_width = WIDTH;
-   image_buffer_height = HEIGHT;
 }
 
 void replace_ext(char *fname, const char *ext)
@@ -1407,7 +1444,6 @@ void handle_tape_autotype()
 
 void retro_run(void)
 {
-   byte currentScreenMode;
    int i,j;
    bool updated = false;
    int16_t joypad_bits[2];
@@ -1482,12 +1518,8 @@ void retro_run(void)
 
    handle_tape_autotype();
 
-   currentScreenMode = ScrMode;
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / fps);
-   if (currentScreenMode != ScrMode) {
-      set_image_buffer_size(ScrMode);
-   }
 
    fflush(stdout);
 

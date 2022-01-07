@@ -94,6 +94,8 @@ A restart is required after changing most of these options.
 |---|---|---
 |`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2
 |`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL&vert;Dynamic
+|`fmsx_hires`|Support high resolution|Off*&vert;Interlaced&vert;Progressive
+|`fmsx_overscan`|Support overscan|*No&vert;Yes
 |`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC
 |`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB
@@ -290,10 +292,31 @@ MSX native screen resolutions are:
 - horizontal: 240, 256 or 512 (textmode: 32, 40 or 80 columns)
 - vertical: 192 or 212 (192-line mode adds 10px to vertical border top+bottom)
 
+The MSX2 supports interlacing, which is used by some software. Combined with showing two alternating pages, this increases
+the maximum vertical resolution to 424, at the expense of halving the effective FPS to 25 (PAL) or 30 (NTSC).
+Setting `fmsx_hires` to "Interlaced" will approximate an interlaced screen. 
+The approximation suffers from 'time-based aliasing', most prominent when this core's FPS is not equal to
+that of the actual display. Setting `fmsx_hires` to "Progressive" is less authentic, but more pleasing to the eye.
+
+Some games and demos create an overscan effect. On a real MSX, this can go up to 256 vertical lines (PAL) or 243 (NTSC).
+A part of the overscan is then actually displayed _on top_ of the screen, replacing the top border.
+This core supports limited overscan, when enabled (`fmsx_overscan`=Yes). The lines beyond 212 will be displayed at the 
+bottom. No attempt is made to display them on top. Most software that does overscan will apply custom blanking, 
+e.g., at line 224. 
+Overscanned lines beyond those are not shown. The bottom border is not drawn when overscan is active.
+A limitation: in text mode overscan, incorrect text characters are shown.
+
+In theory, [an MSX2 can show 512x512 pixels](https://www.msx.org/forum/development/msx-development/here-you-can-see-all-msx2-vram-your-screen) 
+by combining interlacing with overscan in PAL mode.
+
+In hires mode, the vertical output resolution will be doubled. Combined with overscan, this can result into maximum 
+528 vertical lines. RetroArch will automatically scale this to retain aspect ratio and window size.
+
 Audio: rendered in 48kHz 16b signed mono.
 fMSX emulates PSG, SCC and FM-PAC.
 
-Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
+Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). 
+Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
 
 ### Memory layout
 Unlike BlueMSX and openMSX, fMSX does not implement any or all specific models sold historically.
