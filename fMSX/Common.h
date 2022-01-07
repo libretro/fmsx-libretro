@@ -13,7 +13,7 @@
 /**     changes to this file.                               **/
 /*************************************************************/
 
-static int FirstLine = 18;     /* First scanline in the XBuf */
+static int FirstLine = 10 + BORDER;/* First scanline in XBuf */
 
 static void  Sprites(byte Y,pixel *Line);
 static void  ColorSprites(byte Y,byte *ZBuf);
@@ -45,16 +45,20 @@ static void ClearLine(pixel *P,pixel C)
 INLINE pixel YJKColor(int Y,int J,int K)
 {
   int R,G,B;
-		
-  R=Y+J;
-  G=Y+K;
-  B=((5*Y-2*J-K)/4);
 
-  R=R<0? 0:R>31? 31:R;
-  G=G<0? 0:G>31? 31:G;
-  B=B<0? 0:B>31? 31:B;
+  // See http://map.grauw.nl/articles/yjk/
+  // YJK566 (17 bits of information, 131072 values) translates to RGB555 (15 bits, 32768 values)
+  R=(Y+J)<<3;
+  G=(Y+K)<<3;
+  B=(5*Y-2*J-K)<<1;
 
-  return(BPal[(R&0x1C)|((G&0x1C)<<3)|(B>>3)]);
+  // .. but because of overlapping & clipping that results in 16384 + 2884 = 19268 distinct colours
+  // (SCREEN10+11 YJK466, 16bits: 8192 + 4307 = 12499, plus 16 palette colours)
+  R=R<0? 0:R>255? 255:R;
+  G=G<0? 0:G>255? 255:G;
+  B=B<0? 0:B>255? 255:B;
+
+  return PIXEL(R,G,B);
 }
 
 /** RefreshBorder() ******************************************/
@@ -65,13 +69,13 @@ INLINE pixel YJKColor(int Y,int J,int K)
 pixel *RefreshBorder(byte Y,pixel C)
 {
   pixel *P;
-  int H;
+  int H,L,A;
 
   /* First line number in the buffer */
-  if(!Y) FirstLine=(ScanLines212? 8:18)+VAdjust;
+  if(!Y) FirstLine=(ScanLines212?0:10)+BORDER+VAdjust;
 
   /* Return 0 if we've run out of the screen buffer due to overscan */
-  if(Y+FirstLine>=HEIGHT) return(0);
+  if(Y>(OverscanMode?MAX_SCANLINE:211)) return(0);
 
   /* Set up the transparent color */
   XPal[0]=(!BGColor||SolidColor0)? XPal0:XPal[BGColor];
@@ -79,11 +83,62 @@ pixel *RefreshBorder(byte Y,pixel C)
   /* Start of the buffer */
   P=(pixel *)XBuf;
 
-  /* Paint top of the screen */
-  if(!Y) for(H=WIDTH*FirstLine-1;H>=0;H--) P[H]=C;
+  if(HiResMode)
+  {
+    if(!Y)
+      /* Paint top of the screen */
+      for(L=FirstLine;L>0;L--)
+      {
+        for(A=((WIDTH*L)<<1)-1,H=WIDTH;H>0;H--,A--)
+        {
+          if (InterlacedMode)
+          {
+            if (OddPage)
+            { // even lines are black
+              P[A]=0;
+              P[A-WIDTH]=C;
+            }
+            else
+            { // odd lines are black
+              P[A]=C;
+              P[A-WIDTH]=0;
+            }
+          }
+          else // progressive: only touch this frame's lines
+          {
+            if (OddPage)
+              P[A-WIDTH]=C;
+            else
+              P[A]=C;
+          }
+        }
+      }
 
-  /* Start of the line */
-  P+=WIDTH*(FirstLine+Y);
+    /* Start of the line */
+    P+=(WIDTH*(FirstLine+Y))<<1;
+
+    if (OddPage)
+    {
+      if (InterlacedMode)
+        // erase previous frame's line
+        for(A=(WIDTH<<1)-1,H=WIDTH;H>0;H--,A--) P[A]=0;
+    }
+    else
+    {
+      if (InterlacedMode)
+        // erase previous frame's line
+        for(H=WIDTH-1;H>=0;H--) P[H]=0;
+      P+=WIDTH; // interlace offset
+    }
+  }
+  else // standard mode
+  {
+    /* Paint top of the screen */
+    if(!Y) for(H=WIDTH*FirstLine-1;H>=0;H--) P[H]=C;
+
+    /* Start of the line */
+    P+=WIDTH*(FirstLine+Y);
+  }
 
   /* Paint left/right borders */
   for(H=(WIDTH-256)/2+HAdjust;H>0;H--) P[H-1]=C;
@@ -91,7 +146,23 @@ pixel *RefreshBorder(byte Y,pixel C)
 
   /* Paint bottom of the screen */
   H=ScanLines212? 212:192;
-  if(Y==H-1) for(H=WIDTH*(HEIGHT-H-FirstLine+1)-1;H>=WIDTH;H--) P[H]=C;
+
+  if(HiResMode)
+  {
+    if(Y==H-1)
+      for(L=MAX_HEIGHT-Y;L>0;L--)
+      {
+        for(A=((WIDTH*L)<<1)-1,H=WIDTH;H>0;H--,A--)
+        {
+          if (InterlacedMode)
+            // erase previous frame's line
+            P[A]=0;
+          P[A+WIDTH]=C;
+        }
+      }
+  }
+  else // standard mode
+    if(Y==H-1) for(H=WIDTH*(HEIGHT-H-FirstLine+1)-1;H>=WIDTH;H--) P[H]=C;
 
   /* Return pointer to the scanline in XBuf */
   return(P+(WIDTH-256)/2+HAdjust);
@@ -461,6 +532,7 @@ void RefreshLine0(byte Y)
   if(!ScreenON) ClearLine(P,BC);
   else
   {
+    LastScanline = Y + FirstLine;
     P[0]=P[1]=P[2]=P[3]=P[4]=P[5]=P[6]=P[7]=P[8]=BC;
 
     G=(FontBuf&&(Mode&MSX_FIXEDFONT)? FontBuf:ChrGen)+((Y+VScroll)&0x07);
@@ -496,6 +568,7 @@ void RefreshLine1(byte Y)
      ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     Y+=VScroll;
     G=(FontBuf&&(Mode&MSX_FIXEDFONT)? FontBuf:ChrGen)+(Y&0x07);
     T=ChrTab+((int)(Y&0xF8)<<2);
@@ -532,6 +605,7 @@ void RefreshLine2(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     Y+=VScroll;
     T=ChrTab+((int)(Y&0xF8)<<2);
     I=((int)(Y&0xC0)<<5)+(Y&0x07);
@@ -566,6 +640,7 @@ void RefreshLine3(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     Y+=VScroll;
     T=ChrTab+((int)(Y&0xF8)<<2);
     G=ChrGen+((Y&0x1C)>>2);
@@ -598,6 +673,7 @@ void RefreshLine4(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     Y+=VScroll;
@@ -640,9 +716,11 @@ void RefreshLine5(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     T=ChrTab+(((int)(Y+VScroll)<<7)&ChrTabM&0x7FFF);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x8000) T-=0x8000;
 
     for(X=0;X<16;X++,R+=16,P+=16,T+=8)
     {
@@ -687,9 +765,11 @@ void RefreshLine8(byte Y)
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     T=ChrTab+(((int)(Y+VScroll)<<8)&ChrTabM&0xFFFF);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
     for(X=0;X<32;X++,T+=8,R+=8,P+=8)
     {
@@ -722,9 +802,11 @@ void RefreshLine10(byte Y)
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     T=ChrTab+(((int)(Y+VScroll)<<8)&ChrTabM&0xFFFF);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
     /* Draw first 4 pixels */
     C=R[0];P[0]=C? XPal[C]:BPal[VDP[7]];
@@ -765,12 +847,14 @@ void RefreshLine12(byte Y)
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R = ZBuf+32;
     T = ChrTab
       + (((int)(Y+VScroll)<<8)&ChrTabM&0xFFFF)
       + (HScroll512&&(HScroll>255)? 0x10000:0)
       + (HScroll&0xFC);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
     /* Draw first 4 pixels */
     C=R[0];P[0]=C? XPal[C]:BPal[VDP[7]];
@@ -812,9 +896,11 @@ void RefreshLine6(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor&0x03]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     T=ChrTab+(((int)(Y+VScroll)<<7)&ChrTabM&0x7FFF);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x8000) T-=0x8000;
 
     for(X=0;X<32;X++)
     {
@@ -847,9 +933,11 @@ void RefreshLine7(byte Y)
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
   else
   {
+    LastScanline = Y + FirstLine;
     ColorSprites(Y,ZBuf);
     R=ZBuf+32;
     T=ChrTab+(((int)(Y+VScroll)<<8)&ChrTabM&0xFFFF);
+    if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
     for(X=0;X<32;X++)
     {
@@ -881,6 +969,7 @@ void RefreshLineTx80(byte Y)
   if(!ScreenON) ClearLine(P,BC);
   else
   {
+    LastScanline = Y + FirstLine;
     P[0]=P[1]=P[2]=P[3]=P[4]=P[5]=P[6]=P[7]=P[8]=BC;
     G=(FontBuf&&(Mode&MSX_FIXEDFONT)? FontBuf:ChrGen)+((Y+VScroll)&0x07);
     T=ChrTab+((80*(Y>>3))&ChrTabM);

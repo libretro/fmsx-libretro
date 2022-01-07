@@ -23,13 +23,13 @@
 static bool video_mode_dynamic=false;
 static unsigned frame_number=0;
 static unsigned fps;
-static uint16_t* image_buffer;
+static pixel* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
 
-static uint16_t XPal[80];
-static uint16_t BPal[256];
-static uint16_t XPal0;
+static pixel XPal[80];
+static pixel BPal[256];
+static pixel XPal0;
 static bool PaletteFrozen=false;
 
 #ifndef PATH_MAX
@@ -74,6 +74,8 @@ bool require_disk_rom = false;
 #define BORDER 8
 #define WIDTH  (256+(BORDER<<1))
 #define HEIGHT (212+(BORDER<<1))
+#define MAX_HEIGHT      (256+BORDER)
+#define MAX_SCANLINE    (PALVideo?255:242)
 
 #ifdef PSP
 #define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
@@ -91,8 +93,19 @@ static retro_input_state_t input_state_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 
+#define HIRES_OFF           0
+#define HIRES_INTERLACED    1
+#define HIRES_PROGRESSIVE   2
+static int hires_mode = HIRES_OFF;
+static bool overscan = false;
+#define HiResMode           (InterlaceON&&hires_mode!=HIRES_OFF)
+#define InterlacedMode      (hires_mode==HIRES_INTERLACED)
+#define OverscanMode        (overscan)
+#define OddPage             (frame_number&1)
+
 #define XBuf image_buffer
 #define WBuf image_buffer
+int LastScanline;
 #include "CommonMux.h"
 
 static bool libretro_supports_bitmasks = false;
@@ -500,6 +513,8 @@ void retro_set_environment(retro_environment_t cb)
    const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL|Dynamic" },
+      { "fmsx_hires", "Support high resolution; Off|Interlaced|Progressive" },
+      { "fmsx_overscan", "Support overscan; No|Yes" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
             "Guess|"
             "Generic 8kB|"
@@ -514,6 +529,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
+      { "fmsx_game_master", "Support Game Master; No|Yes" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
@@ -783,7 +799,9 @@ void retro_reset(void)
 
 size_t retro_serialize_size(void)
 {
-   return 0x100000;
+   // max 5MiB: 1778B hardware state, <=4MiB RAM, <=192KiB VRAM
+   // Zipped that will be just a few KiB.
+   return 0x500000;
 }
 
 bool retro_serialize(void *data, size_t size)
@@ -805,8 +823,23 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+void set_image_buffer_size(byte screen_mode)
+{
+   image_buffer_height = (LastScanline<HEIGHT || !OverscanMode) ? HEIGHT : (LastScanline+1);
+   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
+      image_buffer_width = WIDTH<<1;
+   else
+      image_buffer_width = WIDTH;
+   if (frame_number==0)
+      image_buffer_height = HEIGHT;
+   else if (HiResMode)
+      image_buffer_height <<= 1;
+}
+
 void PutImage(void)
 {
+   set_image_buffer_size(ScrMode);
+
 #ifdef PSP
    static unsigned int __attribute__((aligned(16))) d_list[32];
    void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
@@ -824,7 +857,7 @@ void PutImage(void)
 
    video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #else
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(pixel));
 #endif
    frame_number++;
 
@@ -841,7 +874,7 @@ static void check_variables(void)
    var.key = "fmsx_mode";
    var.value = NULL;
 
-   Mode = 0;
+   Mode = MSX_MSXDOS2;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -895,6 +928,22 @@ static void check_variables(void)
       Mode |= MSX_NTSC;
    }
 
+   var.key = "fmsx_hires";
+   var.value = NULL;
+
+   hires_mode = HIRES_OFF;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Interlaced") == 0)
+         hires_mode = HIRES_INTERLACED;
+      else if (strcmp(var.value, "Progressive") == 0)
+         hires_mode = HIRES_PROGRESSIVE;
+   }
+
+   var.key = "fmsx_overscan";
+   var.value = NULL;
+   overscan = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0;
+
    var.key = "fmsx_mapper_type_mode";
    var.value = NULL;
 
@@ -931,6 +980,12 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_PATCHBDOS;
+
+   var.key = "fmsx_game_master";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+      Mode |= MSX_GMASTER;
 
    var.key = "fmsx_phantom_disk";
    var.value = NULL;
@@ -1073,15 +1128,6 @@ static void check_variables(void)
    update_fps();
 }
 
-void set_image_buffer_size(byte screen_mode)
-{
-   if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
-       image_buffer_width = WIDTH<<1;
-   else
-       image_buffer_width = WIDTH;
-   image_buffer_height = HEIGHT;
-}
-
 void replace_ext(char *fname, const char *ext)
 {
     char *end = fname + strlen(fname);
@@ -1220,7 +1266,7 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
+   image_buffer = (pixel*)malloc(640*480*sizeof(pixel));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -1312,6 +1358,7 @@ bool retro_load_game(const struct retro_game_info *info)
    for(i = 0; i < 80; i++)
       SetColor(i, 0, 0, 0);
 
+   // setup fixed SCREEN 8 palette: RGB332
    for(i = 0; i < 256; i++)
       BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
 
@@ -1396,7 +1443,8 @@ void retro_unload_game(void)
 
 unsigned retro_get_region(void)
 {
-   return RETRO_REGION_NTSC;
+   if (fps==60) return RETRO_REGION_NTSC;
+   return RETRO_REGION_PAL;
 }
 
 void *retro_get_memory_data(unsigned id)
@@ -1429,7 +1477,6 @@ void handle_tape_autotype()
 
 void retro_run(void)
 {
-   byte currentScreenMode;
    int i,j;
    bool updated = false;
    int16_t joypad_bits[2];
@@ -1504,12 +1551,8 @@ void retro_run(void)
 
    handle_tape_autotype();
 
-   currentScreenMode = ScrMode;
    RunZ80(&CPU);
    RenderAndPlayAudio(SND_RATE / fps);
-   if (currentScreenMode != ScrMode) {
-      set_image_buffer_size(ScrMode);
-   }
 
    fflush(stdout);
 

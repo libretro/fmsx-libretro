@@ -60,9 +60,6 @@
 #define SND_BITS        8
 #define SND_BUFSIZE     (1<<SND_BITS)
 
-/** RGB ******************************************************/
-#define PIXEL(R,G,B)  (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
-
 #ifdef __cplusplus
 extern "C" {
 #endif

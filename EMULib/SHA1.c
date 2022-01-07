@@ -1,5 +1,12 @@
 #include "SHA1.h"
 
+#include <streams/file_stream_transforms.h>
+
+#ifndef BYTE_TYPE_DEFINED
+#define BYTE_TYPE_DEFINED
+typedef unsigned char byte;
+#endif
+
 #define ROTATE(Data,Shift) \
   ((((Data)<<(Shift))|((Data)>>(32-(Shift))))&0xFFFFFFFF)
 
@@ -190,4 +197,30 @@ const char *OutputSHA1(SHA1 *State,char *Output,unsigned int Size)
 
   Output[J] = '\0';
   return(Output);
+}
+
+char* SHA1Sum(const char* FileName)
+{
+  char* S;
+  SHA1 C;
+  const byte *Buf;
+  int Len;
+  RFILE *F;
+
+  /* Open file and find its size */
+  if(!(F=rfopen(FileName,"rb"))) return(0);
+  if(rfseek(F,0,SEEK_END)<0)    { rfclose(F);return(0); }
+  if((Len=rftell(F))<=0)        { rfclose(F);return(0); }
+  filestream_rewind(F);
+  Buf=malloc(Len);
+  if(rfread(Buf,1,Len,F)!=Len)  { free(Buf);rfclose(F);return(0); }
+  rfclose(F);
+
+  ResetSHA1(&C);
+  InputSHA1(&C,Buf,Len);
+  free(Buf);
+  S=malloc(41);
+  if(!ComputeSHA1(&C) || !OutputSHA1(&C,S,41))  { free(S);return 0; }
+
+  return S;
 }
