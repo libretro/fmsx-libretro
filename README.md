@@ -85,6 +85,82 @@ nor RetroArch Handled (would probably require support for loading content from m
 A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repeatedly to active cheats one by one, or disable cheats.  
 
 
+## Cheevos / RetroAchievements
+Contrary to [documentation stating otherwise](https://docs.libretro.com/guides/retroachievements/#msx-msx2) ([here as well](https://docs.retroachievements.org/Emulator-Support-and-Issues/), item 29), this core _does_ support [RetroAchievements](https://retroachievements.org).
+
+There are currently [16 MSX games with achievements](https://retroachievements.org/gameList.php?c=29).
+Most are verified to work in this core. Note: this list is just for reference; will not be updated.
+
+Take note of the following to ensure your achievements are registered:
+
+- Use a recent version of your preferred frontend, e.g., RetroArch
+- [follow the (libretro) howto](https://docs.libretro.com/guides/retroachievements/#how-to-setup-achievements)
+- ❗ [make sure the content you start has the exact same hash](https://docs.retroachievements.org/Game-Identification/#msx) (MD5, SHA1, CRC32) as listed below
+- ❗ Content marked with * below requires the [CARTS.SHA](https://raw.githubusercontent.com/libretro/fmsx-libretro/master/fMSX/ROMs/CARTS.SHA) file as distributed with fMSX to be present in the RetroArch system folder
+- if these tips don't help, see the [RetroAchievements FAQ](https://docs.retroachievements.org/My-game-is-not-loading-achievements/)
+
+Game-specific remarks:
+- **SD-Snatcher** is only registered at RetroAchievements for the **Melancholia English translation**. There are [instructions for applying that patch](https://www.mediafire.com/file/4kzsfn2p22laxsv), 
+and creating a four-disk .m3u (multi-disk) including the user save disk. The intermediate files with hashes are listed for convenience.
+❗ Although saving to disk will immediately break the hash, this _only_ applies to *game* disks.
+To save progress in SD-Snatcher, you'll have to set `fmsx_flush_disk` to 'Immediate' or 'On close' to enable writing to the fourth (User) disk.
+This user disk is not part of the set of hashes that RetroAchievements verifies.
+- **Penguin-Kun Wars 2**: the English translation is not listed in CARTS.SHA. Manually set `fmsx_mapper_type_mode` to 'ASCII 16kB'.
+- **Metal Gear**: RetroAchievements operates with MD5 hashes. Since the openMSX database and fMSX CARTS.SHA use SHA1 hashes, those are listed here where available. 
+  When running a patched ROM with _unlisted_ SHA1, manually set `fmsx_mapper_type_mode` to 'Konami4 8kB'.  
+- **Metal Gear 2**: same, but set 'Konami5 8kB'
+
+|Game|RA topic & gen-MSX|Verified lr-fmsx|Common filename|Type|Platform|MD5|SHA1|CRC32|Remarks
+|---|---|---|---|---|---|---|---|---|---
+[Aleste](https://retroachievements.org/game/7578)|[Topic](https://retroachievements.org/viewtopic.php?t=12082) [GenMSX](https://www.generation-msx.nl/software/compile/aleste/release/1055/)|✓ *|Aleste (Japan).rom|ROM|MSX2|7087b51f3ccfdf314ce60d5d8aaf644a|12f6f31f495bfb384c9ca9067bfbf8f98af6adf9| 
+| | |✓|Aleste (Japan).dsk|Disk| |28427cfe955f65c6ec8ef2bdd35ff6a7|655989b36f291d7ad2e8a1bb7711ec32287363c8| 
+| | | |alesteen.dsk|Disk| |2ebb5484e112b0c41fa0d392da9a9bf1| | |English Patch
+[Knightmare](https://retroachievements.org/game/10507)|[Topic](https://retroachievements.org/viewtopic.php?t=13660) [GenMSX](https://www.generation-msx.nl/software/konami/knightmare/release/855/)|✓|Knightmare - Majou Densetsu (Japan).rom|ROM|MSX1|ebfcaba358d7ceca95c7385276321f78|c8ff858d239c62a859f15c2f1bf44e1d657cec13|0DB84205
+[SD-Snatcher (Melancholia English Translation)](https://retroachievements.org/game/10505)|[Topic](https://retroachievements.org/viewtopic.php?t=13309) [GenMSX](https://www.generation-msx.nl/software/konami/sd-snatcher/release/1267/)|n/a|Super Deform Snatcher (1990)(Konami)(ja)(Disk 1 of 3)\[a]\[SCC+].dsk|original|MSX2 SCC+| |4cef12ae13334ed4f3f890311b641c1ad2bdc408|74DF1878|filename variant 1
+| | |n/a|Super Deform Snatcher (1990)(Konami)(ja)(Disk 2 of 3)\[SCC+].dsk|original| | |1156f6c4d9332fdc6cda05558ac3e3102a2764fe|930E06B3
+| | |n/a|Super Deform Snatcher (1990)(Konami)(ja)(Disk 3 of 3)\[SCC+].dsk|original| | |e4b1b5f8b7ea4532551c103164860c8802151131|0547BB3A
+| | |n/a|SD Snatcher Japanese for SCC+ Disk 1.DSK|original| | | |74DF1878|filename variant 2
+| | |n/a|SD Snatcher Japanese for SCC+ Disk 2.DSK|original| | | |930E06B3
+| | |n/a|SD Snatcher Japanese for SCC+ Disk 3.DSK|original| | | |0547BB3A
+| | |n/a|SD092M1E.IPS|Patch| | |9f09878023f0ce424cc3200e9ad6870c9d3325a2|F5A3D165
+| | |n/a|SD092M2E.IPS|Patch| | |7eeab38f97064aaa0158826dbb181126b9344a87|FD1B05CE
+| | |n/a|SD092M3E.IPS|Patch| | |45f5c4db226fc177b3e797cc3a7d95b61c10ebee|D30D8D7E
+| | |✓|SD Snatcher (Melancholia Translation - Any SCC Cartridge) Disk 1.dsk|Multi-Disk| |3bcf74b40f15eef5aab22a49781f9f1a|9d12c20f71c4049f8a8b65cc4f13fd7b54affadc|1B3D3C89
+| | |✓|SD Snatcher (Melancholia Translation - Any SCC Cartridge) Disk 2.dsk|Multi-Disk| |6d1990d36783caf8b6e4d73ae22c98b1|4983041e918acd599e65c70de3101011c43b059a|AC407E31
+| | |✓|SD Snatcher (Melancholia Translation - Any SCC Cartridge) Disk 3.dsk|Multi-Disk| |e4d3e483964c62ade5f07afdd81dd64b|0c4c993758e69a8f8fd79fbc4eef4cecdc156f32|F626F02E
+[Metal Gear](https://retroachievements.org/game/10501)|[Topic](https://retroachievements.org/viewtopic.php?t=10641) [GenMSX](https://www.generation-msx.nl/software/konami/metal-gear/release/1028/)|✓ *|Metal Gear (J).mx2|ROM|MSX2|12e302954fa9b23c11ce7c8f5770b82a|a52021f1b257c7c35d626d5d642134091c45e4f4
+| | | |Metal Gear \[RC-750](JP).rom|ROM| |439ea985617135d70858f0e6f88ba0f9
+| | | |Metal Gear (T-Eng).mx2|ROM| |56a32f310765e54101a10001d28344b6| | |Nekura_Heko Patch - version 1995c (English translation)
+| | | |Metal Gear \[RC-750](T-Eng).rom|ROM| |3da994910180808cc03bbe3df973b55c
+| | | |Metal Gear (T-Eng).mx2|ROM| |6e5144f5c8e50fb2f8f00852cbf3d2ca| | |TyrannoRanger/Mr. Dude Patch - version 1.0 (English translation)
+| | | |Metal Gear \[RC-750](T-Eng).rom|ROM| |8473c150867394a0f0de6e8d29c9a50a
+[Metal Gear 2: Solid Snake](https://retroachievements.org/game/10504)|[Topic](https://retroachievements.org/viewtopic.php?t=10642) [GenMSX](https://www.generation-msx.nl/software/konami/metal-gear-2---solid-snake/release/1248/)|✓ *|Metal Gear 2 - Solid Snake (J).mx2|ROM|MSX2 SCC|9f50d92d35e19d5de37d75a36a410588|af567ea6e27912d6d5bf1c8e9bc18e9b393fd1ab
+| | | |Metal Gear 2 - Solid Snake (J) \[Turbo Fix].mx2|ROM| |72e813494dcacde3029a07db1ecca934
+| | |✓ *|Metal Gear 2 - Solid Snake \[T-Eng].mx2|ROM| |668217f475619500c87f136949267b6d|a7b196f7e934faa76602c8c00bd2f6e6d2d70787| |English
+| | | |Metal Gear 2 - Solid Snake \[T-Eng+Turbo Fix].mx2|ROM| |8fe72857b748852cec910345ce7a2b73| | |English
+| | | |Metal Gear 2 - Solid Snake \[T-Eng+Addendum].mx2|ROM| |c54d3657e78b1ecc7cfe4f641158fbff| | |English
+| | | |Metal Gear 2 - Solid Snake \[T-Eng+Addendum+Turbo Fix].mx2|ROM| |a501ffaf9fb30c3a68c0c4c803fba341| | |English
+| | | |Metal Gear 2 - Solid Snake \[Addendum Only].mx2|ROM| |01ec86d19248514baf263f0b60df4d0c| | |English
+| | | |Metal Gear 2 - Solid Snake \[Addendum Only+Turbo Fix].mx2|ROM| |da8047597419d24897d8a43c0056876e| | |English
+| | | |Metal Gear 2 - Solid Snake \[T-Por].mx2|ROM| |614c03a00bfee70c581f759e96cdc099| | |Portuguese
+| | | |Metal Gear 2 - Solid Snake \[T-Por+Turbo Fix].mx2|ROM| |70e3d3dd66a97aeef6a87db23fadfc32| | |Portuguese
+[Oh Shit!](https://retroachievements.org/game/17069)|[Topic](https://retroachievements.org/viewtopic.php?t=11765) [GenMSX](https://www.generation-msx.nl/software/aackosoft/oh-shit/release/2400/)|?|Oh_Shit.rom|ROM|MSX1|1721862f3f033e74607af9e26688403d| |1d34e4e0
+[Picture Puzzle (HAL Laboratory, 1983)](https://retroachievements.org/game/16396)|[Topic](https://retroachievements.org/viewtopic.php?t=11976) [GenMSX](https://www.generation-msx.nl/software/hal-laboratory/picture-puzzle/release/60/)|✓|Picture Puzzle (Japan).rom|ROM|MSX1 |9383ba8643fd1000b5cc099cf9d46822|336a7c451a03c9a55726d171603b54628ad832c8| 
+| | | |Picture Puzzle (Japan) (Alt 1).rom|ROM| |ac0bc988775b9c65c92cfb200f9b1beb| | 
+[Picture Puzzle (Karoshi Corporation, 2004)](https://retroachievements.org/game/16395)|[Topic](https://retroachievements.org/viewtopic.php?t=11007) [GenMSX](https://www.generation-msx.nl/software/karoshi/picture-puzzle/release/3680/)|✓|Picture Puzzle v2 (2004)(Karoshi)\[RK706].rom|ROM|MSX1|6ee570b6fa73fe9a147846078cddc11c|27e56fbec7fa39ce19d045b0dbc4217d290f92e2| 
+[Sudoku](https://retroachievements.org/game/16506) MSXdev '06|[Topic](https://retroachievements.org/viewtopic.php?t=11313) [GenMSX](https://www.generation-msx.nl/software/dvik-joyrex/sudoku/release/3715/)|✓|sudoku.rom|ROM|MSX1|2df142939c9e1147f814099856fd6361|120d477cd28b48b8a63efb34920ac331b54e66e5
+[The Treasure of Usas](https://retroachievements.org/game/17872)|[Topic](https://retroachievements.org/viewtopic.php?t=13620) [GenMSX](https://www.generation-msx.nl/software/konami/usas/release/895/)|✓ *|Treasure of Usas, The (Japan, Europe).rom|ROM|MSX2|9aab75984b06c21ed8e6214474d3a68e|4ff2aad8371e382e203c7f29b665612a8c9d937c|30396650
+[Vampire Killer](https://retroachievements.org/game/3289)|[Topic](https://retroachievements.org/viewtopic.php?t=11050) [GenMSX](https://www.generation-msx.nl/software/konami/vampire-killer/release/696/)|✓ *|Vampire Killer (Japan, Europe).rom|ROM|MSX2|92ba9dab3c7a4ac6c8a130f6ccbac91c|5ef7d03b138a2023f6def241b671c666f97ed83b|5953D084
+[~Homebrew~ ~Prototype~ Super Mario World](https://retroachievements.org/game/17024)|[Topic](https://retroachievements.org/viewtopic.php?t=11658) [MSX games world](https://msxgamesworld.com/software.php?id=4519)|✓|Super Mario World - Daemos et al. (2016)\[Advanced Prototype]\[original] \[3392].rom|ROM|MSX2(+)|da28da0bb524bd0072e10b2799a88a75|77b37d7028d5f657239eb24f0c16097a6e183f8d|9d90c0a6
+[Mappy](https://retroachievements.org/game/17324)|[Topic](https://retroachievements.org/viewtopic.php?t=12058) [GenMSX](https://www.generation-msx.nl/software/namco/mappy/release/329/)|✓|Mappy (Japan).rom / Mappy (1984) (Namcot) (J).rom|ROM|MSX1|134f8a060bb879a343afcae975e45adf|e7d06c0a5c7f256c061e5b8173fdcc145d2fc4d6
+| | |✓|Mappy (Japan) (Alt 1).rom|ROM| |1c8f344249b311b13ad4bade12ca49d3|a8313b0dce35faa80b399a220f19b04333fdec1d| 
+| | | |Mappy (Japan) (Alt 2).rom|ROM| |ac32e186da2c5cedc5abbdcabe7575ff| | 
+[Penguin-kun Wars 2](https://retroachievements.org/game/10472)|[Topic](https://retroachievements.org/viewtopic.php?t=13795) [GenMSX](https://www.generation-msx.nl/software/ascii-corporation/penguin-kun-wars-2/release/1211/)|✓ *|Penguin-kun Wars 2 (Japan).rom|ROM| |3db77573e81184156486fe743b828e58|b7104477c8801fe54d1ba91f3a77ac6e4f399f52| 
+| | |✓❗|Penguin-kun Wars 2 (Japan) + [English Patch](https://www.romhacking.net/translations/1463/) .rom|ROM|MSX2|d4f8d8a7e052a0d6246ac2b5afdc729e|9f476f544d1cd5f87d4ca19665ccdbf6ac0f68a0
+[Zoom 909](https://retroachievements.org/game/16530)|[Topic](https://retroachievements.org/viewtopic.php?t=11248) [GenMSX](https://www.generation-msx.nl/software/sega/zoom-909/release/521/)|✓|Zoom 909 (Japan).rom|ROM|MSX1|d8e09f622af52e07a83f19ca58aee194|07db3e3ffb16c138f9da12cacde48bf7522a188c|64283863
+[Space Manbow](https://retroachievements.org/game/4023)|[Topic](https://retroachievements.org/viewtopic.php?t=13687) [GenMSX](https://www.generation-msx.nl/software/konami/space-manbow/release/1238/)|✓ *|Space Manbow (1989) (Konami) (J)|ROM|MSX2(+) SCC|f78b9f4ea885cf072e5b41dce9f15436|f6199f48ff994fc9a8e33a8581bb3bb16dd301ab
+
+
 ## Configuration options
 Specify these in your RetroArch core options, either manually or via the RetroArch GUI.
 
