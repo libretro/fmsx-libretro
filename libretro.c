@@ -635,7 +635,7 @@ bool set_image_index(unsigned index)
 {
    disk_index = index;
 
-   if(disk_index == disk_images)
+   if(disk_index >= disk_images)
    {
       //retroarch is trying to set "no disk in tray"
       ChangeDisk(0,NULL);
@@ -1235,6 +1235,22 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
 
       case RETROK_F8:
          if (video_mode_dynamic) toggle_frequency();
+         break;
+
+      case RETROK_1:
+      case RETROK_2:
+      case RETROK_3:
+      case RETROK_4:
+      case RETROK_5:
+      case RETROK_6:
+      case RETROK_7:
+      case RETROK_8:
+      case RETROK_9:
+         if (key_modifiers&RETROKMOD_CTRL && disk_inserted)
+         {
+            disk_flush_on_close();
+            set_image_index(keycode-RETROK_1);
+         }
          break;
       }
    }
