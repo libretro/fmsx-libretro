@@ -678,6 +678,8 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
   RFILE *F;
   byte *P,*T;
 
+  if (!FileName) return(0);
+
   /* Must have a disk to save */
   if(!D->Data) return(0);
 

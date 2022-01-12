@@ -53,7 +53,8 @@ char *autotype=0;
 #define FLUSH_NEVER     0
 #define FLUSH_IMMEDIATE 1
 #define FLUSH_ON_CLOSE  2
-int disk_flush=FLUSH_NEVER;
+static int disk_flush=FLUSH_NEVER;
+static bool phantom_disk = false;
 
 extern int MCFCount;
 int current_cheat;
@@ -62,6 +63,9 @@ extern byte *RAMData;
 extern int RAMPages ;
 
 extern int VPeriod;
+
+extern byte DiskROMLoaded;
+bool require_disk_rom = false;
 
 #define SND_RATE 48000
 #define AUDIO_BUFFER_SIZE 1024 // .78 frames at 60Hz, .94 frames at 50Hz
@@ -531,6 +535,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
       { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
       { "fmsx_flush_disk", "Save changes to .dsk; Never|Immediate|On close" },
+      { "fmsx_phantom_disk", "Create empty disk when none loaded; No|Yes" },
       { "fmsx_custom_keyboard_up", up_value},
       { "fmsx_custom_keyboard_down", down_value},
       { "fmsx_custom_keyboard_left", left_value},
@@ -593,7 +598,7 @@ void disk_flush_on_close(void)
 {
    if(disk_flush==FLUSH_ON_CLOSE && FDD[0].Dirty)
    {
-      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
+      SaveFDI(&FDD[0],DSKName_buffer,FMT_MSXDSK);
       FDD[0].Dirty = 0;
    }
 }
@@ -630,20 +635,24 @@ bool set_image_index(unsigned index)
 {
    disk_index = index;
 
-   if(disk_index == disk_images)
+   if(disk_index >= disk_images)
    {
       //retroarch is trying to set "no disk in tray"
-      ChangeDisk(0, NULL);
+      ChangeDisk(0,NULL);
       return true;
    }
 
    strncpy(DSKName_buffer, disk_paths[disk_index], PATH_MAX-1);
    DSKName_buffer[PATH_MAX-1] = 0;
    DSKName[0]=DSKName_buffer;
-   if(!ChangeDisk(0,DSKName[0]) && log_cb) {
-      log_cb(RETRO_LOG_ERROR, "%s %s\n", "could not load", disk_paths[disk_index]);
-      return false;
-   }
+   if(!ChangeDisk(0,DSKName[0]))
+      if (phantom_disk)
+         ChangeDisk(0,"");
+      else
+      {
+         if (log_cb) log_cb(RETRO_LOG_ERROR, "%s %s\n", "could not load", disk_paths[disk_index]);
+         return false;
+      }
 
    return true;
 }
@@ -978,6 +987,12 @@ static void check_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_GMASTER;
 
+   var.key = "fmsx_phantom_disk";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+      phantom_disk=true;
+
    var.key = "fmsx_flush_disk";
    var.value = NULL;
 
@@ -1221,6 +1236,22 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
       case RETROK_F8:
          if (video_mode_dynamic) toggle_frequency();
          break;
+
+      case RETROK_1:
+      case RETROK_2:
+      case RETROK_3:
+      case RETROK_4:
+      case RETROK_5:
+      case RETROK_6:
+      case RETROK_7:
+      case RETROK_8:
+      case RETROK_9:
+         if (key_modifiers&RETROKMOD_CTRL && disk_inserted)
+         {
+            disk_flush_on_close();
+            set_image_index(keycode-RETROK_1);
+         }
+         break;
       }
    }
 }
@@ -1242,6 +1273,8 @@ bool retro_load_game(const struct retro_game_info *info)
    static char CasName_buffer[PATH_MAX];
    struct retro_keyboard_callback keyboard_event_callback;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   bool have_image = false;
+   char *dot;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
@@ -1289,21 +1322,25 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (info && path_is_valid(info->path))
    {
-      char *dot = strrchr(info->path, '.');
+      dot = strrchr(info->path, '.');
       if (dot && ( !strcasecmp(dot, ".rom") || !strcasecmp(dot, ".mx1") || !strcasecmp(dot, ".mx2") ))
       {
          strcpy(ROMName_buffer, info->path);
          ROMName[0]=ROMName_buffer;
+         have_image = true;
       }
       else if (dot && ( !strcasecmp(dot, ".dsk") || !strcasecmp(dot, ".fdi") ))
       {
          strcpy(DSKName_buffer, info->path);
          DSKName[0]=DSKName_buffer;
+         have_image = true;
+         require_disk_rom = true;
       }
       else if (dot && !strcasecmp(dot, ".cas"))
       {
          strcpy(CasName_buffer, info->path);
          CasName=CasName_buffer;
+         have_image = true;
       }
       else if (dot && !strcasecmp(dot, ".m3u"))
       {
@@ -1315,6 +1352,8 @@ bool retro_load_game(const struct retro_game_info *info)
          set_image_index(0);
          disk_inserted = true;
          attach_disk_swap_interface();
+         have_image = true;
+         require_disk_rom = true;
       }
 
       if (try_loading_palette(info->path, "pal") || try_loading_palette(info->path, "PAL")) {}
@@ -1323,6 +1362,7 @@ bool retro_load_game(const struct retro_game_info *info)
    {
       ROMName[0]=NULL;
       DSKName[0]=NULL;
+      DSKName_buffer[0]=0;
       CasName=NULL;
    }
 
@@ -1336,14 +1376,23 @@ bool retro_load_game(const struct retro_game_info *info)
 
    // setup fixed SCREEN 8 palette: RGB332
    for(i = 0; i < 256; i++)
-     BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
+      BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
 
    InitSound(SND_RATE, 0);
    SetChannels(255/MAXCHANNELS, (1<<MAXCHANNELS)-1);
 
    StartMSX(Mode,RAMPages,VRAMPages);
+   if (!have_image && phantom_disk)
+   {
+      if (info && (dot = strrchr(info->path, '.')) && !strcasecmp(dot, ".dsk"))
+         strcpy(DSKName_buffer, info->path);
+      ChangeDisk(0,"");
+      require_disk_rom = true;
+   }
    if (info) load_core_specific_cheats(info->path);
    update_fps();
+   if (require_disk_rom && !DiskROMLoaded)
+      show_message("DISK.ROM not loaded; content will not start", 10 * fps);
    setup_tape_autotype();
    return true;
 }
@@ -1526,7 +1575,7 @@ void retro_run(void)
    // debounce 1s before flushing to .dsk
    if(disk_flush==FLUSH_IMMEDIATE && FDD[0].Dirty && ++FDD[0].Dirty >= fps)
    {
-      SaveFDI(&FDD[0],DSKName[0],FMT_MSXDSK);
+      SaveFDI(&FDD[0],DSKName_buffer,FMT_MSXDSK);
       FDD[0].Dirty = 0;
    }
 }

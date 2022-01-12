@@ -110,6 +110,7 @@ byte *SRAMData[MAXSLOTS];          /* SRAM (battery backed)  */
 
 /** Disk images used by fMSX *********************************/
 const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
+byte DiskROMLoaded = 0;            /* 1 when DISK.ROM loaded */
 
 /** Fixed font used by fMSX **********************************/
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
@@ -469,6 +470,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   CheatsON    = 0;
   CheatCount  = 0;
   MCFCount    = 0;
+  DiskROMLoaded = 0;
 
   /* Zero cartridge related data */
   for(J=0;J<MAXSLOTS;++J)
@@ -825,6 +827,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening DISK.ROM...");
     P1=LoadROM("DISK.ROM",0x4000,0);
     PRINTRESULT(P1);
+    DiskROMLoaded=!!P1;
 
     /* Change to the working directory */
     if(WorkDir && chdir(WorkDir))
