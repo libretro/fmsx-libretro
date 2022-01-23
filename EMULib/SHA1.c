@@ -203,7 +203,7 @@ char* SHA1Sum(const char* FileName)
 {
   char* S;
   SHA1 C;
-  const byte *Buf;
+  byte *Buf;
   int Len;
   RFILE *F;
 
