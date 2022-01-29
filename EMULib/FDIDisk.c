@@ -29,6 +29,11 @@
 
 extern retro_log_printf_t log_cb;
 
+#define SRAM_HEADER 0xA5
+extern byte *sram_disk_ptr;
+byte* DiskData=NULL;
+int DiskSize=0;
+
 #define IMAGE_SIZE(Fmt) \
   (Formats[Fmt].Sides*Formats[Fmt].Tracks*    \
    Formats[Fmt].Sectors*Formats[Fmt].SecSize)
@@ -206,7 +211,7 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
 {
   byte Buf[256],*P,*DDir;
   const char *T;
-  int J,I,K,L,N;
+  int J,I,K,L,N,Size;
   RFILE *F;
 
   /* If just ejecting a disk, drop out */
@@ -262,6 +267,7 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
   if(rfseek(F,0,SEEK_END)<0) { rfclose(F);return(0); }
   if((J=rftell(F))<=0)       { rfclose(F);return(0); }
   filestream_rewind(F);
+  Size=J;
 
   switch(Format)
   {
@@ -590,6 +596,10 @@ int LoadFDI(FDIDisk *D,const char *FileName,int Format)
       FileName,D->Sides,D->Tracks,D->Sectors,D->SecSize
     );
 
+  /* expose data ptr to enable libretro SRAM patching */
+  DiskData=FDI_DATA(P);
+  DiskSize=Size;
+
   /* Done */
   rfclose(F);
   D->Data   = P;
@@ -625,6 +635,36 @@ static int SaveDSKData(FDIDisk *D,RFILE *F,int Sides,int Tracks,int Sectors,int 
         L = SecSize>L? FDI_SAVE_PADDED:SecSize<L? FDI_SAVE_TRUNCATED:FDI_SAVE_OK;
         if(L<Result) Result=L;
       }
+
+  /* Done */
+  return(Result);
+}
+
+static int SaveDSKDataToMemory(FDIDisk *D,int Sides,int Tracks,int Sectors,int SecSize)
+{
+  int J,I,K,Result = FDI_SAVE_OK;
+  int Off,Size = Sides*Tracks*Sectors*SecSize;
+
+  memset(sram_disk_ptr, 0, Size);
+
+  /* Scan through all tracks, sides, sectors */
+  for(J=0;J<Tracks;++J)
+    for(I=0;I<Sides;++I)
+      for(K=0;K<Sectors;++K)
+      {
+        /* Seek to sector and determine actual sector size */
+        byte *P = SeekFDI(D,I,J,I,J,K+1);
+        int   L = D->SecSize<SecSize? D->SecSize:SecSize;
+        /* Write sector to memory */
+        if(!P||!L)           { return(FDI_SAVE_FAILED); }
+        Off = P-FDI_DATA(D->Data);
+        memcpy(&sram_disk_ptr[Off],P,L);
+        /* Update result */
+        L = SecSize>L? FDI_SAVE_PADDED:SecSize<L? FDI_SAVE_TRUNCATED:FDI_SAVE_OK;
+        if(L<Result) Result=L;
+      }
+
+  sram_disk_ptr[-1] = SRAM_HEADER;
 
   /* Done */
   return(Result);
@@ -675,7 +715,7 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
 {
   byte S[256];
   int I,J,K,C,L,Result;
-  RFILE *F;
+  RFILE *F=NULL;
   byte *P,*T;
 
   if (!FileName) return(0);
@@ -687,7 +727,7 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
   if(!Format) Format=D->Format;
 
   /* Open file for writing */
-  if(!(F=rfopen(FileName,"wb"))) return(0);
+  if(Format!=FMT_MEMORY && !(F=rfopen(FileName,"wb"))) return(0);
 
   /* Assume success */
   Result = FDI_SAVE_OK;
@@ -763,6 +803,15 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
          unlink(FileName);
          return(0);
       }
+      break;
+
+    case FMT_MEMORY:
+      /* Must have uniform tracks */
+      if(!D->Sectors || !D->SecSize)
+         return(0);
+      Result = SaveDSKDataToMemory(D,FDI_SIDES(D->Data),FDI_TRACKS(D->Data),D->Sectors,D->SecSize);
+      if(!Result)
+         return(0);
       break;
 
     case FMT_SAD:
@@ -924,7 +973,7 @@ int SaveFDI(FDIDisk *D,const char *FileName,int Format)
 
   /* Done */
   D->Dirty=0;
-  rfclose(F);
+  if(F) rfclose(F);
   return(Result);
 }
 

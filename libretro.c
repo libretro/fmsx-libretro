@@ -19,6 +19,7 @@
 #include "MSX.h"
 #include "EMULib.h"
 #include "Sound.h"
+#include "FDIDisk.h"
 
 static bool video_mode_dynamic=false;
 static unsigned frame_number=0;
@@ -53,14 +54,31 @@ char *autotype=0;
 #define FLUSH_NEVER     0
 #define FLUSH_IMMEDIATE 1
 #define FLUSH_ON_CLOSE  2
+#define FLUSH_TO_SRAM   3
 static int disk_flush=FLUSH_NEVER;
 static bool phantom_disk = false;
+
+/* .dsk swap support */
+struct retro_disk_control_callback dskcb;
+unsigned disk_index = 0;
+unsigned num_disk_images = 0;
+char disk_paths[MAXDISKS][PATH_MAX];
+bool disk_inserted = false;
 
 extern int MCFCount;
 int current_cheat;
 
+#define SRAM_HEADER 0xA5
+static bool sram_save_phase=false;
+int sram_size = 0;
+byte *sram_content = NULL;
+byte *sram_disk_ptr = NULL;
+
 extern byte *RAMData;
-extern int RAMPages ;
+extern byte *VRAM;
+extern int RAMPages;
+extern int VRAMPages;
+extern byte RTC[4][13];
 
 extern int VPeriod;
 
@@ -309,6 +327,8 @@ char* custom_keyboard_fmsx_to_name(int fmsx)
 
 void retro_get_system_info(struct retro_system_info *info)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_get_system_info\n");
+
    info->library_name = "fMSX";
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
@@ -317,10 +337,14 @@ void retro_get_system_info(struct retro_system_info *info)
    info->need_fullpath    = true;
    info->block_extract    = false;
    info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas|m3u";
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_get_system_info\n");
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_get_system_av_info\n");
+
    info->geometry.base_width   = image_buffer_width;
    info->geometry.base_height  = image_buffer_height;
    info->geometry.max_width    = 640;
@@ -328,6 +352,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.aspect_ratio = 0;
    info->timing.fps            = fps;
    info->timing.sample_rate    = SND_RATE;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_get_system_av_info\n");
 }
 
 void retro_init(void)
@@ -340,15 +366,23 @@ void retro_init(void)
    else
       log_cb = NULL;
 
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_init\n");
+
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_init\n");
 }
 
 void retro_deinit(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_deinit\n");
+
    if (log_cb) log_cb(RETRO_LOG_INFO, "maximum frame ticks : %llu\n", max_frame_ticks);
 
    libretro_supports_bitmasks = false;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_deinit\n");
 }
 
 static void set_input_descriptors(void)
@@ -432,6 +466,8 @@ static void set_input_descriptors(void)
    struct retro_input_descriptor *out_ptr = descriptors;
    struct retro_input_descriptor *in_ptr;
 
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter set_input_descriptors\n");
+
    if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0))
       in_ptr = descriptors_keyb_emu0;
    else if (port0_device == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1))
@@ -456,6 +492,8 @@ static void set_input_descriptors(void)
    out_ptr->description = NULL;
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit set_input_descriptors\n");
 }
 
 char* custom_keyboard_values(char *prefix, char *def)
@@ -477,6 +515,8 @@ char* custom_keyboard_values(char *prefix, char *def)
 
 void retro_set_environment(retro_environment_t cb)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_set_environment\n");
+
    struct retro_vfs_interface_info vfs_iface_info;
    bool no_content = true;
    static const struct retro_controller_description port0[] = {
@@ -534,7 +574,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
       { "fmsx_allsprites", "Show all sprites; No|Yes" },
       { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
-      { "fmsx_flush_disk", "Save changes to .dsk; Never|Immediate|On close" },
+      { "fmsx_flush_disk", "Save disk changes; Never|Immediate|On close|To/From SRAM" },
       { "fmsx_phantom_disk", "Create empty disk when none loaded; No|Yes" },
       { "fmsx_custom_keyboard_up", up_value},
       { "fmsx_custom_keyboard_down", down_value},
@@ -583,101 +623,187 @@ void retro_set_environment(retro_environment_t cb)
    free(r2_value);
    free(l3_value);
    free(r3_value);
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_set_environment\n");
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_set_controller_port_device\n");
+
    if(port == 0)
    {
       port0_device = device;
       set_input_descriptors();
    }
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_set_controller_port_device\n");
 }
 
-void disk_flush_on_close(void)
+void flush_disk(void)
 {
-   if(disk_flush==FLUSH_ON_CLOSE && FDD[0].Dirty)
+   int R,num_patched_images;
+   bool found=false;
+
+   if(!FDD[0].Dirty)
+      return;
+
+   switch(disk_flush)
    {
-      SaveFDI(&FDD[0],DSKName_buffer,FMT_MSXDSK);
+   case FLUSH_ON_CLOSE:
+   case FLUSH_IMMEDIATE:
+      if ((R=SaveFDI(&FDD[0],DSKName_buffer,FMT_MSXDSK))!=FDI_SAVE_OK && log_cb)
+         log_cb(RETRO_LOG_ERROR, "Error saving %s as .DSK: code %d\n", DSKName[0], R);
+      FDD[0].Dirty = 0; // set to false anyway to prevent spamming
+      break;
+
+   case FLUSH_TO_SRAM:
+      if (num_disk_images > 0 && filestream_exists(DSKName_buffer))
+      {
+         num_patched_images=sram_content[2];
+         for(R=0;R<num_patched_images;R++)
+         {
+            if(sram_content[3+R] == disk_index)
+            {
+               found=true;
+               break;
+            }
+         }
+         if (!found)
+         {
+            sram_content[3+num_patched_images] = disk_index;
+            sram_content[2]=++num_patched_images;
+         }
+         sram_disk_ptr = &sram_content[3 + MAXDISKS + (R * (1 + 720 * 1024)) + 1];
+      }
+      // initial save, i.e., non-existent .dsk image, _will_ go to disk
+      if ((R=SaveFDI(&FDD[0],DSKName_buffer,filestream_exists(DSKName_buffer)?FMT_MEMORY:FMT_MSXDSK))!=FDI_SAVE_OK && log_cb)
+         log_cb(RETRO_LOG_ERROR, "Error saving %s to SRAM memory: code %d\n", DSKName[0], R);
       FDD[0].Dirty = 0;
+      break;
+   }
+}
+
+void patch_disk(void)
+{
+   int i;
+
+   if (sram_content && num_disk_images > 0)
+   {
+      sram_disk_ptr=NULL;
+      for(i=0;i<sram_content[2];i++)
+      {
+         if(sram_content[3+i] == disk_index)
+         {
+            sram_disk_ptr = &sram_content[3 + MAXDISKS + (i * (1 + 720 * 1024)) + 1];
+            break;
+         }
+      }
+   }
+   if (sram_disk_ptr && sram_disk_ptr[-1] == SRAM_HEADER && DiskData && DiskSize <= sram_size-1)
+   {
+      memcpy(DiskData, sram_disk_ptr, DiskSize);
+      DiskData = NULL;
+      DiskSize = 0;
    }
 }
 
 /* .dsk swap support */
-struct retro_disk_control_callback dskcb;
-unsigned disk_index = 0;
-unsigned disk_images = 0;
-char disk_paths[MAXDISKS][PATH_MAX];
-bool disk_inserted = false;
-
 bool set_eject_state(bool ejected)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter set_eject_state\n");
+
    disk_inserted = !ejected;
    if (!disk_inserted)
    {
-      disk_flush_on_close();
+      flush_disk();
       ChangeDisk(0, NULL);
+      sram_disk_ptr=NULL;
    }
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit set_eject_state\n");
    return true;
 }
 
 bool get_eject_state(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit get_eject_state\n");
+
    return !disk_inserted;
 }
 
 unsigned get_image_index(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit get_image_index\n");
+
    return disk_index;
 }
 
 bool set_image_index(unsigned index)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter set_image_index\n");
+
    disk_index = index;
 
-   if(disk_index >= disk_images)
+   if(disk_index >= num_disk_images)
    {
-      //retroarch is trying to set "no disk in tray"
+      if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: retroarch is trying to set \"no disk in tray\"\n");
       ChangeDisk(0,NULL);
+      sram_disk_ptr=NULL;
       return true;
    }
 
    strncpy(DSKName_buffer, disk_paths[disk_index], PATH_MAX-1);
    DSKName_buffer[PATH_MAX-1] = 0;
    DSKName[0]=DSKName_buffer;
-   if(!ChangeDisk(0,DSKName[0]))
-      if (phantom_disk)
-         ChangeDisk(0,"");
-      else
-      {
-         if (log_cb) log_cb(RETRO_LOG_ERROR, "%s %s\n", "could not load", disk_paths[disk_index]);
-         return false;
-      }
+   if(ChangeDisk(0,DSKName[0]))
+   {
+      if (disk_flush==FLUSH_TO_SRAM)
+         patch_disk();
+   }
+   else if (phantom_disk)
+      ChangeDisk(0,"");
+   else
+   {
+      if (log_cb) log_cb(RETRO_LOG_ERROR, "%s %s\n", "could not load", disk_paths[disk_index]);
+      return false;
+   }
 
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit set_image_index\n");
    return true;
 }
 
 unsigned get_num_images(void)
 {
-   return disk_images;
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit get_num_images\n");
+
+   return num_disk_images;
 }
 
 bool add_image_index(void)
 {
-   if (disk_images >= MAXDISKS)
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter add_image_index\n");
+
+   if (num_disk_images >= MAXDISKS)
       return false;
 
-   disk_images++;
+   num_disk_images++;
+   if (sram_content) sram_content[1] = num_disk_images;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit add_image_index\n");
    return true;
 }
 
 bool replace_image_index(unsigned index, const struct retro_game_info *info)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter replace_image_index\n");
+
    char *dot = strrchr(info->path, '.');
    if (!dot || strcasecmp(dot, ".dsk"))
       return false; /* can't swap a cart or tape into a disk slot */
 
    strcpy(disk_paths[index], info->path);
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit replace_image_index\n");
    return true;
 }
 
@@ -703,7 +829,7 @@ static bool read_m3u(const char *file)
    if (!f)
       return false;
 
-   while (rfgets(line, sizeof(line), f) && disk_images < MAXDISKS)
+   while (rfgets(line, sizeof(line), f) && num_disk_images < MAXDISKS)
    {
       char *carriage_return = NULL;
       char *newline         = NULL;
@@ -728,12 +854,12 @@ static bool read_m3u(const char *file)
             strncpy(name, line, sizeof(name));
          else if (snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line) < 0)
             name[sizeof(name)-1] = 0;
-         strcpy(disk_paths[disk_images++], name);
+         strcpy(disk_paths[num_disk_images++], name);
       }
    }
 
    rfclose(f);
-   return (disk_images != 0);
+   return (num_disk_images != 0);
 }
 
 static void extract_directory(char *buf, const char *path, size_t size)
@@ -790,15 +916,32 @@ static void update_fps(void)
    fps = VIDEO(MSX_PAL) ? 50 : 60;
 }
 
+void cleanup_sram(void)
+{
+   sram_save_phase=false;
+   if (sram_content) free(sram_content);
+   sram_content = NULL;
+   sram_disk_ptr = NULL;
+   sram_size = 0;
+}
+
 void retro_reset(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_reset\n");
+
+   flush_disk();
+
    ResetMSX(Mode,RAMPages,VRAMPages);
    frame_number=0;
    update_fps();
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_reset\n");
 }
 
 size_t retro_serialize_size(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit retro_serialize_size\n");
+
    // max 5MiB: 1778B hardware state, <=4MiB RAM, <=192KiB VRAM
    // Zipped that will be just a few KiB.
    return 0x500000;
@@ -806,17 +949,23 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_serialize\n");
+
    if (!SaveState(data, size))
       return false;
 
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit retro_serialize\n");
    return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_unserialize\n");
+
    if (LoadState((unsigned char*)data, size) == 0)
       return false;
 
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit retro_unserialize\n");
    return true;
 }
 
@@ -1004,6 +1153,8 @@ static void check_variables(void)
          disk_flush=FLUSH_IMMEDIATE;
       else if (strcmp(var.value, "On close") == 0)
          disk_flush=FLUSH_ON_CLOSE;
+      else if (strcmp(var.value, "To/From SRAM") == 0)
+         disk_flush=FLUSH_TO_SRAM;
    }
 
    var.key = "fmsx_autospace";
@@ -1200,6 +1351,8 @@ void toggle_frequency()
 
 RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter keyboard_event\n");
+
    if (down)
    {
       switch(keycode)
@@ -1248,12 +1401,14 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
       case RETROK_9:
          if (key_modifiers&RETROKMOD_CTRL && disk_inserted)
          {
-            disk_flush_on_close();
+            flush_disk();
             set_image_index(keycode-RETROK_1);
          }
          break;
       }
    }
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit keyboard_event\n");
 }
 
 void load_core_specific_cheats(const char* path)
@@ -1266,6 +1421,18 @@ void load_core_specific_cheats(const char* path)
     || try_loading_mcf(path, "MCF")) {}
 }
 
+size_t filesize(const char* FileName)
+{
+  size_t Len = -1;
+  RFILE *F;
+
+  if(!(F=rfopen(FileName,"rb"))) return Len;
+  if(rfseek(F,0,SEEK_END)<0)    { rfclose(F);return Len; }
+  Len=rftell(F);
+  rfclose(F);
+  return Len;
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    int i;
@@ -1275,6 +1442,9 @@ bool retro_load_game(const struct retro_game_info *info)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    bool have_image = false;
    char *dot;
+   size_t len;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_load_game %s\n", info?info->path:"none");
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
@@ -1288,7 +1458,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (info) extract_directory(base_dir, info->path, sizeof(base_dir));
    disk_index = 0;
-   disk_images = 0;
+   num_disk_images = 0;
    disk_inserted = false;
 
    keyboard_event_callback.callback = keyboard_event;
@@ -1335,6 +1505,13 @@ bool retro_load_game(const struct retro_game_info *info)
          DSKName[0]=DSKName_buffer;
          have_image = true;
          require_disk_rom = true;
+         len=filesize(DSKName_buffer);
+         if (len > 0 && disk_flush==FLUSH_TO_SRAM) {
+            sram_size = 1 + len;
+            sram_content = malloc(sram_size);
+            memset(sram_content, 0, sram_size);
+            sram_disk_ptr=&sram_content[1];
+         }
       }
       else if (dot && !strcasecmp(dot, ".cas"))
       {
@@ -1354,6 +1531,23 @@ bool retro_load_game(const struct retro_game_info *info)
          attach_disk_swap_interface();
          have_image = true;
          require_disk_rom = true;
+
+         if (disk_flush==FLUSH_TO_SRAM)
+         {
+            // format:
+            // Byte 0: 0xA5
+            // Byte 1: total images
+            // Byte 2: # patched disk images
+            // Byte 3..34(==3+MAXDISKS-1): index of patched image
+            // repeat MAXDISKS times:
+            // Byte 35: 0xA5
+            // Byte 36..36+720KiB-1: first patched image
+            sram_size = 3 + MAXDISKS + (MAXDISKS * (1 + 720 * 1024));
+            sram_content = malloc(sram_size);
+            memset(sram_content, 0, sram_size);
+            sram_content[0] = SRAM_HEADER;
+            sram_content[1] = num_disk_images;
+         }
       }
 
       if (try_loading_palette(info->path, "pal") || try_loading_palette(info->path, "PAL")) {}
@@ -1394,6 +1588,9 @@ bool retro_load_game(const struct retro_game_info *info)
    if (require_disk_rom && !DiskROMLoaded)
       show_message("DISK.ROM not loaded; content will not start", 10 * fps);
    setup_tape_autotype();
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: success exit retro_load_game\n");
+   // retro_get_memory_size/data not yet invoked at this point
    return true;
 }
 
@@ -1437,14 +1634,16 @@ unsigned int Mouse(byte N)
    return 0;
 }
 
-bool retro_load_game_special(unsigned a,
-      const struct retro_game_info *b, size_t c)
+bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t c)
 {
    return false;
 }
 
 void retro_unload_game(void)
 {
+   // when this is invoked, data is already saved to .rtc/.srm
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_unload_game\n");
+
    if (image_buffer)
       free(image_buffer);
 
@@ -1452,30 +1651,75 @@ void retro_unload_game(void)
    image_buffer_width = 0;
    image_buffer_height = 0;
 
-   disk_flush_on_close();
+   flush_disk();
+   cleanup_sram();
+   num_disk_images = 0;
 
    TrashMSX();
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_unload_game\n");
 }
 
 unsigned retro_get_region(void)
 {
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit retro_get_region\n");
+
    if (fps==60) return RETRO_REGION_NTSC;
    return RETRO_REGION_PAL;
 }
 
 void *retro_get_memory_data(unsigned id)
 {
-   if ( id == RETRO_MEMORY_SYSTEM_RAM )
-      return RAMData;
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter/exit retro_get_memory_data %d\n", id);
 
+   switch(id)
+   {
+   case RETRO_MEMORY_SAVE_RAM:
+      return sram_content;
+   case RETRO_MEMORY_RTC:
+      return RTC;
+   case RETRO_MEMORY_SYSTEM_RAM:
+      return RAMData;
+   case RETRO_MEMORY_VIDEO_RAM:
+      return VRAM;
+   }
    return NULL;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-   if ( id == RETRO_MEMORY_SYSTEM_RAM )
-      return RAMPages*0x4000;
-   return 0;
+   size_t size = 0;
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_get_memory_size %d\n", id);
+
+   switch(id)
+   {
+   case RETRO_MEMORY_SAVE_RAM:
+      if (require_disk_rom && sram_save_phase && disk_flush==FLUSH_TO_SRAM) {
+         flush_disk();
+         if (sram_content[0] != SRAM_HEADER) {
+            // no changes to save
+            cleanup_sram();
+         }
+         if (num_disk_images > 0)
+            sram_size = 3 + MAXDISKS + (sram_content[2] * (1 + 720 * 1024));
+      }
+      size = sram_size;
+      break;
+   case RETRO_MEMORY_RTC:
+      // disable loading/saving fMSX CMOS.ROM, and detect changes before enabling this
+      //size = sizeof(RTC);
+      break;
+   case RETRO_MEMORY_SYSTEM_RAM:
+      size = RAMPages*0x4000;
+      break;
+   case RETRO_MEMORY_VIDEO_RAM:
+      size = VRAMPages*0x4000;
+      break;
+   }
+
+   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_get_memory_size %d: %d\n", id, size);
+   return size;
 }
 
 void handle_tape_autotype()
@@ -1494,12 +1738,21 @@ void handle_tape_autotype()
 void retro_run(void)
 {
    int i,j;
-   bool updated = false;
+   bool updated=false;
    int16_t joypad_bits[2];
+
+//   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: enter retro_run\n");
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated)
          && updated)
       check_variables();
+
+   if (require_disk_rom && !sram_save_phase && disk_flush==FLUSH_TO_SRAM)
+   {
+      // disk is immediately loaded in retro_load_game() but RetroArch reads SRAM later. So we have to patch now.
+      patch_disk();
+      sram_save_phase=true;
+   }
 
    input_poll_cb();
 
@@ -1572,12 +1825,11 @@ void retro_run(void)
 
    fflush(stdout);
 
-   // debounce 1s before flushing to .dsk
-   if(disk_flush==FLUSH_IMMEDIATE && FDD[0].Dirty && ++FDD[0].Dirty >= fps)
-   {
-      SaveFDI(&FDD[0],DSKName_buffer,FMT_MSXDSK);
-      FDD[0].Dirty = 0;
-   }
+   // debounce 1s before flushing to .DSK or SRAM memory
+   if((disk_flush==FLUSH_IMMEDIATE||disk_flush==FLUSH_TO_SRAM) && FDD[0].Dirty && ++FDD[0].Dirty >= fps)
+      flush_disk();
+
+//   if (log_cb) log_cb(RETRO_LOG_DEBUG, "fmsx-libretro: exit retro_run\n");
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }

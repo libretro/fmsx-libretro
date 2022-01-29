@@ -38,6 +38,7 @@ extern "C" {
 #define FMT_DDP    12      /* Coleco Adam tape               */  
 #define FMT_SAD    13      /* Sam Coupe disk                 */
 #define FMT_DSK    14      /* Generic raw disk image         */
+#define FMT_MEMORY 15      /* In-memory (RetroArch SRAM)     */
 
 #define SEEK_DELETED (0x40000000)
 
@@ -47,6 +48,9 @@ extern "C" {
 #define BYTE_TYPE_DEFINED
 typedef unsigned char byte;
 #endif
+
+extern byte* DiskData;
+extern int DiskSize;
 
 /** FDIDisk **************************************************/
 /** This structure contains all disk image information and  **/
