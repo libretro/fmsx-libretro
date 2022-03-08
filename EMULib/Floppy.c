@@ -16,7 +16,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__PS3__)
     // Copied from linux libc sys/stat.h:
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
