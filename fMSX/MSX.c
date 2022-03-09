@@ -58,6 +58,11 @@ extern retro_log_printf_t log_cb;
 #define getcwd _getcwd
 #endif
 
+#ifdef __PS3__
+#define	getcwd(a,b)	"/dev_hdd0/game/RETROARCH/USRDIR/"
+#define chdir(a) 0
+#endif
+
 /** User-defined parameters for fMSX *************************/
 int  Mode        = MSX_MSX2|MSX_NTSC|MSX_MSXDOS2|MSX_GUESSA|MSX_GUESSB;
 byte Verbose     = 1;              /* Debug msgs ON/OFF      */
@@ -2823,7 +2828,7 @@ byte *LoadROM(const char *Name,int Size,byte *Buf)
   /* Can't give address without size! */
   if(Buf&&!Size) return(0);
 
-#if defined( VITA )
+#if defined( VITA ) || defined(__PS3__)
   if(!(F=rfopen(Name,"rb")))
   {
      fill_pathname_join(path, ProgDir, Name, sizeof(path));

@@ -159,13 +159,20 @@ else ifeq ($(platform), qnx)
    CC_AS = qcc -Vgcc_ntoarmv7le
 	AR = QCC -Vgcc_ntoarmv7le
    PLATFORM_DEFINES := -D__BLACKBERRY_QNX__ -fexceptions -marm -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp
-else ifeq ($(platform), psl1ght)
-   TARGET := $(TARGET_NAME)_libretro_$(platform).a
-   CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
-   CC_AS = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
-   AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
-   PLATFORM_DEFINES := -D__PSL1GHT__ -DMSB_FIRST
-    STATIC_LINKING = 1
+
+# Lightweight PS3 Homebrew SDK
+else ifneq (,$(filter $(platform), ps3 psl1ght))
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
+	CC = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)gcc$(EXE_EXT)
+	CC_AS = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)gcc$(EXE_EXT)
+	AR = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)ar$(EXE_EXT)
+	PLATFORM_DEFINES := -D__PS3__ -DMSB_FIRST
+	ifeq ($(platform), psl1ght)
+		PLATFORM_DEFINES += -D__PSL1GHT__
+	endif
+	STATIC_LINKING = 0
+	STATIC_LINK = 1
+
     
 # Classic Platforms ####################
 # Platform affix = classic_<ISA>_<µARCH>
@@ -591,6 +598,8 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
+	$(AR) rcs $@ $(OBJECTS)
+else ifeq ($(STATIC_LINK), 1)
 	$(AR) rcs $@ $(OBJECTS)
 else
 	$(LD) $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
