@@ -33,24 +33,12 @@ extern "C" {
 /** InitSound() **********************************************/
 /** Initialize RenderSound() with given parameters.         **/
 /*************************************************************/
-unsigned int InitSound(unsigned int Rate,unsigned int Latency);
+unsigned int InitSound(unsigned int Rate);
 
 /** TrashSound() *********************************************/
 /** Shut down RenderSound() driver.                         **/
 /*************************************************************/
 void TrashSound(void);
-
-/** RenderAudio() ********************************************/
-/** Render given number of melodic sound samples into an    **/
-/** integer buffer for mixing.                              **/
-/*************************************************************/
-void RenderAudio(int *Wave,unsigned int Samples);
-
-/** PlayAudio() **********************************************/
-/** Normalize and play given number of samples from the mix **/
-/** buffer. Returns the number of samples actually played.  **/
-/*************************************************************/
-unsigned int PlayAudio(int *Wave,unsigned int Samples);
 
 /** RenderAndPlayAudio() *************************************/
 /** Render and play a given number of samples. Returns the  **/
@@ -91,18 +79,6 @@ void SetNoise(int Seed,int OUTBit,int XORBit);
 /** own playback rate.                                      **/
 /*************************************************************/
 void SetWave(int Channel,const signed char *Data,int Length,int Rate);
-
-/** GetWave() ************************************************/
-/** Get current read position for the buffer set with the   **/
-/** SetWave() call. Returns 0 if no buffer has been set, or **/
-/** if there is no playrate set (i.e. wave is instrument).  **/
-/*************************************************************/
-const signed char *GetWave(int Channel);
-
-/** GetSndRate() *********************************************/
-/** Get current sampling rate used for synthesis.           **/
-/*************************************************************/
-unsigned int GetSndRate(void);
 
 #ifdef __cplusplus
 }

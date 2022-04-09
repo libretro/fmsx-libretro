@@ -1492,7 +1492,7 @@ bool retro_load_game(const struct retro_game_info *info)
    for(i = 0; i < 256; i++)
       BPal[i]=PIXEL(((i>>2)&0x07)*255/7,((i>>5)&0x07)*255/7,(i&0x03)*255/3);
 
-   InitSound(SND_RATE, 0);
+   InitSound(SND_RATE);
    SetChannels(255/MAXCHANNELS, (1<<MAXCHANNELS)-1);
 
    StartMSX(Mode,RAMPages,VRAMPages);

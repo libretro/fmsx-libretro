@@ -20,13 +20,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(ANDROID)
-/* On Android, may need to open files for writing at an */
-/* alternative location, if the requested location is   */
-/* not available. OpenRealFile() WILL NOT USE ZLIB.     */
-#define fopen OpenRealFile
-#endif
-
 typedef unsigned char byte;
 typedef unsigned short word;
 
@@ -69,11 +62,6 @@ static int NoiseOut   = 16;       /* NoiseGen bit used for output     */
 static int NoiseXor   = 14;       /* NoiseGen bit used for XORing     */
 int MasterSwitch      = 0xFFFF;   /* Switches to turn channels on/off */
 int MasterVolume      = 192;      /* Master volume                    */
-
-/** GetSndRate() *********************************************/
-/** Get current sampling rate used for synthesis.           **/
-/*************************************************************/
-unsigned int GetSndRate(void) { return(SndRate); }
 
 /** Sound() **************************************************/
 /** Generate sound of given frequency (Hz) and volume       **/
@@ -160,27 +148,10 @@ void SetWave(int Channel,const signed char *Data,int Length,int Rate)
   WaveCH[Channel].Data   = Data;
 }
 
-/** GetWave() ************************************************/
-/** Get current read position for the buffer set with the   **/
-/** SetWave() call. Returns 0 if no buffer has been set, or **/
-/** if there is no playrate set (i.e. wave is instrument).  **/
-/*************************************************************/
-const signed char *GetWave(int Channel)
-{
-  /* Channel has to be valid */
-  if((Channel<0)||(Channel>=SND_CHANNELS)) return(0);
-
-  /* Return current read position */
-  return(
-    WaveCH[Channel].Rate&&(WaveCH[Channel].Type==SND_WAVE)?
-    WaveCH[Channel].Data+WaveCH[Channel].Pos:0
-  );
-}
-
 /** InitSound() **********************************************/
 /** Initialize RenderSound() with given parameters.         **/
 /*************************************************************/
-unsigned int InitSound(unsigned int Rate,unsigned int Latency)
+unsigned int InitSound(unsigned int Rate)
 {
   int I;
 
@@ -220,7 +191,7 @@ void TrashSound(void)
 /** Render given number of melodic sound samples into an    **/
 /** integer buffer for mixing.                              **/
 /*************************************************************/
-void RenderAudio(int *Wave,unsigned int Samples)
+static void RenderAudio(int *Wave,unsigned int Samples)
 {
   int J,K,I,L1,L2,V,A1;
 #ifdef WAVE_INTERPOLATION
@@ -363,17 +334,13 @@ void RenderAudio(int *Wave,unsigned int Samples)
 /** Normalize and play given number of samples from the mix **/
 /** buffer. Returns the number of samples actually played.  **/
 /*************************************************************/
-unsigned int PlayAudio(int *Wave,unsigned int Samples)
+static unsigned int PlayAudio(int *Wave,unsigned int Samples)
 {
   sample Buf[256];
-  unsigned int I,J,K;
+  unsigned int I,K;
   int D;
-
-  /* Exit if wave sound not initialized */
-  if(SndRate<8192) return(0);
-
   /* Check if the buffer contains enough free space */
-  J = GetFreeAudio();
+  unsigned int J = GetFreeAudio();
   if(J<Samples) Samples=J;
 
   /* Spin until all samples played or WriteAudio() fails */
