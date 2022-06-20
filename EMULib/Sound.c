@@ -155,9 +155,6 @@ unsigned int InitSound(unsigned int Rate)
 {
   int I;
 
-  /* Shut down current sound */
-  TrashSound();
-
   /* Initialize internal variables (keeping MasterVolume/MasterSwitch!) */
   SndRate  = 0;
 
@@ -178,15 +175,6 @@ unsigned int InitSound(unsigned int Rate)
   return(SndRate=Rate);
 }
 
-/** TrashSound() *********************************************/
-/** Shut down RenderSound() driver.                         **/
-/*************************************************************/
-void TrashSound(void)
-{
-  /* Sound is now off */
-  SndRate = 0;
-}
-
 /** RenderAudio() ********************************************/
 /** Render given number of melodic sound samples into an    **/
 /** integer buffer for mixing.                              **/
@@ -200,9 +188,6 @@ static void RenderAudio(int *Wave,unsigned int Samples)
   int L  = 0;
   int N  = 0;
 #endif
-
-  /* Exit if wave sound not initialized */
-  if(SndRate<8192) return;
 
   /* Waveform generator */
   for(J=0;J<SND_CHANNELS;J++)
@@ -340,7 +325,7 @@ static unsigned int PlayAudio(int *Wave,unsigned int Samples)
   unsigned int I,K;
   int D;
   /* Check if the buffer contains enough free space */
-  unsigned int J = GetFreeAudio();
+  unsigned int J = AUDIO_BUFFER_SIZE;
   if(J<Samples) Samples=J;
 
   /* Spin until all samples played or WriteAudio() fails */
@@ -355,15 +340,7 @@ static unsigned int PlayAudio(int *Wave,unsigned int Samples)
     {
       D      = ((*Wave++)*MasterVolume)>>8;
       D      = D>32767? 32767:D<-32768? -32768:D;
-#if defined(BPU16)
-      Buf[I] = D+32768;
-#elif defined(BPS16)
       Buf[I] = D;
-#elif defined(BPU8)
-      Buf[I] = (D>>8)+128;
-#else
-      Buf[I] = D>>8;
-#endif
     }
 
     /* Play samples */
@@ -386,7 +363,7 @@ unsigned int RenderAndPlayAudio(unsigned int Samples)
   /* Exit if wave sound not initialized */
   if(SndRate<8192) return(0);
 
-  J       = GetFreeAudio();
+  J       = AUDIO_BUFFER_SIZE;
   Samples = Samples<J? Samples:J;
  
   /* Render and play sound */

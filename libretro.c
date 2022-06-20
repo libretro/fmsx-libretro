@@ -86,7 +86,6 @@ extern byte DiskROMLoaded;
 bool require_disk_rom = false;
 
 #define SND_RATE 48000
-#define AUDIO_BUFFER_SIZE 1024 // .78 frames at 60Hz, .94 frames at 50Hz
 
 // in screen mode 6 & 7 (512px wide), Wide.h doubles WIDTH
 #define BORDER 8
@@ -1520,11 +1519,6 @@ void SetColor(byte N,byte R,byte G,byte B)
      XPal[N]=PIXEL(R,G,B);
   else
      XPal0=PIXEL(R,G,B);
-}
-
-unsigned int GetFreeAudio(void)
-{
-  return AUDIO_BUFFER_SIZE;
 }
 
 unsigned int WriteAudio(sample *Data,unsigned int Length)

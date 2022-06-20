@@ -19,6 +19,8 @@
 extern "C" {
 #endif
 
+#define AUDIO_BUFFER_SIZE 1024 // .78 frames at 60Hz, .94 frames at 50Hz
+
                                /* SetSound() arguments:      */
 #define SND_MELODIC     0      /* Melodic sound (default)    */
 #define SND_RECTANGLE   0      /* Rectangular wave           */
@@ -34,11 +36,6 @@ extern "C" {
 /** Initialize RenderSound() with given parameters.         **/
 /*************************************************************/
 unsigned int InitSound(unsigned int Rate);
-
-/** TrashSound() *********************************************/
-/** Shut down RenderSound() driver.                         **/
-/*************************************************************/
-void TrashSound(void);
 
 /** RenderAndPlayAudio() *************************************/
 /** Render and play a given number of samples. Returns the  **/

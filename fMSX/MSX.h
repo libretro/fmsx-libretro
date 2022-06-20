@@ -383,12 +383,6 @@ byte ChangeDisk(byte N,const char *FileName);
 /*************************************************************/
 byte LoadFNT(const char *FileName);
 
-/** SetScreenDepth() *****************************************/
-/** Set screen depth for the display drivers. Returns 1 on  **/
-/** success, 0 on failure.                                  **/
-/*************************************************************/
-int SetScreenDepth(int Depth);
-
 /** ApplyMCFCheat() ******************************************/
 /** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
 /** on success.                                             **/

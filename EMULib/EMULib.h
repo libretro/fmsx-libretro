@@ -71,15 +71,7 @@ extern "C" {
 /*************************************************************/
 #ifndef PIXEL_TYPE_DEFINED
 #define PIXEL_TYPE_DEFINED
-#if defined(BPP32) || defined(BPP24)
-typedef unsigned int pixel;
-#elif defined(BPP16)
 typedef unsigned short pixel;
-#elif defined(BPP8)
-typedef unsigned char pixel;
-#else
-typedef unsigned int pixel;
-#endif
 #endif
 
 /** sample ***************************************************/
@@ -87,17 +79,8 @@ typedef unsigned int pixel;
 /*************************************************************/
 #ifndef SAMPLE_TYPE_DEFINED
 #define SAMPLE_TYPE_DEFINED
-#ifdef BPS16
 typedef signed short sample;
-#else
-typedef signed char sample;
 #endif
-#endif
-
-/** GetFreeAudio() *******************************************/
-/** Get the amount of free samples in the audio buffer.     **/
-/*************************************************************/
-unsigned int GetFreeAudio(void);
 
 /** WriteAudio() *********************************************/
 /** Write up to a given number of samples to audio buffer.  **/
