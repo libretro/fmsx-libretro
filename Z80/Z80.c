@@ -18,8 +18,6 @@
 #include "Z80.h"
 #include "Tables.h"
 
-extern retro_log_printf_t log_cb;
-
 /** INLINE ***************************************************/
 /** C99 standard has "inline", but older compilers used     **/
 /** __inline for the same purpose.                          **/
@@ -317,11 +315,6 @@ static void CodesCB(Z80 *R)
   {
 #include "CodesCB.h"
     default:
-      if(R->TrapBadOps)
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "[Z80 %lX] Unrecognized instruction: CB %02X at PC=%04X\n",
-          (long)(R->User),OpZ80(R->PC.W-1),R->PC.W-2
-        );
       break;
   }
 }
@@ -341,11 +334,6 @@ static void CodesDDCB(Z80 *R)
   {
 #include "CodesXCB.h"
     default:
-      if(R->TrapBadOps)
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "[Z80 %lX] Unrecognized instruction: DD CB %02X %02X at PC=%04X\n",
-          (long)(R->User),OpZ80(R->PC.W-2),OpZ80(R->PC.W-1),R->PC.W-4
-        );
       break;
   }
 #undef XX
@@ -366,11 +354,6 @@ static void CodesFDCB(Z80 *R)
   {
 #include "CodesXCB.h"
     default:
-      if(R->TrapBadOps)
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "[Z80 %lX] Unrecognized instruction: FD CB %02X %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-2),OpZ80(R->PC.W-1),R->PC.W-4
-        );
       break;
   }
 #undef XX
@@ -394,11 +377,6 @@ static void CodesED(Z80 *R)
     case PFX_ED:
       R->PC.W--;break;
     default:
-      if(R->TrapBadOps)
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "[Z80 %lX] Unrecognized instruction: ED %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-1),R->PC.W-2
-        );
       break;
   }
 }
@@ -425,11 +403,6 @@ static void CodesDD(Z80 *R)
     case PFX_CB:
       CodesDDCB(R);break;
     default:
-      if(R->TrapBadOps)
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "[Z80 %lX] Unrecognized instruction: DD %02X at PC=%04X\n",
-          (long)R->User,OpZ80(R->PC.W-1),R->PC.W-2
-        );
       break;
   }
 #undef XX
@@ -457,10 +430,6 @@ static void CodesFD(Z80 *R)
     case PFX_CB:
       CodesFDCB(R);break;
     default:
-        if(log_cb) log_cb(RETRO_LOG_INFO,
-          "Unrecognized instruction: FD %02X at PC=%04X\n",
-          OpZ80(R->PC.W-1),R->PC.W-2
-        );
       break;
   }
 #undef XX

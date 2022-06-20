@@ -1392,17 +1392,10 @@ bool retro_load_game(const struct retro_game_info *info)
    switch (fmsx_log_level)
    {
    case RETRO_LOG_INFO: // fMSX information logged
-      CPU.TrapBadOps=0;
-      break;
    case RETRO_LOG_DEBUG: // fMSX debug details logged
-      CPU.TrapBadOps=1;
-      break;
    case -1: // same as RETRO_LOG_DEBUG but also log unknown I/O ports (spams a lot..)
-      CPU.TrapBadOps=1;
-      break;
    case RETRO_LOG_WARN: // only RetroArch/libretro-related messages; no fMSX-specifics
    default:
-      CPU.TrapBadOps=0;
       break;
    }
 

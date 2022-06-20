@@ -90,7 +90,6 @@ typedef struct
   int IBackup;        /* Private, don't touch                */
   word IRequest;      /* Set to address of pending IRQ       */
   byte IAutoReset;    /* Set to 1 to autom. reset IRequest   */
-  byte TrapBadOps;    /* Set to 1 to warn of illegal opcodes */
   word Trap;          /* Set Trap to address to trace from   */
   byte Trace;         /* Set Trace=1 to start tracing        */
   unsigned int User;  /* Arbitrary user data (ID,RAM*,etc.)  */
