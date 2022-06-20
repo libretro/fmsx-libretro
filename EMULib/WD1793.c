@@ -109,9 +109,7 @@ byte Read1793(WD1793 *D,byte A)
       return(D->R[A]);
     case WD1793_DATA:
       /* When reading data, load value from disk */
-      if(!D->RDLength)
-      { if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: EXTRA DATA READ\n"); }
-      else
+      if(D->RDLength)
       {
         /* Read data */
         D->R[A]=*D->Ptr++;
@@ -126,7 +124,6 @@ byte Read1793(WD1793 *D,byte A)
         else
         {
           /* Read completed */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ COMPLETED\n");
           D->R[0]&= ~(F_DRQ|F_BUSY);
           D->IRQ  = WD1793_IRQ;
         }
@@ -137,7 +134,6 @@ byte Read1793(WD1793 *D,byte A)
       if(D->Wait)
         if(!--D->Wait)
         {
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: COMMAND TIMED OUT\n");
           D->RDLength=D->WRLength=0;
           D->R[0] = (D->R[0]&~(F_DRQ|F_BUSY))|F_LOSTDATA;
           D->IRQ  = WD1793_IRQ;
@@ -166,7 +162,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
       /* If it is FORCE-IRQ command... */
       if((V&0xF0)==0xD0)
       {
-        if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: FORCE-INTERRUPT (%02Xh)\n",V);
         /* Reset any executing command */
         D->RDLength=D->WRLength=0;
         D->Cmd=0xD0;
@@ -187,7 +182,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
       switch(V&0xF0)
       {
         case 0x00: /* RESTORE (seek track 0) */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: RESTORE-TRACK-0 (%02Xh)\n",V);
           D->Track[D->Drive]=0;
           D->R[0] = F_INDEX|F_TRACK0|(V&C_LOADHEAD? F_HEADLOAD:0);
           D->R[1] = 0;
@@ -195,7 +189,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           break;
 
         case 0x10: /* SEEK */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: SEEK-TRACK %d (%02Xh)\n",D->R[3],V);
           /* Reset any executing command */
           D->RDLength=D->WRLength=0;
           D->Track[D->Drive]=D->R[3];
@@ -212,11 +205,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
         case 0x50: /* STEP-IN-AND-UPDATE */
         case 0x60: /* STEP-OUT */
         case 0x70: /* STEP-OUT-AND-UPDATE */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: STEP%s%s (%02Xh)\n",
-            V&0x40? (V&0x20? "-OUT":"-IN"):"",
-            V&0x10? "-AND-UPDATE":"",
-            V
-          );
           /* Either store or fetch step direction */
           if(V&0x40) D->LastS=V&0x20; else V=(V&~0x20)|D->LastS;
           /* Step the head, update track register if requested */
@@ -234,7 +222,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
 
         case 0x80:
         case 0x90: /* READ-SECTORS */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ-SECTOR%s %c:%d:%d:%d (%02Xh)\n",V&0x10? "S":"",D->Drive+'A',D->Side,D->R[1],D->R[2],V);
           /* Seek to the requested sector */
           D->Ptr=SeekFDI(
             D->Disk[D->Drive],D->Side,D->Track[D->Drive],
@@ -243,7 +230,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           /* If seek successful, set up reading operation */
           if(!D->Ptr)
           {
-            if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ ERROR\n");
             D->R[0]     = (D->R[0]&~F_ERRCODE)|F_NOTFOUND;
             D->IRQ      = WD1793_IRQ;
           }
@@ -259,7 +245,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
 
         case 0xA0:
         case 0xB0: /* WRITE-SECTORS */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: WRITE-SECTOR%s %c:%d:%d:%d (%02Xh)\n",V&0x10? "S":"",'A'+D->Drive,D->Side,D->R[1],D->R[2],V);
           /* Seek to the requested sector */
           D->Ptr=SeekFDI(
             D->Disk[D->Drive],D->Side,D->Track[D->Drive],
@@ -268,7 +253,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           /* If seek successful, set up writing operation */
           if(!D->Ptr)
           {
-            if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: WRITE ERROR\n");
             D->R[0]     = (D->R[0]&~F_ERRCODE)|F_NOTFOUND;
             D->IRQ      = WD1793_IRQ;
           }
@@ -284,7 +268,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           break;
 
         case 0xC0: /* READ-ADDRESS */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ-ADDRESS (%02Xh)\n",V);
           /* Read first sector address from the track */
           if(!D->Disk[D->Drive]) D->Ptr=0;
           else
@@ -300,7 +283,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           /* If address found, initiate data transfer */
           if(!D->Ptr)
           {
-            if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ-ADDRESS ERROR\n");
             D->R[0]    |= F_NOTFOUND;
             D->IRQ      = WD1793_IRQ;
           }
@@ -315,11 +297,9 @@ byte Write1793(WD1793 *D,byte A,byte V)
           break;
 
         case 0xE0: /* READ-TRACK */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: READ-TRACK %d (%02Xh) UNSUPPORTED!\n",D->R[1],V);
           break;
 
         case 0xF0: /* WRITE-TRACK, i.e., format */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: WRITE-TRACK %d (%02Xh) UNSUPPORTED!\n",D->R[1],V);
           // not implementing the full protocol (involves parsing lead-in & lead-out); simply setting track data to 0xe5
           if(D->Ptr=SeekFDI(D->Disk[D->Drive],0,D->Track[D->Drive],0,D->R[1],1))
           {
@@ -334,7 +314,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
           break;
 
         default: /* UNKNOWN */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: UNSUPPORTED OPERATION %02Xh!\n",V);
           break;
       }
       break;
@@ -357,9 +336,7 @@ byte Write1793(WD1793 *D,byte A,byte V)
 
     case WD1793_DATA:
       /* When writing data, store value to disk */
-      if(!D->WRLength)
-      { if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: EXTRA DATA WRITE (%02Xh)\n",V); }
-      else
+      if(D->WRLength)
       {
         /* Write data */
         *D->Ptr++=V;
@@ -375,7 +352,6 @@ byte Write1793(WD1793 *D,byte A,byte V)
         else
         {
           /* Write completed */
-          if(D->Verbose && log_cb) log_cb(RETRO_LOG_INFO,"WD1793: WRITE COMPLETED\n");
           D->R[0]&= ~(F_DRQ|F_BUSY);
           D->IRQ  = WD1793_IRQ;
         }

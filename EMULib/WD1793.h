@@ -97,8 +97,6 @@ typedef struct
   int  RDLength;    /* Data left to read */
   int  Rsrvd2;      /* Reserved, do not touch */
 
-  byte Verbose;     /* 1: Print debugging messages */
-
   /*--- Save1793() will save state above this line ----*/
 
   byte *Ptr;        /* Pointer to data */

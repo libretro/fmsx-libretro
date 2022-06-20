@@ -68,7 +68,6 @@ typedef struct
   int  DataSize;   /* Disk data size */
 
   byte Header[6];  /* Current header, result of SeekFDI() */
-  byte Verbose;    /* 1: Print debugging messages */
   byte Dirty;      /* 1: Data to be flushed */
 } FDIDisk;
 

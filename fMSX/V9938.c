@@ -158,8 +158,6 @@ static void HmmmEngine(void);
 static void YmmmEngine(void);
 static void HmmcEngine(void);
 
-void ReportVdpCommand(byte Op);
-
 /*************************************************************/
 /** Variables visible only in this module                   **/
 /*************************************************************/
@@ -847,40 +845,6 @@ byte VDPRead(void)
   return(VDP[44]);
 }
 
-/** ReportVdpCommand() ***************************************/
-/** Report VDP Command to be executed                       **/
-/*************************************************************/
-void ReportVdpCommand(byte Op)
-{
-  static char *Ops[16] =
-  {
-    "SET ","AND ","OR  ","XOR ","NOT ","NOP ","NOP ","NOP ",
-    "TSET","TAND","TOR ","TXOR","TNOT","NOP ","NOP ","NOP "
-  };
-  static char *Commands[16] =
-  {
-    " ABRT"," ????"," ????"," ????","POINT"," PSET"," SRCH"," LINE",
-    " LMMV"," LMMM"," LMCM"," LMMC"," HMMV"," HMMM"," YMMM"," HMMC"
-  };
-  /* Fetch arguments */
-  byte CL = VDP[44];
-  int SX  = (VDP[32]+((int)VDP[33]<<8)) & 511;
-  int SY  = (VDP[34]+((int)VDP[35]<<8)) & 1023;
-  int DX  = (VDP[36]+((int)VDP[37]<<8)) & 511;
-  int DY  = (VDP[38]+((int)VDP[39]<<8)) & 1023;
-  int NX  = (VDP[40]+((int)VDP[41]<<8)) & 1023;
-  int NY  = (VDP[42]+((int)VDP[43]<<8)) & 1023;
-  byte CM = Op>>4;
-  byte LO = Op&0x0F;
-
-  if(log_cb) log_cb(RETRO_LOG_DEBUG,"V9938: Opcode %02Xh %s-%s (%d,%d)->(%d,%d),%d [%d,%d]%s\n",
-         Op, Commands[CM], Ops[LO],
-         SX,SY, DX,DY, CL, VDP[45]&0x04? -NX:NX,
-         VDP[45]&0x08? -NY:NY,
-         VDP[45]&0x70? " on ExtVRAM":""
-        );
-}
-
 /** VDPDraw() ************************************************/
 /** Perform a given V9938 operation Op.                     **/
 /*************************************************************/
@@ -898,9 +862,6 @@ byte VDPDraw(byte Op)
   if ((MMC.CM & 0x0C) != 0x0C && MMC.CM != 0)
     /* Dot operation: use only relevant bits of color */
     VDPStatus[7]=(VDP[44]&=Mask[SM]);
-
-  if(Verbose&0x02)
-    ReportVdpCommand(Op);
 
   switch(Op>>4) {
     case CM_ABRT:
@@ -954,7 +915,6 @@ byte VDPDraw(byte Op)
       VdpEngine=HmmcEngine;  
       break;
     default:
-      if(Verbose&0x02 && log_cb) log_cb(RETRO_LOG_WARN,"V9938: Unrecognized opcode %02Xh\n",Op);
         return(0);
   }
 

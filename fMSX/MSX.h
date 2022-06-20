@@ -253,7 +253,6 @@ extern byte tape_type;
 /*************************************************************/
 
 /** Variables used to control emulator behavior **************/
-extern byte Verbose;                  /* Debug msgs 0x04=FDD */
 extern int  Mode;                     /* ORed MSX_* bits     */
 extern int  RAMPages,VRAMPages;    /* Number of (V)RAM pages */
 extern int  VRAMPageMask;                  /* VRAM page mask */

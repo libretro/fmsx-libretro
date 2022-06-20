@@ -39,10 +39,6 @@
 
 extern retro_log_printf_t log_cb;
 
-#define PRINTOK           if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"OK\n")
-#define PRINTFAILED       if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"FAILED\n")
-#define PRINTRESULT(R)    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,(R)? "OK\n":"FAILED\n")
-
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
 
 /* MSDOS chdir() is broken and has to be replaced :( */
@@ -65,7 +61,6 @@ extern retro_log_printf_t log_cb;
 
 /** User-defined parameters for fMSX *************************/
 int  Mode        = MSX_MSX2|MSX_NTSC|MSX_MSXDOS2|MSX_GUESSA|MSX_GUESSB;
-byte Verbose     = 1;              /* Debug msgs ON/OFF      */
 byte UPeriod     = 75;             /* % of frames to draw    */
 int  VPeriod     = CPU_VPERIOD;    /* CPU cycles per VBlank  */
 int  HPeriod     = CPU_HPERIOD;    /* CPU cycles per HBlank  */
@@ -492,8 +487,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   UPeriod=UPeriod<1? 1:UPeriod>100? 100:UPeriod;
 
   /* Allocate 16kB for the empty space (scratch RAM) */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Allocating 16kB for empty space...\n");
-  if(!(EmptyRAM=GetMemory(0x4000))) { PRINTFAILED;return(0); }
+  if(!(EmptyRAM=GetMemory(0x4000))) { return(0); }
   memset(EmptyRAM,NORAM,0x4000);
 
   /* Reset memory map to the empty space */
@@ -517,38 +511,25 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if(!RAMPages||!VRAMPages) return(0);
 
   /* Change to the program directory */
-  if(ProgDir && chdir(ProgDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",ProgDir); }
+  if(ProgDir && chdir(ProgDir)) { }
 
   /* Try loading font */
   if(FNTName)
-  {
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Loading %s font...",FNTName);
     J=LoadFNT(FNTName);
-    PRINTRESULT(J);
-  }
-
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Loading optional ROMs: ");
 
   /* Try loading CMOS memory contents */
-  if(LoadROM("CMOS.ROM",sizeof(RTC),(byte *)RTC))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"CMOS.ROM.."); }
-  else
+  if(!LoadROM("CMOS.ROM",sizeof(RTC),(byte *)RTC))
      memcpy(RTC,RTCInit,sizeof(RTC));
 
   /* Try loading Kanji alphabet ROM */
-  if((Kanji = LoadROM("KANJI.ROM",0x20000,0)))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"KANJI.ROM.."); }
+  if((Kanji = LoadROM("KANJI.ROM",0x20000,0))) { }
 
   /* Try loading RS232 support ROM to slot */
   if((P=LoadROM("RS232.ROM",0x4000,0)))
   {
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"RS232.ROM..");
     MemMap[3][3][2]=P;
     MemMap[3][3][3]=P+0x2000;
   }
-
-  PRINTOK;
 
   /* Start loading system cartridges */
   J=MAXCARTS;
@@ -596,45 +577,28 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   }
 
   /* We are now back to working directory */
-  if(WorkDir && chdir(WorkDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",WorkDir); }
+  if(WorkDir && chdir(WorkDir)) { }
 
   /* For each user cartridge slot, try loading cartridge */
   for(J=0;J+FirstCart<MAXCARTS;++J) LoadCart(ROMName[J],J+FirstCart,ROMGUESS(J)|ROMTYPE(J));
 
   /* Open cassette image */
-  if(CasName&&ChangeTape(CasName))
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Using %s as a tape\n",CasName);
+  if(CasName&&ChangeTape(CasName)) { }
 
   /* Initialize floppy disk controller */
   Reset1793(&FDC,FDD,WD1793_INIT);
-  FDC.Verbose=Verbose&0x04;
 
   /* Open disk images */
   for(J=0;J<MAXDRIVES;++J)
   {
-    FDD[J].Verbose=Verbose&0x04;
-    if(ChangeDisk(J,DSKName[J]))
-      if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Inserting %s into drive %c\n",DSKName[J],J+'A');  
+    if(ChangeDisk(J,DSKName[J])) { }
   }
 
   /* Done with initialization */
-  if(Verbose && log_cb)
-  {
-    log_cb(RETRO_LOG_INFO,"Initializing VDP, FDC, PSG, OPLL, SCC, and CPU...\n");
-    log_cb(RETRO_LOG_INFO,"  Attached %s to joystick port A\n",JoyTypes[JOYTYPE(0)]);
-    log_cb(RETRO_LOG_INFO,"  Attached %s to joystick port B\n",JoyTypes[JOYTYPE(1)]);
-    log_cb(RETRO_LOG_INFO,"  %d CPU cycles per HBlank\n",HPeriod);
-    log_cb(RETRO_LOG_INFO,"  %d CPU cycles per VBlank\n",VPeriod);
-    log_cb(RETRO_LOG_INFO,"  %d scanlines\n",VPeriod/HPeriod);
-  }
-
   /* Start execution of the code */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"RUNNING ROM CODE...\n");
   A=RunZ80(&CPU);
 
   /* Exiting emulation... */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"EXITED at PC = %04Xh.\n",A);
   return(1);
 }
 
@@ -647,25 +611,21 @@ void TrashMSX(void)
   int J;
 
   /* CMOS.ROM is saved in the program directory */
-  if(ProgDir && chdir(ProgDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",ProgDir); }
+  if(ProgDir && chdir(ProgDir)) { }
 
   /* Save CMOS RAM, if present */
   if(SaveCMOS)
   {
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Writing CMOS.ROM...");
     if(!(F=rfopen("CMOS.ROM","wb"))) SaveCMOS=0;
     else
     {
       if(rfwrite(RTC,1,sizeof(RTC),F)!=sizeof(RTC)) SaveCMOS=0;
       rfclose(F);
     }
-    PRINTRESULT(SaveCMOS);
   }
 
   /* Change back to working directory */
-  if(WorkDir && chdir(WorkDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",WorkDir); }
+  if(WorkDir && chdir(WorkDir)) { }
 
   /* Eject disks, free disk buffers */
   Reset1793(&FDC,FDD,WD1793_EJECT);
@@ -720,15 +680,12 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   if((Mode^NewMode)&MSX_MODEL)
   {
     /* Change to the program directory */
-    if(ProgDir && chdir(ProgDir))
-    { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Failed changing to '%s' directory!\n",ProgDir); }
+    if(ProgDir && chdir(ProgDir)) { }
 
     switch(NewMode&MSX_MODEL)
     {
       case MSX_MSX1:
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening MSX.ROM...");
         P1=LoadROM("MSX.ROM",0x8000,0);
-        PRINTRESULT(P1);
         if(!P1) NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
         else
         {
@@ -744,12 +701,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         break;
 
       case MSX_MSX2:
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening MSX2.ROM...");
         P1=LoadROM("MSX2.ROM",0x8000,0);
-        PRINTRESULT(P1);
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening MSX2EXT.ROM...");
         P2=LoadROM("MSX2EXT.ROM",0x4000,0);
-        PRINTRESULT(P2);
         if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
@@ -770,12 +723,8 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         break;
 
       case MSX_MSX2P:
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening MSX2P.ROM...");
         P1=LoadROM("MSX2P.ROM",0x8000,0);
-        PRINTRESULT(P1);
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening MSX2PEXT.ROM...");
         P2=LoadROM("MSX2PEXT.ROM",0x4000,0);
-        PRINTRESULT(P2);
         if(!P1||!P2)
         {
           NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
@@ -797,46 +746,37 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
       default:
         /* Unknown MSX model, keep old model */
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"ResetMSX(): INVALID HARDWARE MODEL!\n");
         NewMode=(NewMode&~MSX_MODEL)|(Mode&MSX_MODEL);
         break;
     }
 
     /* Change to the working directory */
-    if(WorkDir && chdir(WorkDir))
-    { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",WorkDir); }
+    if(WorkDir && chdir(WorkDir)) { }
   }
 
   /* If hardware model changed ok, patch freshly loaded BIOS */
   if((Mode^NewMode)&MSX_MODEL)
   {
     /* Apply patches to BIOS */
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Patching BIOS: ");
     for(J=0;BIOSPatches[J];++J)
     {
-      if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"%04X..",BIOSPatches[J]);
       P1=MemMap[0][0][0]+BIOSPatches[J];
       P1[0]=0xED;P1[1]=0xFE;P1[2]=0xC9;
     }
-    PRINTOK;
   }
 
   /* If toggling BDOS patches... */
   if((Mode^NewMode)&MSX_PATCHBDOS)
   {
     /* Change to the program directory */
-    if(ProgDir && chdir(ProgDir))
-    { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Failed changing to '%s' directory!\n",ProgDir); }
+    if(ProgDir && chdir(ProgDir)) { }
 
     /* Try loading DiskROM */
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Opening DISK.ROM...");
     P1=LoadROM("DISK.ROM",0x4000,0);
-    PRINTRESULT(P1);
     DiskROMLoaded=!!P1;
 
     /* Change to the working directory */
-    if(WorkDir && chdir(WorkDir))
-    { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Failed changing to '%s' directory!\n",WorkDir); }
+    if(WorkDir && chdir(WorkDir)) { }
 
     /* If failed loading DiskROM, ignore the new PATCHBDOS bit */
     if(!P1) NewMode=(NewMode&~MSX_PATCHBDOS)|(Mode&MSX_PATCHBDOS);
@@ -850,15 +790,12 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       /* If BDOS patching requested... */
       if(NewMode&MSX_PATCHBDOS)
       {
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Patching BDOS: ");
         /* Apply patches to BDOS */
         for(J=0;DiskPatches[J];++J)
         {
-          if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"%04X..",DiskPatches[J]);
           P2=P1+DiskPatches[J]-0x4000;
           P2[0]=0xED;P2[1]=0xFE;P2[2]=0xC9;
         }
-        PRINTOK;
       }
     }
   }
@@ -889,7 +826,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* If changing amount of RAM... */
   if(NewRAMPages!=RAMPages)
   {
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Allocating %dkB for RAM...",NewRAMPages*16);
     if((P1=GetMemory(NewRAMPages*0x4000)))
     {
       memset(P1,NORAM,NewRAMPages*0x4000);
@@ -898,13 +834,11 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       RAMMask  = NewRAMPages-1;
       RAMData  = P1;
     }
-    PRINTRESULT(P1);
   }
 
   /* If changing amount of VRAM... */
   if(NewVRAMPages!=VRAMPages)
   {
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Allocating %dkB for VRAM...",NewVRAMPages*16);
     if((P1=GetMemory(NewVRAMPages*0x4000)))
     {
       memset(P1,0x00,NewVRAMPages*0x4000);
@@ -914,7 +848,6 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
       for(J=1;J<VRAMPages;J<<=1);
       VRAMPageMask = J-1;
     }
-    PRINTRESULT(P1);
   }
 
   /* For all slots... */
@@ -1237,7 +1170,6 @@ case 0xD4: /* FDC IRQ/DRQ */
   }
 
   /* Return NORAM for non-existing ports */
-  if(Verbose&0x20 && log_cb) log_cb(RETRO_LOG_INFO,"I/O: Read from unknown PORT[%02Xh]\n",Port);
   return(NORAM);
 }
 
@@ -1421,7 +1353,6 @@ case 0xFF: /* Mapper page at C000h */
   Value&=RAMMask;
   if(RAMMapper[J]!=Value)
   {
-    if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"RAM-MAPPER: block %d at %Xh\n",Value,J*0x4000);
     I=J<<1;
     RAMMapper[J]      = Value;
     MemMap[3][2][I]   = RAMData+((int)Value<<14);
@@ -1438,7 +1369,6 @@ case 0xFF: /* Mapper page at C000h */
   }
 
   /* Unknown port */
-  if(Verbose&0x20 && log_cb) log_cb(RETRO_LOG_INFO,"I/O: Write to unknown PORT[%02Xh]=%02Xh\n",Port,Value);
 }
 
 /** MapROM() *************************************************/
@@ -1509,7 +1439,6 @@ void MapROM(word A,byte V)
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_GEN16: /* Generic 16kB cartridges (MSXDOS2, HoleInOneSpecial) */
@@ -1525,7 +1454,6 @@ void MapROM(word A,byte V)
         ROMMapper[I][J]=V;
         ROMMapper[I][J+1]=V|1;
       }
-      if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 16kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V>>1,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_KONAMI5: /* KONAMI5 8kB cartridges */
@@ -1541,7 +1469,6 @@ void MapROM(word A,byte V)
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_KONAMI4: /* KONAMI4 8kB cartridges */
@@ -1556,7 +1483,6 @@ void MapROM(word A,byte V)
         RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
         ROMMapper[I][J]=V;
       }
-      if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
       return;
 
     case MAP_ASCII8: /* ASCII 8kB cartridges */
@@ -1570,14 +1496,12 @@ void MapROM(word A,byte V)
           /* Select SRAM page */
           V=0xFF;
           P=SRAMData[I];
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 8kB SRAM at %d:%d:%04Xh\n",I+'A',PS,SS,J*0x2000+0x4000);
         }
         else
         {
           /* Select ROM page */
           V&=ROMMask[I];
           P=ROMData[I]+((int)V<<13);
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
         }
         /* If page was actually changed... */
         if(V!=ROMMapper[I][J])
@@ -1614,14 +1538,12 @@ void MapROM(word A,byte V)
           /* Select SRAM page */
           V=0xFF;
           P=SRAMData[I];
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 2kB SRAM at %d:%d:%04Xh\n",I+'A',PS,SS,J*0x2000+0x4000);
         }
         else
         {
           /* Select ROM page */
           V=(V<<1)&ROMMask[I];
           P=ROMData[I]+((int)V<<13);
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"ROM-MAPPER %c: 16kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V>>1,PS,SS,J*0x2000+0x4000);
         }
         /* If page was actually changed... */
         if(V!=ROMMapper[I][J])
@@ -1667,7 +1589,6 @@ void MapROM(word A,byte V)
           RAM[J+2]=MemMap[PS][SS][J+2]=SRAMData[I]+(V&0x20? 0x2000:0);
           /* SRAM is now on */
           ROMMapper[I][J]=0xFF;
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"GMASTER2 %c: 4kB SRAM page #%d at %d:%d:%04Xh\n",I+'A',(V&0x20)>>5,PS,SS,J*0x2000+0x4000);
         }
         else
         {
@@ -1679,7 +1600,6 @@ void MapROM(word A,byte V)
             RAM[J+2]=MemMap[PS][SS][J+2]=ROMData[I]+((int)V<<13);
             ROMMapper[I][J]=V;
           }
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"GMASTER2 %c: 8kB ROM page #%d at %d:%d:%04Xh\n",I+'A',V,PS,SS,J*0x2000+0x4000);
         }
         /* Done with page switch */
         return;
@@ -1709,10 +1629,8 @@ void MapROM(word A,byte V)
             RAM[2]=MemMap[PS][SS][2]=P;
             RAM[3]=MemMap[PS][SS][3]=P+0x2000;
           }
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"FMPAC %c: 16kB ROM page #%d at %d:%d:4000h\n",I+'A',V>>1,PS,SS);
           return;
         case 0x7FF6: /* OPL1 enable/disable? */
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"FMPAC %c: (7FF6h) = %02Xh\n",I+'A',V);
           V&=0x11;
           return;
         case 0x5FFE: /* Write 4Dh, then (5FFFh)=69h to enable SRAM */
@@ -1723,7 +1641,6 @@ void MapROM(word A,byte V)
             SRAMData[I]:(ROMData[I]+((int)ROMMapper[I][0]<<13));
           RAM[2]=MemMap[PS][SS][2]=P;
           RAM[3]=MemMap[PS][SS][3]=P+0x2000;
-          if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"FMPAC %c: 8kB SRAM %sabled at %d:%d:4000h\n",I+'A',FMPACKey==FMPAC_MAGIC? "en":"dis",PS,SS);
           return;
       }
       /* Write to SRAM */
@@ -1737,7 +1654,6 @@ void MapROM(word A,byte V)
   }
 
   /* No MegaROM mapper or there is an incorrect write */
-  if(Verbose&0x08 && log_cb) log_cb(RETRO_LOG_INFO,"MEMORY: Bad write (%d:%d:%04Xh) = %02Xh\n",PS,SS,A,V);
 }
 
 /** PSlot() **************************************************/
@@ -2687,7 +2603,6 @@ int Cheats(int Switch)
   }
 
   /* Done */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Cheats %s\n",CheatsON? "ON":"OFF");
   return(CheatsON);
 }
 
@@ -2704,8 +2619,7 @@ int GuessROM(const byte *Buf,int Size)
   Result = -1;
 
   /* Change to the program directory */
-  if(ProgDir && chdir(ProgDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",ProgDir); }
+  if(ProgDir && chdir(ProgDir)) { }
 
   /* Try opening file with CRCs */
   if((F = rfopen("CARTS.CRC","rb")))
@@ -2743,8 +2657,7 @@ int GuessROM(const byte *Buf,int Size)
   }
 
   /* We are now back to working directory */
-  if(WorkDir && chdir(WorkDir))
-  { if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Failed changing to '%s' directory!\n",WorkDir); }
+  if(WorkDir && chdir(WorkDir)) { }
 
   /* If found ROM by CRC or SHA1, we are done */
   if(Result>=0) return(Result);
@@ -2909,7 +2822,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
   if(SRAMData[Slot]&&SaveSRAM[Slot]&&SRAMName[Slot])
   {
     /* Open .SAV file */
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Writing %s...",SRAMName[Slot]);
     if(!(F = rfopen(SRAMName[Slot],"wb")))
        SaveSRAM[Slot]=0;
     else
@@ -2937,9 +2849,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
       /* Done with .SAV file */
       rfclose(F);
     }
-
     /* Done saving SRAM */
-    PRINTRESULT(SaveSRAM[Slot]);
   }
 
   /* If ejecting cartridge... */
@@ -2956,7 +2866,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
       /* Restart MSX */
       ResetMSX(Mode,RAMPages,VRAMPages);
       /* Cartridge ejected */
-      if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Ejected cartridge from slot %c\n",Slot+'A');
     }
 
     /* Nothing else to do */
@@ -2966,7 +2875,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* Try opening file */
   if(!(F = rfopen(FileName,"rb")))
      return 0;
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"Found %s:\n",FileName);
 
   /* Determine size via ftell() or by reading entire [GZIPped] stream */
   if(!rfseek(F,0,SEEK_END))
@@ -3014,30 +2922,23 @@ int LoadCart(const char *FileName,int Slot,int Type)
   /* If we can't find "AB" signature, drop out */
   if((C1!='A')||(C2!='B'))
   {
-    if(Verbose) puts("  Not a valid cartridge ROM");
     rfclose(F);
     return(0);
   }
 
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"  Cartridge %c: ",'A'+Slot);
-
   /* Done with the file */
   rfclose(F);
-
-  /* Show ROM type and size */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,
-      "%dkB %s ROM..",Len*8,
-      ROM64||(Len<=0x8000)? "NORMAL":Type>=MAP_GUESS? "UNKNOWN":ROMNames[Type]
-    );
 
   /* Assign ROMMask for MegaROMs */
   ROMMask[Slot]=!ROM64&&(Len>4)? (Pages-1):0x00;
   /* Allocate space for the ROM */
   ROMData[Slot]=P=GetMemory(Pages<<13);
-  if(!P) { PRINTFAILED;return(0); }
+  if(!P)
+    return(0);
 
   /* Try loading ROM */
-  if(!LoadROM(FileName,Len<<13,P)) { PRINTFAILED;return(0); }
+  if(!LoadROM(FileName,Len<<13,P))
+    return(0);
 
   /* Mirror ROM if it is smaller than 2^n pages */
   if(Len<Pages)
@@ -3114,17 +3015,10 @@ int LoadCart(const char *FileName,int Slot,int Type)
       break;
   }
 
-  /* Show starting address */
-  if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,
-      "starts at %04Xh..",
-      MemMap[PS][SS][2][2]+256*MemMap[PS][SS][2][3]
-    );
-
   /* Guess MegaROM mapper type if not given */
   if((Type>=MAP_GUESS)&&(ROMMask[Slot]+1>4))
   {
     Type=GuessROM(P,Len<<13);
-    if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"guessed %s..",ROMNames[Type]);
     if(Slot<MAXCARTS) SETROMTYPE(Slot,Type);
   }
   else if (Type==MAP_GMASTER2 && Slot<MAXCARTS) SETROMTYPE(Slot,Type); // required to enable GM2 in slot A/B
@@ -3146,15 +3040,9 @@ int LoadCart(const char *FileName,int Slot,int Type)
     /* Get SRAM memory */
     SRAMData[Slot]=GetMemory(0x4000);
     if(!SRAMData[Slot])
-    {
-      if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"scratch SRAM..");
       SRAMData[Slot]=EmptyRAM;
-    }
     else
-    {
-      if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"got 16kB SRAM..");
       memset(SRAMData[Slot],NORAM,0x4000);
-    }
 
     /* Generate SRAM file name and load SRAM contents */
     if((SRAMName[Slot]=(char *)GetMemory(strlen(FileName)+5)))
@@ -3174,7 +3062,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
         Len=rfread(SRAMData[Slot],1,0x4000,F);
         rfclose(F);
         /* Print information if needed */
-        if(Verbose && log_cb) log_cb(RETRO_LOG_INFO,"loaded %d bytes from %s..",Len,SRAMName[Slot]);
         /* Mirror data according to the mapper type */
         P=SRAMData[Slot];
         switch(Type)
@@ -3205,7 +3092,6 @@ int LoadCart(const char *FileName,int Slot,int Type)
 
   /* Done setting up cartridge */
   ResetMSX(Mode,RAMPages,VRAMPages);
-  PRINTOK;
 
   /* Done loading cartridge */
   return(Pages);

@@ -127,15 +127,6 @@ case 0x4010:
 *** 6 Seek error                                              ***
 ****************************************************************/
 {
-  if(Verbose&0x04 && log_cb)
-    log_cb
-    (
-      RETRO_LOG_INFO,
-      "%s DISK %c: %d sectors starting from %04Xh [buffer at %04Xh]\n",
-      R->AF.B.l&C_FLAG? "WRITE":"READ",R->AF.B.h+'A',R->BC.B.h,
-      R->DE.W,R->HL.W
-    );
-
   R->IFF|=1;
   Addr  = R->HL.W;
   Count = R->BC.B.h;
@@ -208,8 +199,6 @@ case 0x4013:
 *** media descriptor and transfer a new DPB as with GETDPB.   ***
 ****************************************************************/
 {
-  if(Verbose&0x04 && log_cb) log_cb(RETRO_LOG_INFO,"CHECK DISK %c\n",R->AF.B.h+'A');
-
   R->IFF|=1;
 
   /* If no disk, return "Not ready": */
@@ -376,8 +365,6 @@ case 0x00E1:
 {
   long Pos;
 
-  if(Verbose&0x04 && log_cb) log_cb(RETRO_LOG_INFO,"TAPE: Looking for header...");
-
   R->AF.B.l|=C_FLAG;
   if(CasStream)
   {
@@ -385,21 +372,18 @@ case 0x00E1:
     if(Pos&7)
       if(rfseek(CasStream,8-(Pos&7),SEEK_CUR))
       {
-        if(Verbose&0x04) puts("FAILED");
         filestream_rewind(CasStream);return;
       }
 
     while(rfread(Buf,1,8,CasStream)==8)
       if(!memcmp(Buf,TapeHeader,8))
       {
-        if(Verbose&0x04) puts("OK");
         R->AF.B.l&=~C_FLAG;return;
       }
 
     filestream_rewind(CasStream);
   }
 
-  if(Verbose&0x04) puts("FAILED");
   return;
 }
 
