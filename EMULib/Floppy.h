@@ -13,51 +13,48 @@
 #ifndef FLOPPY_H
 #define FLOPPY_H
 
+#include <stdint.h>
+
 #define DSK_SIDS_PER_DISK 2
 #define DSK_TRKS_PER_SIDE 80
 #define DSK_SECS_PER_TRCK 9
 #define DSK_SECTOR_SIZE   512
 
-#ifndef BYTE_TYPE_DEFINED
-#define BYTE_TYPE_DEFINED
-typedef unsigned char byte;
-#endif
-
 /** DSKCreate() **********************************************/
 /** Create disk image in Dsk or allocate memory when Dsk=0. **/
 /** Returns pointer to the disk image or 0 on failure.      **/
 /*************************************************************/
-byte *DSKCreate(byte *Dsk,const char *Label);
+uint8_t *DSKCreate(uint8_t *Dsk,const char *Label);
 
 /** DSKFile() ************************************************/
 /** Create file with a given name, return file ID or 0 on   **/
 /** failure.                                                **/
 /*************************************************************/
-int DSKFile(byte *Dsk,const char *FileName);
+int DSKFile(uint8_t *Dsk,const char *FileName);
 
 /** DSKFileName() ********************************************/
 /** Return name of a file with a given ID or 0 on failure.  **/
 /*************************************************************/
-const char *DSKFileName(const byte *Dsk,int ID);
+const char *DSKFileName(const uint8_t *Dsk,int ID);
 
 /** DSKFileSize() ********************************************/
 /** Return side of a file with a given ID or 0 on failure.  **/
 /*************************************************************/
-int DSKFileSize(const byte *Dsk,int ID);
+int DSKFileSize(const uint8_t *Dsk,int ID);
 
 /** DSKRead()/DSKWrite() *************************************/
-/** Read or write a given number of bytes to a given file.  **/
-/** Both functions return the number of bytes written or    **/
+/** Read or write a given number of uint8_ts to a given file.  **/
+/** Both functions return the number of uint8_ts written or    **/
 /** read from the file, or 0 on failure.                    **/
 /*************************************************************/
-int DSKWrite(byte *Dsk,int ID,const byte *Buf,int Size);
-int DSKRead(const byte *Dsk,int ID,byte *Buf,int Size);
+int DSKWrite(uint8_t *Dsk,int ID,const uint8_t *Buf,int Size);
+int DSKRead(const uint8_t *Dsk,int ID,uint8_t *Buf,int Size);
 
 /** DSKDelete() **********************************************/
 /** Delete file with a given ID. Returns ID on success or 0 **/
 /** on failure.                                             **/
 /*************************************************************/
-int DSKDelete(byte *Dsk,int ID);
+int DSKDelete(uint8_t *Dsk,int ID);
 
 /** DSKLoad()/DSKSave() **************************************/
 /** Load or save disk contents from/to a disk image or a    **/
@@ -65,7 +62,7 @@ int DSKDelete(byte *Dsk,int ID);
 /** functions return pointer to disk contents on success or **/
 /** 0 on failure.                                           **/
 /*************************************************************/
-byte *DSKLoad(const char *Name,byte *Dsk,const char *Label);
-const byte *DSKSave(const char *Name,const byte *Dsk);
+uint8_t *DSKLoad(const char *Name,uint8_t *Dsk,const char *Label);
+const uint8_t *DSKSave(const char *Name,const uint8_t *Dsk);
 
 #endif /* FLOPPY_H */

@@ -43,7 +43,7 @@ void ResetSCC(SCC *D,int First)
 /** Call this function to read contents of the generic SCC  **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCC(SCC *D,byte R)
+uint8_t ReadSCC(SCC *D,uint8_t R)
 {
   return(R<0x80? D->R[R]:0xFF);
 }
@@ -52,7 +52,7 @@ byte ReadSCC(SCC *D,byte R)
 /** Call this function to read contents of the newer SCC+   **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCCP(SCC *D,byte R)
+uint8_t ReadSCCP(SCC *D,uint8_t R)
 {
   return(R<0xA0? D->R[R]:0xFF);
 }
@@ -61,7 +61,7 @@ byte ReadSCCP(SCC *D,byte R)
 /** Call this function to output a value V into the generic **/
 /** SCC sound chip.                                         **/
 /*************************************************************/
-void WriteSCC(SCC *D,byte R,byte V)
+void WriteSCC(SCC *D,uint8_t R,uint8_t V)
 {
   /* Prevent rollover */
   if(R>=0xE0) return;
@@ -77,10 +77,10 @@ void WriteSCC(SCC *D,byte R,byte V)
 /** Call this function to output a value V into the newer   **/
 /** SCC+ sound chip.                                        **/
 /*************************************************************/
-void WriteSCCP(SCC *D,byte R,byte V)
+void WriteSCCP(SCC *D,uint8_t R,uint8_t V)
 {
   int J;
-  byte I;
+  uint8_t I;
 
   /* Exit if no change */
   if(V==D->R[R]) return;
@@ -169,7 +169,7 @@ void WriteSCCP(SCC *D,byte R,byte V)
 /** should be SCC_SYNC/SCC_ASYNC to set/reset sync, or      **/
 /** SCC_FLUSH to leave sync mode as it is.                  **/
 /*************************************************************/
-void SyncSCC(SCC *D,byte Sync)
+void SyncSCC(SCC *D,uint8_t Sync)
 {
   int J,I;
 

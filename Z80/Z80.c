@@ -32,8 +32,8 @@
 /** This is system-dependent code put here to speed things  **/
 /** up. It has to stay inlined to be fast.                  **/
 /*************************************************************/
-extern byte *RAM[];
-INLINE byte OpZ80(word A) { return(RAM[A>>13][A&0x1FFF]); }
+extern uint8_t *RAM[];
+INLINE uint8_t OpZ80(uint16_t A) { return(RAM[A>>13][A&0x1FFF]); }
 
 #define OpZ80(A) RdZ80(A)
 
@@ -302,7 +302,7 @@ enum CodesED
 
 static void CodesCB(Z80 *R)
 {
-  byte I;
+  uint8_t I;
 
   /* Read opcode and count cycles */
   I=OpZ80(R->PC.W++);
@@ -322,7 +322,7 @@ static void CodesCB(Z80 *R)
 static void CodesDDCB(Z80 *R)
 {
   pair J;
-  byte I;
+  uint8_t I;
 
 #define XX IX
   /* Get offset, read opcode and count cycles */
@@ -342,7 +342,7 @@ static void CodesDDCB(Z80 *R)
 static void CodesFDCB(Z80 *R)
 {
   pair J;
-  byte I;
+  uint8_t I;
 
 #define XX IY
   /* Get offset, read opcode and count cycles */
@@ -361,7 +361,7 @@ static void CodesFDCB(Z80 *R)
 
 static void CodesED(Z80 *R)
 {
-  byte I;
+  uint8_t I;
   pair J;
 
   /* Read opcode and count cycles */
@@ -383,7 +383,7 @@ static void CodesED(Z80 *R)
 
 static void CodesDD(Z80 *R)
 {
-  byte I;
+  uint8_t I;
   pair J;
 
 #define XX IX
@@ -410,7 +410,7 @@ static void CodesDD(Z80 *R)
 
 static void CodesFD(Z80 *R)
 {
-  byte I;
+  uint8_t I;
   pair J;
 
 #define XX IY
@@ -472,7 +472,7 @@ void ResetZ80(Z80 *R)
 #ifdef EXECZ80
 int ExecZ80(Z80 *R,int RunCycles)
 {
-  byte I;
+  uint8_t I;
   pair J;
 
   for(R->ICount=RunCycles;;)
@@ -523,7 +523,7 @@ int ExecZ80(Z80 *R,int RunCycles)
 /** IntZ80() *************************************************/
 /** This function will generate interrupt of given vector.  **/
 /*************************************************************/
-void IntZ80(Z80 *R,word Vector)
+void IntZ80(Z80 *R,uint16_t Vector)
 {
   /* If HALTed, take CPU off HALT instruction */
   if(R->IFF&IFF_HALT) { R->PC.W++;R->IFF&=~IFF_HALT; }
@@ -555,7 +555,7 @@ void IntZ80(Z80 *R,word Vector)
     if(R->IFF&IFF_IM2)
     {
       /* Make up the vector address */
-      Vector=(Vector&0xFF)|((word)(R->I)<<8);
+      Vector=(Vector&0xFF)|((uint16_t)(R->I)<<8);
       /* Read the vector */
       R->PC.B.l=RdZ80(Vector++);
       R->PC.B.h=RdZ80(Vector);
@@ -590,9 +590,9 @@ void IntZ80(Z80 *R,word Vector)
 /** emulation stopped, and current register values in R.    **/
 /*************************************************************/
 #ifndef EXECZ80
-word RunZ80(Z80 *R)
+uint16_t RunZ80(Z80 *R)
 {
-  byte I;
+  uint8_t I;
   pair J;
 
   for(;;)

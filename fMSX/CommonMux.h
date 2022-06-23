@@ -18,9 +18,8 @@
 #include "Wide.h"
 
 /** Screen Mode Handlers [number of screens + 1] *************/
-extern void (*RefreshLine[MAXSCREEN+2])(byte Y);
+extern void (*RefreshLine[MAXSCREEN+2])(uint8_t Y);
 
-#define pixel            unsigned short
 #define FirstLine        FirstLine_16
 #define Sprites          Sprites_16
 #define ColorSprites     ColorSprites_16
@@ -43,7 +42,5 @@ extern void (*RefreshLine[MAXSCREEN+2])(byte Y);
 #define RefreshLine10    RefreshLine10_16
 #define RefreshLine12    RefreshLine12_16
 #define RefreshLineTx80  RefreshLineTx80_16
-#include "Common.h"
-#include "Wide.h"
 
 #endif /* COMMONMUX_H */

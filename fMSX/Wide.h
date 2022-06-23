@@ -17,7 +17,7 @@
 /** ClearLine512() *******************************************/
 /** Clear 512 pixels from P with color C.                   **/
 /*************************************************************/
-static void ClearLine512(pixel *P,pixel C)
+static void ClearLine512(uint16_t *P,uint16_t C)
 {
   int J;
 
@@ -29,9 +29,9 @@ static void ClearLine512(pixel *P,pixel C)
 /** the screen border. It returns a pointer to the start of **/
 /** scanline Y in XBuf or 0 if scanline is beyond XBuf.     **/
 /*************************************************************/
-pixel *RefreshBorder512(byte Y,pixel C)
+uint16_t *RefreshBorder512(uint8_t Y,uint16_t C)
 {
-  pixel *P;
+  uint16_t *P;
   int H,L,A;
 
   /* First line number in the buffer */
@@ -44,7 +44,7 @@ pixel *RefreshBorder512(byte Y,pixel C)
   XPal[0]=(!BGColor||SolidColor0)? XPal0:XPal[BGColor];
 
   /* Start of the buffer */
-  P=(pixel *)WBuf;
+  P=(uint16_t *)WBuf;
 
   if(HiResMode)
   {
@@ -136,13 +136,11 @@ pixel *RefreshBorder512(byte Y,pixel C)
 /** RefreshScr6() ********************************************/
 /** Function to be called to update SCREEN 6.               **/
 /*************************************************************/
-void RefreshLine6(byte Y)
+void RefreshLine6(uint8_t Y)
 {
-  pixel *P;
-  byte X,*T,*R,C;
-  byte ZBuf[304];
-
-  P=RefreshBorder512(Y,XPal[BGColor&0x03]);
+  uint8_t X,*T,*R,C;
+  uint8_t ZBuf[304];
+  uint16_t *P=RefreshBorder512(Y,XPal[BGColor&0x03]);
   if(!P) return;
 
   if(!ScreenON) ClearLine512(P,XPal[BGColor&0x03]);
@@ -172,13 +170,11 @@ void RefreshLine6(byte Y)
 /** RefreshScr7() ********************************************/
 /** Function to be called to update SCREEN 7.               **/
 /*************************************************************/
-void RefreshLine7(byte Y)
+void RefreshLine7(uint8_t Y)
 {
-  pixel *P;
-  byte C,X,*T,*R;
-  byte ZBuf[304];
-
-  P=RefreshBorder512(Y,XPal[BGColor]);
+  uint8_t C,X,*T,*R;
+  uint8_t ZBuf[304];
+  uint16_t *P=RefreshBorder512(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine512(P,XPal[BGColor]);
@@ -208,13 +204,12 @@ void RefreshLine7(byte Y)
 /** RefreshTx80() ********************************************/
 /** Function to be called to update TEXT80.                 **/
 /*************************************************************/
-void RefreshLineTx80(byte Y)
+void RefreshLineTx80(uint8_t Y)
 {
-  pixel *P,FC,BC;
-  byte X,M,*T,*C,*G;
-
-  BC=XPal[BGColor];
-  P=RefreshBorder512(Y,BC);
+  uint16_t FC;
+  uint8_t X,M,*T,*C,*G;
+  uint16_t BC=XPal[BGColor];
+  uint16_t *P=RefreshBorder512(Y,BC);
   if(!P) return;
 
   if(!ScreenON) ClearLine512(P,BC);

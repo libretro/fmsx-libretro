@@ -164,8 +164,8 @@ extern "C" {
 /*************************************************************/
 
 /** Keyboard codes and macros ********************************/
-extern const byte Keys[137][2];
-extern volatile byte KeyState[16];
+extern const uint8_t Keys[137][2];
+extern volatile uint8_t KeyState[16];
 
 #define KBD_SET(K)   KeyState[Keys[K][0]]&=~Keys[K][1]
 #define KBD_RES(K)   KeyState[Keys[K][0]]|=Keys[K][1]
@@ -217,7 +217,7 @@ extern volatile byte KeyState[16];
 /*************************************************************/
 
 /** Cassette Tapes *******************************************/
-extern byte tape_type;
+extern uint8_t tape_type;
 
 #define NO_TAPE      0
 #define ASCII_TAPE   1
@@ -256,31 +256,31 @@ extern byte tape_type;
 extern int  Mode;                     /* ORed MSX_* bits     */
 extern int  RAMPages,VRAMPages;    /* Number of (V)RAM pages */
 extern int  VRAMPageMask;                  /* VRAM page mask */
-extern byte UPeriod;                  /* % of frames to draw */
+extern uint8_t UPeriod;                  /* % of frames to draw */
 /*************************************************************/
 
 /** Screen Mode Handlers [number of screens + 1] *************/
-extern void (*RefreshLine[MAXSCREEN+2])(byte Y);
+extern void (*RefreshLine[MAXSCREEN+2])(uint8_t Y);
 /*************************************************************/
 
 extern Z80  CPU;                      /* CPU state/registers */
-extern byte *VRAM;                    /* Video RAM           */
-extern byte VDP[64];                  /* VDP control reg-ers */
-extern byte VDPStatus[16];            /* VDP status reg-ers  */
-extern byte *ChrGen,*ChrTab,*ColTab;  /* VDP tables (screen) */
-extern byte *SprGen,*SprTab;          /* VDP tables (sprites)*/
+extern uint8_t *VRAM;                    /* Video RAM           */
+extern uint8_t VDP[64];                  /* VDP control reg-ers */
+extern uint8_t VDPStatus[16];            /* VDP status reg-ers  */
+extern uint8_t *ChrGen,*ChrTab,*ColTab;  /* VDP tables (screen) */
+extern uint8_t *SprGen,*SprTab;          /* VDP tables (sprites)*/
 extern int  ChrGenM,ChrTabM,ColTabM;  /* VDP masks (screen)  */
 extern int  SprTabM;                  /* VDP masks (sprites) */
-extern byte FGColor,BGColor;          /* Colors              */
-extern byte XFGColor,XBGColor;        /* Alternative colors  */
-extern byte ScrMode;                  /* Current screen mode */
+extern uint8_t FGColor,BGColor;          /* Colors              */
+extern uint8_t XFGColor,XBGColor;        /* Alternative colors  */
+extern uint8_t ScrMode;                  /* Current screen mode */
 extern int  ScanLine;                 /* Current scanline    */
-extern byte *FontBuf;                 /* Optional fixed font */
+extern uint8_t *FontBuf;                 /* Optional fixed font */
 
-extern byte ExitNow;                  /* 1: Exit emulator    */
+extern uint8_t ExitNow;                  /* 1: Exit emulator    */
 
-extern byte PSLReg;                   /* Primary slot reg.   */
-extern byte SSLReg[4];                /* Secondary slot reg. */
+extern uint8_t PSLReg;                   /* Primary slot reg.   */
+extern uint8_t SSLReg[4];                /* Secondary slot reg. */
 
 extern const char *ProgDir;           /* Program directory   */
 extern const char *ROMName[MAXCARTS]; /* Cart A/B ROM files  */
@@ -294,9 +294,9 @@ extern RFILE *CasStream;              /* Cassette I/O stream */
 typedef struct
 {
   unsigned int Addr;
-  word Data,Orig;
-  byte Size;
-  byte Text[14];
+  uint16_t Data,Orig;
+  uint8_t Size;
+  uint8_t Text[14];
 } CheatCode;
 
 /** StartMSX() ***********************************************/
@@ -331,7 +331,7 @@ int LoadMCF(const char *Name);
 
 /** LoadCHT() ************************************************/
 /** Load cheats from .CHT file. Cheat format is either      **/
-/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** 00XXXXXX-XX (one uint8_t) or 00XXXXXX-XXXX (two uint8_ts) for **/
 /** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
 /** cheats. Returns the number of cheats on success, 0 on   **/
 /** failure.                                                **/
@@ -361,7 +361,7 @@ void ChangePrinter(const char *FileName);
 /** Change tape image. ChangeTape(0) closes current image.  **/
 /** Returns 1 on success, 0 on failure.                     **/
 /*************************************************************/
-byte ChangeTape(const char *FileName);
+uint8_t ChangeTape(const char *FileName);
 
 /** RewindTape() *********************************************/
 /** Rewind currenly open tape.                              **/
@@ -373,14 +373,14 @@ void RewindTape(void);
 /** image if Name=0 was given. Creates a new disk image if  **/
 /** Name="" was given. Returns 1 on success or 0 on failure.**/
 /*************************************************************/
-byte ChangeDisk(byte N,const char *FileName);
+uint8_t ChangeDisk(uint8_t N,const char *FileName);
 
 /** LoadFNT() ************************************************/
 /** Load fixed 8x8 font used in text screen modes when      **/
 /** MSX_FIXEDFONT option is enabled. LoadFNT(0) frees the   **/
 /** font buffer. Returns 1 on success, 0 on failure.        **/
 /*************************************************************/
-byte LoadFNT(const char *FileName);
+uint8_t LoadFNT(const char *FileName);
 
 /** ApplyMCFCheat() ******************************************/
 /** Apply given MCF cheat entry. Returns 0 on failure or 1  **/
@@ -432,16 +432,16 @@ unsigned int Joystick(void);
 /** Query coordinates of a mouse connected to port N.       **/
 /** Returns F2.F1.Y.Y.Y.Y.Y.Y.Y.Y.X.X.X.X.X.X.X.X.          **/
 /************************************ TO BE WRITTEN BY USER **/
-unsigned int Mouse(byte N);
+unsigned int Mouse(uint8_t N);
 
 /** DiskPresent()/DiskRead()/DiskWrite() *********************/
 /*** These three functions are called to check for floppy   **/
 /*** disk presence in the "drive", and to read/write given  **/
 /*** sector to the disk.                                    **/
 /************************************ TO BE WRITTEN BY USER **/
-byte DiskPresent(byte ID);
-byte DiskRead(byte ID,byte *Buf,int N);
-byte DiskWrite(byte ID,const byte *Buf,int N);
+uint8_t DiskPresent(uint8_t ID);
+uint8_t DiskRead(uint8_t ID,uint8_t *Buf,int N);
+uint8_t DiskWrite(uint8_t ID,const uint8_t *Buf,int N);
 
 /** PlayAllSound() *******************************************/
 /** Render and play given number of microseconds of sound.  **/
@@ -451,7 +451,7 @@ void PlayAllSound(int uSec);
 /** SetColor() ***********************************************/
 /** Set color N (0..15) to (R,G,B).                         **/
 /************************************ TO BE WRITTEN BY USER **/
-void SetColor(byte N,byte R,byte G,byte B);
+void SetColor(uint8_t N,uint8_t R,uint8_t G,uint8_t B);
 
 /** RefreshScreen() ******************************************/
 /** Refresh screen. This function is called in the end of   **/
@@ -463,18 +463,18 @@ void RefreshScreen(void);
 /** Refresh line Y (0..191/211), on an appropriate SCREEN#, **/
 /** including sprites in this line.                         **/
 /************************************ TO BE WRITTEN BY USER **/
-void RefreshLineTx80(byte Y);
-void RefreshLine0(byte Y);
-void RefreshLine1(byte Y);
-void RefreshLine2(byte Y);
-void RefreshLine3(byte Y);
-void RefreshLine4(byte Y);
-void RefreshLine5(byte Y);
-void RefreshLine6(byte Y);
-void RefreshLine7(byte Y);
-void RefreshLine8(byte Y);
-void RefreshLine10(byte Y);
-void RefreshLine12(byte Y);
+void RefreshLineTx80(uint8_t Y);
+void RefreshLine0(uint8_t Y);
+void RefreshLine1(uint8_t Y);
+void RefreshLine2(uint8_t Y);
+void RefreshLine3(uint8_t Y);
+void RefreshLine4(uint8_t Y);
+void RefreshLine5(uint8_t Y);
+void RefreshLine6(uint8_t Y);
+void RefreshLine7(uint8_t Y);
+void RefreshLine8(uint8_t Y);
+void RefreshLine10(uint8_t Y);
+void RefreshLine12(uint8_t Y);
 
 #ifdef __cplusplus
 }

@@ -13,6 +13,8 @@
 #ifndef SCC_H
 #define SCC_H
 
+#include <stdint.h>
+
 #define SCC_BASE     111861    /* Base frequency for SCC     */
 #define SCC_CHANNELS 5         /* 5 melodic channels         */
 
@@ -20,24 +22,19 @@
 #define SCC_SYNC     1         /* Synchronous emulation mode */
 #define SCC_FLUSH    2         /* Flush buffers only         */
 
-#ifndef BYTE_TYPE_DEFINED
-#define BYTE_TYPE_DEFINED
-typedef unsigned char byte;
-#endif
-
 /** SCC ******************************************************/
 /** This data structure stores SCC state.                   **/
 /*************************************************************/
 #pragma pack(4)
 typedef struct
 {
-  byte R[256];                /* SCC register contents       */
+  uint8_t R[256];                /* SCC register contents       */
   int Freq[SCC_CHANNELS];     /* Frequencies (0 for off)     */
   int Volume[SCC_CHANNELS];   /* Volumes (0..255)            */
   int First;                  /* First used Sound() channel  */
-  byte Changed;               /* Bitmap of changed channels  */
-  byte WChanged;              /* Bitmap of changed waveforms */
-  byte Sync;                  /* SCC_SYNC/SCC_ASYNC          */
+  uint8_t Changed;               /* Bitmap of changed channels  */
+  uint8_t WChanged;              /* Bitmap of changed waveforms */
+  uint8_t Sync;                  /* SCC_SYNC/SCC_ASYNC          */
 } SCC;
 #pragma pack()
 
@@ -51,25 +48,25 @@ void ResetSCC(SCC *D,int First);
 /** Call this function to read contents of the generic SCC  **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCC(SCC *D,byte R);
+uint8_t ReadSCC(SCC *D,uint8_t R);
 
 /** ReadSCCP() ***********************************************/
 /** Call this function to read contents of the newer SCC+   **/
 /** sound chip registers.                                   **/
 /*************************************************************/
-byte ReadSCCP(SCC *D,byte R);
+uint8_t ReadSCCP(SCC *D,uint8_t R);
            
 /** WriteSCC() ***********************************************/
 /** Call this function to output a value V into the generic **/
 /** SCC sound chip.                                         **/
 /*************************************************************/
-void WriteSCC(SCC *D,byte R,byte V);
+void WriteSCC(SCC *D,uint8_t R,uint8_t V);
 
 /** WriteSCCP() **********************************************/
 /** Call this function to output a value V into the newer   **/
 /** SCC+ sound chip.                                        **/
 /*************************************************************/
-void WriteSCCP( SCC *D,byte R,byte V);
+void WriteSCCP( SCC *D,uint8_t R,uint8_t V);
 
 /** SyncSCC() ************************************************/
 /** Flush all accumulated changes by issuing Sound() calls  **/
@@ -77,6 +74,6 @@ void WriteSCCP( SCC *D,byte R,byte V);
 /** should be SCC_SYNC/SCC_ASYNC to set/reset sync, or      **/
 /** SCC_FLUSH to leave sync mode as it is.                  **/
 /*************************************************************/
-void SyncSCC(SCC *D,byte Sync);
+void SyncSCC(SCC *D,uint8_t Sync);
 
 #endif /* SCC_H */

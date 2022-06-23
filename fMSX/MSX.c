@@ -61,36 +61,36 @@ extern retro_log_printf_t log_cb;
 
 /** User-defined parameters for fMSX *************************/
 int  Mode        = MSX_MSX2|MSX_NTSC|MSX_MSXDOS2|MSX_GUESSA|MSX_GUESSB;
-byte UPeriod     = 75;             /* % of frames to draw    */
+uint8_t UPeriod  = 75;             /* % of frames to draw    */
 int  VPeriod     = CPU_VPERIOD;    /* CPU cycles per VBlank  */
 int  HPeriod     = CPU_HPERIOD;    /* CPU cycles per HBlank  */
 int  RAMPages    = 4;              /* Number of RAM pages    */
 int  VRAMPages   = 2;              /* Number of VRAM pages   */
-int  VRAMPageMask = 0x01;                  /* VRAM page mask */
-byte ExitNow     = 0;              /* 1 = Exit the emulator  */
+int  VRAMPageMask = 0x01;          /* VRAM page mask */
+uint8_t ExitNow     = 0;           /* 1 = Exit the emulator  */
 
 /** Main hardware: CPU, RAM, VRAM, mappers *******************/
 Z80 CPU;                           /* Z80 CPU state and regs */
 
-byte *VRAM,*VPAGE;                 /* Video RAM              */
+uint8_t *VRAM,*VPAGE;                 /* Video RAM              */
 
-byte *RAM[8];                      /* Main RAM (8x8kB pages) */
-byte *EmptyRAM;                    /* Empty RAM page (8kB)   */
-byte SaveCMOS;                     /* Save CMOS.ROM on exit  */
-byte *MemMap[4][4][8];   /* Memory maps [PPage][SPage][Addr] */
+uint8_t *RAM[8];                      /* Main RAM (8x8kB pages) */
+uint8_t *EmptyRAM;                    /* Empty RAM page (8kB)   */
+uint8_t SaveCMOS;                     /* Save CMOS.ROM on exit  */
+uint8_t *MemMap[4][4][8];   /* Memory maps [PPage][SPage][Addr] */
 
-byte *RAMData;                     /* RAM Mapper contents    */
-byte RAMMapper[4];                 /* RAM Mapper state       */
-byte RAMMask;                      /* RAM Mapper mask        */
+uint8_t *RAMData;                     /* RAM Mapper contents    */
+uint8_t RAMMapper[4];                 /* RAM Mapper state       */
+uint8_t RAMMask;                      /* RAM Mapper mask        */
 
-byte *ROMData[MAXSLOTS];           /* ROM Mapper contents    */
-byte ROMMapper[MAXSLOTS][4];       /* ROM Mappers state      */
-byte ROMMask[MAXSLOTS];            /* ROM Mapper masks       */
-byte ROMType[MAXSLOTS];            /* ROM Mapper types       */
+uint8_t *ROMData[MAXSLOTS];           /* ROM Mapper contents    */
+uint8_t ROMMapper[MAXSLOTS][4];       /* ROM Mappers state      */
+uint8_t ROMMask[MAXSLOTS];            /* ROM Mapper masks       */
+uint8_t ROMType[MAXSLOTS];            /* ROM Mapper types       */
 
-byte EnWrite[4];                   /* 1 if write enabled     */
-byte PSL[4],SSL[4];                /* Lists of current slots */
-byte PSLReg,SSLReg[4];   /* Storage for A8h port and (FFFFh) */
+uint8_t EnWrite[4];                   /* 1 if write enabled     */
+uint8_t PSL[4],SSL[4];                /* Lists of current slots */
+uint8_t PSLReg,SSLReg[4];   /* Storage for A8h port and (FFFFh) */
 
 /** Memory blocks to free in TrashMSX() **********************/
 void *Chunks[MAXCHUNKS];           /* Memory blocks to free  */
@@ -105,21 +105,21 @@ const char *ROMName[MAXCARTS] = { "CARTA.ROM","CARTB.ROM" };
 
 /** On-cartridge SRAM data ***********************************/
 char *SRAMName[MAXSLOTS] = {0,0,0,0,0,0};/* Filenames (gen-d)*/
-byte SaveSRAM[MAXSLOTS] = {0,0,0,0,0,0}; /* Save SRAM on exit*/
-byte *SRAMData[MAXSLOTS];          /* SRAM (battery backed)  */
+uint8_t SaveSRAM[MAXSLOTS] = {0,0,0,0,0,0}; /* Save SRAM on exit*/
+uint8_t *SRAMData[MAXSLOTS];          /* SRAM (battery backed)  */
 
 /** Disk images used by fMSX *********************************/
 const char *DSKName[MAXDRIVES] = { "DRIVEA.DSK","DRIVEB.DSK" };
-byte DiskROMLoaded = 0;            /* 1 when DISK.ROM loaded */
+uint8_t DiskROMLoaded = 0;            /* 1 when DISK.ROM loaded */
 
 /** Fixed font used by fMSX **********************************/
 const char *FNTName = "DEFAULT.FNT"; /* Font file for text   */
-byte *FontBuf;                     /* Font for text modes    */
+uint8_t *FontBuf;                     /* Font for text modes    */
 
 /** Cassette tape ********************************************/
 const char *CasName = "DEFAULT.CAS";  /* Tape image file     */
 RFILE *CasStream;
-byte tape_type = NO_TAPE;
+uint8_t tape_type = NO_TAPE;
 #define TAPE_HEADER_LEN 10
 // header values copied from openMSX CasImage.cc
 const char ASCII_HEADER[TAPE_HEADER_LEN]  = { 0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA,0xEA };
@@ -127,21 +127,21 @@ const char BINARY_HEADER[TAPE_HEADER_LEN] = { 0xD0,0xD0,0xD0,0xD0,0xD0,0xD0,0xD0
 const char BASIC_HEADER[TAPE_HEADER_LEN]  = { 0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3,0xD3 };
 
 /** Kanji font ROM *******************************************/
-byte *Kanji;                       /* Kanji ROM 4096x32      */
+uint8_t *Kanji;                       /* Kanji ROM 4096x32      */
 int  KanLetter;                    /* Current letter index   */
-byte KanCount;                     /* Byte count 0..31       */
+uint8_t KanCount;                     /* Byte count 0..31       */
 
 /** Keyboard, joystick, and mouse ****************************/
-volatile byte KeyState[16];        /* Keyboard map state     */
-word JoyState;                     /* Joystick states        */
+volatile uint8_t KeyState[16];        /* Keyboard map state     */
+uint16_t JoyState;                     /* Joystick states        */
 int  MouState[2];                  /* Mouse states           */
-byte MouseDX[2],MouseDY[2];        /* Mouse offsets          */
-byte OldMouseX[2],OldMouseY[2];    /* Old mouse coordinates  */
-byte MCount[2];                    /* Mouse nibble counter   */
+uint8_t MouseDX[2],MouseDY[2];        /* Mouse offsets          */
+uint8_t OldMouseX[2],OldMouseY[2];    /* Old mouse coordinates  */
+uint8_t MCount[2];                    /* Mouse nibble counter   */
 
 /** General I/O registers: i8255 *****************************/
 I8255 PPI;                         /* i8255 PPI at A8h-ABh   */
-byte IOReg;                        /* Storage for AAh port   */
+uint8_t IOReg;                        /* Storage for AAh port   */
 
 /** Disk controller: WD1793 **********************************/
 WD1793 FDC;                        /* WD1793 at 7FF8h-7FFFh  */
@@ -151,29 +151,29 @@ FDIDisk FDD[NUM_FDI_DRIVES];       /* Floppy disk images     */
 AY8910 PSG;                        /* PSG registers & state  */
 YM2413 OPLL;                       /* OPLL registers & state */
 SCC  SCChip;                       /* SCC registers & state  */
-byte SCCOn[2];                     /* 1 = SCC page active    */
-word FMPACKey;                     /* MAGIC = SRAM active    */
+uint8_t SCCOn[2];                     /* 1 = SCC page active    */
+uint16_t FMPACKey;                     /* MAGIC = SRAM active    */
 
 /** Real-time clock ******************************************/
-byte RTCReg,RTCMode;               /* RTC register numbers   */
-byte RTC[4][13];                   /* RTC registers          */
+uint8_t RTCReg,RTCMode;               /* RTC register numbers   */
+uint8_t RTC[4][13];                   /* RTC registers          */
 
 /** Video processor ******************************************/
-byte *ChrGen,*ChrTab,*ColTab;      /* VDP tables (screen)    */
-byte *SprGen,*SprTab;              /* VDP tables (sprites)   */
+uint8_t *ChrGen,*ChrTab,*ColTab;      /* VDP tables (screen)    */
+uint8_t *SprGen,*SprTab;              /* VDP tables (sprites)   */
 int  ChrGenM,ChrTabM,ColTabM;      /* VDP masks (screen)     */
 int  SprTabM;                      /* VDP masks (sprites)    */
-word VAddr;                        /* VRAM address in VDP    */
-byte VKey,PKey;                    /* Status keys for VDP    */
-byte FGColor,BGColor;              /* Colors                 */
-byte XFGColor,XBGColor;            /* Second set of colors   */
-byte ScrMode;                      /* Current screen mode    */
-byte VDP[64],VDPStatus[16];        /* VDP registers          */
-byte IRQPending;                   /* Pending interrupts     */
+uint16_t VAddr;                        /* VRAM address in VDP    */
+uint8_t VKey,PKey;                    /* Status keys for VDP    */
+uint8_t FGColor,BGColor;              /* Colors                 */
+uint8_t XFGColor,XBGColor;            /* Second set of colors   */
+uint8_t ScrMode;                      /* Current screen mode    */
+uint8_t VDP[64],VDPStatus[16];        /* VDP registers          */
+uint8_t IRQPending;                   /* Pending interrupts     */
 int  ScanLine;                     /* Current scanline       */
-byte VDPData;                      /* VDP data buffer        */
-byte PLatch;                       /* Palette buffer         */
-byte ALatch;                       /* Address buffer         */
+uint8_t VDPData;                      /* VDP data buffer        */
+uint8_t PLatch;                       /* Palette buffer         */
+uint8_t ALatch;                       /* Address buffer         */
 int  Palette[16];                  /* Current palette        */
 
 /** Cheat entries ********************************************/
@@ -181,24 +181,24 @@ int MCFCount     = 0;              /* Size of MCFEntries[]   */
 MCFEntry MCFEntries[MAXCHEATS];    /* Entries from .MCF file */
 
 /** Cheat codes **********************************************/
-byte CheatsON    = 0;              /* 1: Cheats are on       */
+uint8_t CheatsON    = 0;              /* 1: Cheats are on       */
 int  CheatCount  = 0;              /* # cheats, <=MAXCHEATS  */
 CheatCode CheatCodes[MAXCHEATS];
 
 /** Places in DiskROM to be patched with ED FE C9 ************/
-static const word DiskPatches[] =
+static const uint16_t DiskPatches[] =
 { 0x4010,0x4013,0x4016,0x401C,0x401F,0 };
 
 /** Places in BIOS to be patched with ED FE C9 ***************/
-static const word BIOSPatches[] =
+static const uint16_t BIOSPatches[] =
 { 0x00E1,0x00E4,0x00E7,0x00EA,0x00ED,0x00F0,0x00F3,0 };
 
 /** Cartridge map, by primary and secondary slots ************/
-static const byte CartMap[4][4] =
+static const uint8_t CartMap[4][4] =
 { { 255,3,4,5 },{ 0,0,0,0 },{ 1,1,1,1 },{ 2,255,255,255 } };
 
 /** Screen Mode Handlers [number of screens + 1] *************/
-void (*RefreshLine[MAXSCREEN+2])(byte Y) =
+void (*RefreshLine[MAXSCREEN+2])(uint8_t Y) =
 {
   RefreshLine0,   /* SCR 0:  TEXT 40x24  */
   RefreshLine1,   /* SCR 1:  TEXT 32x24  */
@@ -217,7 +217,7 @@ void (*RefreshLine[MAXSCREEN+2])(byte Y) =
 };
 
 /** VDP Address Register Masks *******************************/
-static const struct { byte R2,R3,R4,R5,M2,M3,M4,M5; } MSK[MAXSCREEN+2] =
+static const struct { uint8_t R2,R3,R4,R5,M2,M3,M4,M5; } MSK[MAXSCREEN+2] =
 {
   { 0x7F,0x00,0x3F,0x00,0x00,0x00,0x00,0x00 }, /* SCR 0:  TEXT 40x24  */
   { 0x7F,0xFF,0x3F,0xFF,0x00,0x00,0x00,0x00 }, /* SCR 1:  TEXT 32x24  */
@@ -275,7 +275,7 @@ static const char *GameMaster2SlotSpecialSHA1s[16] =
 /** This keyboard mapping is used by KBD_SET()/KBD_RES()    **/
 /** macros to modify KeyState[] bits.                       **/
 /*************************************************************/
-const byte Keys[][2] =
+const uint8_t Keys[][2] =
 {
   { 0,0x00 },{ 8,0x10 },{ 8,0x20 },{ 8,0x80 }, /* None,LEFT,UP,RIGHT */
   { 8,0x40 },{ 6,0x01 },{ 6,0x02 },{ 6,0x04 }, /* DOWN,SHIFT,CONTROL,GRAPH */
@@ -324,24 +324,24 @@ const byte Keys[][2] =
 /** These functions are defined and internally used by the  **/
 /** code in MSX.c.                                          **/
 /*************************************************************/
-byte *LoadROM(const char *Name,int Size,byte *Buf);
-int  GuessROM(const byte *Buf,int Size);
-void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3);
-void MapROM(word A,byte V);       /* Switch MegaROM banks            */
-void PSlot(byte V);               /* Switch primary slots            */
-void SSlot(byte V);               /* Switch secondary slots          */
-void VDPOut(byte R,byte V);       /* Write value into a VDP register */
-void Printer(byte V);             /* Send a character to a printer   */
-void PPIOut(byte New,byte Old);   /* Set PPI bits (key click, etc.)  */
+uint8_t *LoadROM(const char *Name,int Size,uint8_t *Buf);
+int  GuessROM(const uint8_t *Buf,int Size);
+void SetMegaROM(int Slot,uint8_t P0,uint8_t P1,uint8_t P2,uint8_t P3);
+void MapROM(uint16_t A,uint8_t V);       /* Switch MegaROM banks            */
+void PSlot(uint8_t V);               /* Switch primary slots            */
+void SSlot(uint8_t V);               /* Switch secondary slots          */
+void VDPOut(uint8_t R,uint8_t V);       /* Write value into a VDP register */
+void Printer(uint8_t V);             /* Send a character to a printer   */
+void PPIOut(uint8_t New,uint8_t Old);   /* Set PPI bits (key click, etc.)  */
 int  CheckSprites(void);          /* Check for sprite collisions     */
-byte RTCIn(byte R);               /* Read RTC registers              */
-byte SetScreen(void);             /* Change screen mode              */
-word SetIRQ(byte IRQ);            /* Set/Reset IRQ                   */
-word StateID(void);               /* Compute emulation state ID      */
+uint8_t RTCIn(uint8_t R);               /* Read RTC registers              */
+uint8_t SetScreen(void);             /* Change screen mode              */
+uint16_t SetIRQ(uint8_t IRQ);            /* Set/Reset IRQ                   */
+uint16_t StateID(void);               /* Compute emulation state ID      */
 int  ApplyCheats(void);           /* Apply RAM-based cheats          */
 
 static int hasext(const char *FileName,const char *Ext);
-static byte *GetMemory(int Size); /* Get memory chunk                */
+static uint8_t *GetMemory(int Size); /* Get memory chunk                */
 static void FreeMemory(const void *Ptr); /* Free memory chunk        */
 static void FreeAllMemory(void);  /* Free all memory chunks          */
 
@@ -374,12 +374,12 @@ static int hasext(const char *FileName,const char *Ext)
 /** Allocate a memory chunk of given size using malloc().   **/
 /** Store allocated address in Chunks[] for later disposal. **/
 /*************************************************************/
-static byte *GetMemory(int Size)
+static uint8_t *GetMemory(int Size)
 {
-  byte *P;
+  uint8_t *P;
 
   if((Size<=0)||(NChunks>=MAXCHUNKS)) return(0);
-  P=(byte *)malloc(Size);
+  P=(uint8_t *)malloc(Size);
   if(P) Chunks[NChunks++]=P;
 
   return(P);
@@ -429,18 +429,18 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   };
 
   /*** CMOS ROM default values: ***/
-  static const byte RTCInit[4][13]  = // 4*13 _nibbles_ - only b3-0 are used
+  static const uint8_t RTCInit[4][13]  = // 4*13 _nibbles_ - only b3-0 are used
   { // see https://www.msx.org/wiki/Ricoh_RP-5C01
     {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // Current Time and Day - bypassed in RTCIn()
     {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // Alarm, Hour Mode, Year Type
 //  {0xa, 0, 0, 1,0xd,1,15, 4, 7, 3, 0, 0, 0 }, // explicitly & correctly set Adjust, Screen, Beep, Logo color, Language & others, or ..
     {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },  // .. will be initialized to default when zeroed - store with SET SCREEN
-    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }  // Title, Password, Prompt
+    {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }  // Title, Passuint16_t, Prompt
   };
 
   int *T,I,J,K;
-  byte *P;
-  word A;
+  uint8_t *P;
+  uint16_t A;
   char *sha1;
   int FirstCart=0;
 
@@ -518,7 +518,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     J=LoadFNT(FNTName);
 
   /* Try loading CMOS memory contents */
-  if(!LoadROM("CMOS.ROM",sizeof(RTC),(byte *)RTC))
+  if(!LoadROM("CMOS.ROM",sizeof(RTC),(uint8_t *)RTC))
      memcpy(RTC,RTCInit,sizeof(RTC));
 
   /* Try loading Kanji alphabet ROM */
@@ -650,10 +650,10 @@ void TrashMSX(void)
 int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 {
   /*** VDP status register states: ***/
-  static const byte VDPSInit[16] = { 0x9F,0,0x6C,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+  static const uint8_t VDPSInit[16] = { 0x9F,0,0x6C,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
   /*** VDP control register states: ***/
-  static const byte VDPInit[64]  =
+  static const uint8_t VDPInit[64]  =
   {
     0x00,0x10,0xFF,0xFF,0xFF,0xFF,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -673,7 +673,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     0x00208020,0x00C040A0,0x00A0A0A0,0x00E0E0E0
   };
 
-  byte *P1,*P2;
+  uint8_t *P1,*P2;
   int J,I;
 
   /* If changing hardware model, load new system ROMs */
@@ -946,11 +946,11 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 }
 
 /** RdZ80() **************************************************/
-/** Z80 emulation calls this function to read a byte from   **/
+/** Z80 emulation calls this function to read a uint8_t from   **/
 /** address A in the Z80 address space. Also see OpZ80() in **/
 /** Z80.c which is a simplified code-only RdZ80() version.  **/
 /*************************************************************/
-byte RdZ80(word A)
+uint8_t RdZ80(uint16_t A)
 {
   /* Filter out everything but [xx11 1111 1xxx 1xxx] */
   if((A&0x3F88)!=0x3F88) return(RAM[A>>13][A&0x1FFF]);
@@ -981,10 +981,10 @@ byte RdZ80(word A)
 }
 
 /** WrZ80() **************************************************/
-/** Z80 emulation calls this function to write byte V to    **/
+/** Z80 emulation calls this function to write uint8_t V to    **/
 /** address A of Z80 address space.                         **/
 /*************************************************************/
-void WrZ80(word A,byte V)
+void WrZ80(uint16_t A,uint8_t V)
 {
   /* Secondary slot selector */
   if(A==0xFFFF) { SSlot(V);return; }
@@ -1026,10 +1026,10 @@ void WrZ80(word A,byte V)
 }
 
 /** InZ80() **************************************************/
-/** Z80 emulation calls this function to read a byte from   **/
+/** Z80 emulation calls this function to read a uint8_t from   **/
 /** a given I/O port.                                       **/
 /*************************************************************/
-byte InZ80(word Port)
+uint8_t InZ80(uint16_t Port)
 {
   /* MSX only uses 256 IO ports */
   Port&=0xFF;
@@ -1174,12 +1174,12 @@ case 0xD4: /* FDC IRQ/DRQ */
 }
 
 /** OutZ80() *************************************************/
-/** Z80 emulation calls this function to write byte V to a  **/
+/** Z80 emulation calls this function to write uint8_t V to a  **/
 /** given I/O port.                                         **/
 /*************************************************************/
-void OutZ80(word Port,byte Value)
+void OutZ80(uint16_t Port,uint8_t Value)
 {
-  byte I,J;
+  uint8_t I,J;
 
   Port&=0xFF;
   switch(Port)
@@ -1239,7 +1239,7 @@ case 0x99: /* VDP Address Latch */
       case 0x00:
       case 0x40:
         /* Set the VRAM access address */
-        VAddr=(((word)Value<<8)+ALatch)&0x3FFF;
+        VAddr=(((uint16_t)Value<<8)+ALatch)&0x3FFF;
         /* When set for reading, perform first read */
         if(!(Value&0x40))
         {
@@ -1260,7 +1260,7 @@ case 0x9A: /* VDP Palette Latch */
   if(PKey) { PLatch=Value;PKey=0; }
   else
   {
-    byte R,G,B;
+    uint8_t R,G,B;
     /* New palette entry written */
     PKey=1;
     J=VDP[16];
@@ -1375,13 +1375,13 @@ case 0xFF: /* Mapper page at C000h */
 /** Switch ROM Mapper pages. This function is supposed to   **/
 /** be called when ROM page registers are written to.       **/
 /*************************************************************/
-void MapROM(word A,byte V)
+void MapROM(uint16_t A,uint8_t V)
 {
-  byte *P;
-  byte J  = A>>14;           /* 16kB page number 0-3  */
-  byte PS = PSL[J];          /* Primary slot number   */
-  byte SS = SSL[J];          /* Secondary slot number */
-  byte I  = CartMap[PS][SS]; /* Cartridge number      */
+  uint8_t *P;
+  uint8_t J  = A>>14;           /* 16kB page number 0-3  */
+  uint8_t PS = PSL[J];          /* Primary slot number   */
+  uint8_t SS = SSL[J];          /* Secondary slot number */
+  uint8_t I  = CartMap[PS][SS]; /* Cartridge number      */
 
   /* Drop out if no cartridge in that slot */
   if(I>=MAXSLOTS) return;
@@ -1660,9 +1660,9 @@ void MapROM(word A,byte V)
 /** Switch primary memory slots. This function is called    **/
 /** when value in port A8h changes.                         **/
 /*************************************************************/
-void PSlot(byte V)
+void PSlot(uint8_t V)
 {
-  byte J,I;
+  uint8_t J,I;
 
   if(PSLReg!=V)
     for(PSLReg=V,J=0;J<4;++J,V>>=2)
@@ -1680,9 +1680,9 @@ void PSlot(byte V)
 /** Switch secondary memory slots. This function is called  **/
 /** when value in (FFFFh) changes.                          **/
 /*************************************************************/
-void SSlot(byte V)
+void SSlot(uint8_t V)
 {
-  byte J,I;
+  uint8_t J,I;
 
   /* Cartridge slots do not have subslots, fix them at 0:0:0:0 */
   if((PSL[3]==1)||(PSL[3]==2)) V=0x00;
@@ -1707,7 +1707,7 @@ void SSlot(byte V)
 /** Set or reset IRQ. Returns IRQ vector assigned to        **/
 /** CPU.IRequest. When upper bit of IRQ is 1, IRQ is reset. **/
 /*************************************************************/
-word SetIRQ(byte IRQ)
+uint16_t SetIRQ(uint8_t IRQ)
 {
   if(IRQ&0x80) IRQPending&=IRQ; else IRQPending|=IRQ;
   CPU.IRequest=IRQPending? INT_IRQ:INT_NONE;
@@ -1717,9 +1717,9 @@ word SetIRQ(byte IRQ)
 /** SetScreen() **********************************************/
 /** Change screen mode. Returns new screen mode.            **/
 /*************************************************************/
-byte SetScreen(void)
+uint8_t SetScreen(void)
 {
-  byte I,J;
+  uint8_t I,J;
 
   switch(((VDP[0]&0x0E)>>1)|(VDP[1]&0x18))
   {
@@ -1757,9 +1757,9 @@ byte SetScreen(void)
 /** Set MegaROM pages for a given slot. SetMegaROM() always **/
 /** assumes 8kB pages.                                      **/
 /*************************************************************/
-void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3)
+void SetMegaROM(int Slot,uint8_t P0,uint8_t P1,uint8_t P2,uint8_t P3)
 {
-  byte PS,SS;
+  uint8_t PS,SS;
 
   /* @@@ ATTENTION: MUST ADD SUPPORT FOR SRAM HERE!   */
   /* @@@ The FFh value must be treated as a SRAM page */
@@ -1795,9 +1795,9 @@ void SetMegaROM(int Slot,byte P0,byte P1,byte P2,byte P3)
 /** VDPOut() *************************************************/
 /** Write value into a given VDP register.                  **/
 /*************************************************************/
-void VDPOut(byte R,byte V)
+void VDPOut(uint8_t R,uint8_t V)
 {
-  byte J;
+  uint8_t J;
 
   switch(R)
   {
@@ -1855,7 +1855,7 @@ void VDPOut(byte R,byte V)
 /** Printer() ************************************************/
 /** Send a character to the printer.                        **/
 /*************************************************************/
-void Printer(byte V)
+void Printer(uint8_t V)
 {
 }
 
@@ -1863,18 +1863,18 @@ void Printer(byte V)
 /** This function is called on each write to PPI to make    **/
 /** key click sound, motor relay clicks, and so on.         **/
 /*************************************************************/
-void PPIOut(byte New,byte Old)
+void PPIOut(uint8_t New,uint8_t Old)
 {
 }
 
 /** RTCIn() **************************************************/
 /** Read value from a given RTC register.                   **/
 /*************************************************************/
-byte RTCIn(byte R)
+uint8_t RTCIn(uint8_t R)
 {
   static time_t PrevTime;
   static struct tm TM;
-  byte J;
+  uint8_t J;
   time_t CurTime;
 
   /* Only 16 registers/mode */
@@ -1924,13 +1924,13 @@ byte RTCIn(byte R)
 /** Refresh screen, check keyboard and sprites. Call this   **/
 /** function on each interrupt.                             **/
 /*************************************************************/
-word LoopZ80(Z80 *R)
+uint16_t LoopZ80(Z80 *R)
 {
-  static byte BFlag=0;
-  static byte BCount=0;
+  static uint8_t BFlag=0;
+  static uint8_t BCount=0;
   static int  UCount=0;
-  static byte ACount=0;
-  static byte Drawing=0;
+  static uint8_t ACount=0;
+  static uint8_t Drawing=0;
   int J;
 
   /* Flip HRefresh bit */
@@ -2155,7 +2155,7 @@ word LoopZ80(Z80 *R)
 int CheckSprites(void)
 {
   unsigned int I,J,LS,LD;
-  byte DH,DV,*S,*D,*PS,*PD,*T;
+  uint8_t DH,DV,*S,*D,*PS,*PD,*T;
 
   /* Must be showing sprites */
   if(SpritesOFF||!ScrMode||(ScrMode>=MAXSCREEN+1)) return(0);
@@ -2230,14 +2230,14 @@ int CheckSprites(void)
 /** Compute 16bit emulation state ID used to identify .STA  **/
 /** files.                                                  **/
 /*************************************************************/
-word StateID(void)
+uint16_t StateID(void)
 {
-  word ID;
+  uint16_t ID;
   int J,I;
 
   ID=0x0000;
 
-  /* Add up cartridge ROMs, BIOS, BASIC, ExtBIOS, and DiskBIOS bytes */
+  /* Add up cartridge ROMs, BIOS, BASIC, ExtBIOS, and DiskBIOS uint8_ts */
   for(I=0;I<MAXSLOTS;++I)
     if(ROMData[I]) for(J=0;J<(ROMMask[I]+1)*0x2000;++J) ID+=I^ROMData[I][J];
   if(MemMap[0][0][0]&&(MemMap[0][0][0]!=EmptyRAM))
@@ -2280,7 +2280,7 @@ char *MakeFileName(const char *Name,const char *Ext)
 /** Change tape image. ChangeTape(0) closes current image.  **/
 /** Returns 1 on success, 0 on failure.                     **/
 /*************************************************************/
-byte ChangeTape(const char *FileName)
+uint8_t ChangeTape(const char *FileName)
 {
   tape_type = NO_TAPE;
 
@@ -2356,9 +2356,9 @@ void ChangePrinter(const char *FileName)
 /** image if Name=0 was given. Creates a new disk image if  **/
 /** Name="" was given. Returns 1 on success or 0 on failure.**/
 /*************************************************************/
-byte ChangeDisk(byte N,const char *FileName)
+uint8_t ChangeDisk(uint8_t N,const char *FileName)
 {
-  byte *P;
+  uint8_t *P;
 
   /* We only have MAXDRIVES drives */
   if(N>=MAXDRIVES) return(0);
@@ -2538,7 +2538,7 @@ int ApplyCheats(void)
 /*************************************************************/
 int Cheats(int Switch)
 {
-  byte *P,*Base;
+  uint8_t *P,*Base;
   int J,Size;
 
   switch(Switch)
@@ -2609,7 +2609,7 @@ int Cheats(int Switch)
 /** GuessROM() ***********************************************/
 /** Guess MegaROM mapper of a ROM.                          **/
 /*************************************************************/
-int GuessROM(const byte *Buf,int Size)
+int GuessROM(const uint8_t *Buf,int Size)
 {
   int J,I,K,Result,ROMCount[MAXMAPPERS];
   char S[256];
@@ -2708,7 +2708,7 @@ int GuessROM(const byte *Buf,int Size)
 /** MSX_FIXEDFONT option is enabled. LoadFNT(0) frees the   **/
 /** font buffer. Returns 1 on success, 0 on failure.        **/
 /*************************************************************/
-byte LoadFNT(const char *FileName)
+uint8_t LoadFNT(const char *FileName)
 {
   RFILE *F;
 
@@ -2731,11 +2731,11 @@ byte LoadFNT(const char *FileName)
 /** Load a file, allocating memory as needed. Returns addr. **/
 /** of the allocated space or 0 if failed.                  **/
 /*************************************************************/
-byte *LoadROM(const char *Name,int Size,byte *Buf)
+uint8_t *LoadROM(const char *Name,int Size,uint8_t *Buf)
 {
   char path[512];
   RFILE *F;
-  byte *P;
+  uint8_t *P;
   int J;
 
   /* Can't give address without size! */
@@ -2800,7 +2800,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
 {
   int64_t Len;
   int C1, C2, Pages, ROM64, BASIC;
-  byte *P,PS,SS;
+  uint8_t *P,PS,SS;
   char *T;
   RFILE *F;
 
@@ -3035,7 +3035,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
   {
     /* Free previous SRAM resources */
     FreeMemory(SRAMData[Slot]);
-    FreeMemory((byte*)SRAMName[Slot]);
+    FreeMemory((uint8_t*)SRAMName[Slot]);
 
     /* Get SRAM memory */
     SRAMData[Slot]=GetMemory(0x4000);
@@ -3049,7 +3049,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
     {
       /* Compose SRAM file name */
       strcpy(SRAMName[Slot],FileName);
-      T = (byte*)(const char*)strrchr(SRAMName[Slot],'.');
+      T = (uint8_t*)(const char*)strrchr(SRAMName[Slot],'.');
       if(T)
          strcpy((char*)T,".sav");
       else
@@ -3099,7 +3099,7 @@ int LoadCart(const char *FileName,int Slot,int Type)
 
 /** LoadCHT() ************************************************/
 /** Load cheats from .CHT file. Cheat format is either      **/
-/** 00XXXXXX-XX (one byte) or 00XXXXXX-XXXX (two bytes) for **/
+/** 00XXXXXX-XX (one uint8_t) or 00XXXXXX-XXXX (two uint8_ts) for **/
 /** ROM-based cheats and XXXX-XX or XXXX-XXXX for RAM-based **/
 /** cheats. Returns the number of cheats on success, 0 on   **/
 /** failure.                                                **/

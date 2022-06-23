@@ -18,17 +18,17 @@
 /** VDPWrite() ***********************************************/
 /** Use this function to transfer pixel(s) from CPU to VDP. **/
 /*************************************************************/
-void VDPWrite(byte V);
+void VDPWrite(uint8_t V);
 
 /** VDPRead() ************************************************/
 /** Use this function to transfer pixel(s) from VDP to CPU. **/
 /*************************************************************/
-byte VDPRead(void);
+uint8_t VDPRead(void);
 
 /** VDPDraw() ************************************************/
 /** Perform a given V9938 graphical operation.              **/
 /*************************************************************/
-byte VDPDraw(byte Op);
+uint8_t VDPDraw(uint8_t Op);
 
 /** LoopVDP() ************************************************/
 /** Perform a number of steps of the active operation       **/

@@ -13,13 +13,11 @@
 /*************************************************************/
 #ifndef I8255_H
 #define I8255_H
+
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef BYTE_TYPE_DEFINED
-#define BYTE_TYPE_DEFINED
-typedef unsigned char byte;
 #endif
 
 /** I8255 ****************************************************/
@@ -27,9 +25,9 @@ typedef unsigned char byte;
 /*************************************************************/
 typedef struct
 {
-  byte R[4];         /* Registers    */
-  byte Rout[3];      /* Output ports */
-  byte Rin[3];       /* Input ports  */
+  uint8_t R[4];         /* Registers    */
+  uint8_t Rout[3];      /* Output ports */
+  uint8_t Rin[3];       /* Input ports  */
 } I8255;
 
 /** Reset8255 ************************************************/
@@ -42,13 +40,13 @@ void Reset8255(I8255 *D);
 /** Write value V into i8255 register A. Returns 0 when A   **/
 /** is out of range, 1 otherwise.                           **/
 /*************************************************************/
-byte Write8255(I8255 *D,byte A,byte V);
+uint8_t Write8255(I8255 *D,uint8_t A,uint8_t V);
 
 /** Read8255 *************************************************/
 /** Read value from an i8255 register A. Returns 0 when A   **/
 /** is out of range.                                        **/
 /*************************************************************/
-byte Read8255(I8255 *D,byte A);
+uint8_t Read8255(I8255 *D,uint8_t A);
 
 #ifdef __cplusplus
 }

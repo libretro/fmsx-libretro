@@ -15,11 +15,11 @@
 
 static int FirstLine = 10 + BORDER;/* First scanline in XBuf */
 
-static void  Sprites(byte Y,pixel *Line);
-static void  ColorSprites(byte Y,byte *ZBuf);
-static pixel *RefreshBorder(byte Y,pixel C);
-static void  ClearLine(pixel *P,pixel C);
-static pixel YJKColor(int Y,int J,int K);
+static void  Sprites(uint8_t Y,uint16_t *Line);
+static void  ColorSprites(uint8_t Y,uint8_t *ZBuf);
+static uint16_t *RefreshBorder(uint8_t Y,uint16_t C);
+static void  ClearLine(uint16_t *P,uint16_t C);
+static uint16_t YJKColor(int Y,int J,int K);
 
 /** RefreshScreen() ******************************************/
 /** Refresh screen. This function is called in the end of   **/
@@ -29,9 +29,9 @@ extern void PutImage(void);
 void RefreshScreen(void) { PutImage(); }
 
 /** ClearLine() **********************************************/
-/** Clear 256 pixels from P with color C.                   **/
+/** Clear 256 uint16_ts from P with color C.                   **/
 /*************************************************************/
-static void ClearLine(pixel *P,pixel C)
+static void ClearLine(uint16_t *P,uint16_t C)
 {
   int J;
 
@@ -42,15 +42,13 @@ static void ClearLine(pixel *P,pixel C)
 /** Given a color in YJK format, return the corresponding   **/
 /** palette entry.                                          **/
 /*************************************************************/
-INLINE pixel YJKColor(int Y,int J,int K)
+INLINE uint16_t YJKColor(int Y,int J,int K)
 {
-  int R,G,B;
-
   // See http://map.grauw.nl/articles/yjk/
   // YJK566 (17 bits of information, 131072 values) translates to RGB555 (15 bits, 32768 values)
-  R=(Y+J)<<3;
-  G=(Y+K)<<3;
-  B=(5*Y-2*J-K)<<1;
+  int R=(Y+J)<<3;
+  int G=(Y+K)<<3;
+  int B=(5*Y-2*J-K)<<1;
 
   // .. but because of overlapping & clipping that results in 16384 + 2884 = 19268 distinct colours
   // (SCREEN10+11 YJK466, 16bits: 8192 + 4307 = 12499, plus 16 palette colours)
@@ -66,9 +64,9 @@ INLINE pixel YJKColor(int Y,int J,int K)
 /** the screen border. It returns a pointer to the start of **/
 /** scanline Y in XBuf or 0 if scanline is beyond XBuf.     **/
 /*************************************************************/
-pixel *RefreshBorder(byte Y,pixel C)
+uint16_t *RefreshBorder(uint8_t Y,uint16_t C)
 {
-  pixel *P;
+  uint16_t *P;
   int H,L,A;
 
   /* First line number in the buffer */
@@ -81,7 +79,7 @@ pixel *RefreshBorder(byte Y,pixel C)
   XPal[0]=(!BGColor||SolidColor0)? XPal0:XPal[BGColor];
 
   /* Start of the buffer */
-  P=(pixel *)XBuf;
+  P=(uint16_t *)XBuf;
 
   if(HiResMode)
   {
@@ -172,11 +170,11 @@ pixel *RefreshBorder(byte Y,pixel C)
 /** This function is called from RefreshLine#() to refresh  **/
 /** sprites in SCREENs 1-3.                                 **/
 /*************************************************************/
-void Sprites(byte Y,pixel *Line)
+void Sprites(uint8_t Y,uint16_t *Line)
 {
-  static const byte SprHeights[4] = { 8,16,16,32 };
-  pixel *P,C;
-  byte OH,IH,*PT,*AT;
+  static const uint8_t SprHeights[4] = { 8,16,16,32 };
+  uint16_t *P,C;
+  uint8_t OH,IH,*PT,*AT;
   unsigned int M;
   int L,K;
 
@@ -256,7 +254,7 @@ void Sprites(byte Y,pixel *Line)
         {
           /* Big (zoomed) sprite */
 
-          /* Draw left 16 pixels of the sprite */
+          /* Draw left 16 uint16_ts of the sprite */
           if(K&0xFF00)
           {
             if(K&0x8000) P[1]=P[0]=C;
@@ -269,7 +267,7 @@ void Sprites(byte Y,pixel *Line)
             if(K&0x0100) P[15]=P[14]=C;
           }
 
-          /* Draw right 16 pixels of the sprite */
+          /* Draw right 16 uint16_ts of the sprite */
           if(K&0x00FF)
           {
             if(K&0x0080) P[17]=P[16]=C;
@@ -286,7 +284,7 @@ void Sprites(byte Y,pixel *Line)
         {
           /* Normal (unzoomed) sprite */
 
-          /* Draw left 8 pixels of the sprite */
+          /* Draw left 8 uint16_ts of the sprite */
           if(K&0xFF00)
           {
             if(K&0x8000) P[0]=C;
@@ -299,7 +297,7 @@ void Sprites(byte Y,pixel *Line)
             if(K&0x0100) P[7]=C;
           }
 
-          /* Draw right 8 pixels of the sprite */
+          /* Draw right 8 uint16_ts of the sprite */
           if(K&0x00FF)
           {
             if(K&0x0080) P[8]=C;
@@ -321,11 +319,11 @@ void Sprites(byte Y,pixel *Line)
 /** color sprites in SCREENs 4-8. The result is returned in **/
 /** ZBuf, whose size must be 320 bytes (32+256+32).         **/
 /*************************************************************/
-void ColorSprites(byte Y,byte *ZBuf)
+void ColorSprites(uint8_t Y,uint8_t *ZBuf)
 {
-  static const byte SprHeights[4] = { 8,16,16,32 };
-  byte C,IH,OH,J,OrThem;
-  byte *P,*PT,*AT;
+  static const uint8_t SprHeights[4] = { 8,16,16,32 };
+  uint8_t C,IH,OH,J,OrThem;
+  uint8_t *P,*PT,*AT;
   int L,K;
   unsigned int M;
 
@@ -350,7 +348,7 @@ void ColorSprites(byte Y,byte *ZBuf)
     M<<=1;AT+=4;              /* Iterating through SprTab      */
     K=AT[0];                  /* Read Y from SprTab            */
     if(K==216) break;         /* Iteration terminates if Y=216 */
-    K=(byte)(K-VScroll);      /* Sprite's actual Y coordinate  */
+    K=(uint8_t)(K-VScroll);      /* Sprite's actual Y coordinate  */
     if(K>256-IH) K-=256;       /* Y coordinate may be negative  */
 
     /* Mark all valid sprites with 1s, break at MAXSPRITE2 sprites */
@@ -377,7 +375,7 @@ void ColorSprites(byte Y,byte *ZBuf)
   for(;M;M>>=1,AT-=4)
     if(M&1)
     {
-      K=(byte)(AT[0]-VScroll); /* K = sprite Y coordinate */
+      K=(uint8_t)(AT[0]-VScroll); /* K = sprite Y coordinate */
       if(K>256-IH) K-=256;        /* Y coordinate may be negative */
 
       J=Y-K-1;
@@ -500,21 +498,21 @@ void ColorSprites(byte Y,byte *ZBuf)
 /** RefreshLineF() *******************************************/
 /** Dummy refresh function called for non-existing screens. **/
 /*************************************************************/
-void RefreshLineF(byte Y)
+void RefreshLineF(uint8_t Y)
 {
-  pixel *P=RefreshBorder(Y,XPal[BGColor]);
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(P) ClearLine(P,XPal[BGColor]);
 }
 
 /** RefreshLine0() *******************************************/
 /** Refresh line Y (0..191/211) of SCREEN0.                 **/
 /*************************************************************/
-void RefreshLine0(byte Y)
+void RefreshLine0(uint8_t Y)
 {
-  pixel *P,FC,BC;
-  byte X,*T,*G;
-  BC=XPal[BGColor];
-  P=RefreshBorder(Y,BC);
+  uint16_t FC;
+  uint8_t X,*T,*G;
+  uint16_t BC=XPal[BGColor];
+  uint16_t *P=RefreshBorder(Y,BC);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,BC);
@@ -544,11 +542,11 @@ void RefreshLine0(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN1, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine1(byte Y)
+void RefreshLine1(uint8_t Y)
 {
-  pixel FC,BC;
-  byte K,X,*T,*G;
-  pixel *P=RefreshBorder(Y,XPal[BGColor]);
+  uint16_t FC,BC;
+  uint8_t K,X,*T,*G;
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P)
      return;
 
@@ -581,13 +579,12 @@ void RefreshLine1(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN2, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine2(byte Y)
+void RefreshLine2(uint8_t Y)
 {
-  pixel *P,FC,BC;
-  byte K,X,*T;
+  uint16_t FC,BC;
+  uint8_t K,X,*T;
   int I,J;
-
-  P=RefreshBorder(Y,XPal[BGColor]);
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -619,10 +616,10 @@ void RefreshLine2(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN3, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine3(byte Y)
+void RefreshLine3(uint8_t Y)
 {
-  byte X,K,*T,*G;
-  pixel *P=RefreshBorder(Y,XPal[BGColor]);
+  uint8_t X,K,*T,*G;
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -648,14 +645,13 @@ void RefreshLine3(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN4, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine4(byte Y)
+void RefreshLine4(uint8_t Y)
 {
-  pixel *P,FC,BC;
-  byte K,X,C,*T,*R;
+  uint16_t FC,BC;
+  uint8_t K,X,C,*T,*R;
   int I,J;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,XPal[BGColor]);
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -692,13 +688,11 @@ void RefreshLine4(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN5, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine5(byte Y)
+void RefreshLine5(uint8_t Y)
 {
-  pixel *P;
-  byte I,X,*T,*R;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,XPal[BGColor]);
+  uint8_t I,X,*T,*R;
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -736,18 +730,16 @@ void RefreshLine5(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN8, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine8(byte Y)
+void RefreshLine8(uint8_t Y)
 {
-  static byte SprToScr[16] =
+  static uint8_t SprToScr[16] =
   {
     0x00,0x02,0x10,0x12,0x80,0x82,0x90,0x92,
     0x49,0x4B,0x59,0x5B,0xC9,0xCB,0xD9,0xDB
   };
-  pixel *P;
-  byte C,X,*T,*R;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,BPal[VDP[7]]);
+  uint8_t C,X,*T,*R;
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,BPal[VDP[7]]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
@@ -777,14 +769,12 @@ void RefreshLine8(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN10/11, including   **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine10(byte Y)
+void RefreshLine10(uint8_t Y)
 {
-  pixel *P;
-  byte C,X,*T,*R;
+  uint8_t C,X,*T,*R;
   int J,K;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,BPal[VDP[7]]);
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,BPal[VDP[7]]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
@@ -796,7 +786,7 @@ void RefreshLine10(byte Y)
     T=ChrTab+(((int)(Y+VScroll)<<8)&ChrTabM&0xFFFF);
     if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
-    /* Draw first 4 pixels */
+    /* Draw first 4 uint16_ts */
     C=R[0];P[0]=C? XPal[C]:BPal[VDP[7]];
     C=R[1];P[1]=C? XPal[C]:BPal[VDP[7]];
     C=R[2];P[2]=C? XPal[C]:BPal[VDP[7]];
@@ -822,14 +812,12 @@ void RefreshLine10(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN12, including      **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine12(byte Y)
+void RefreshLine12(uint8_t Y)
 {
-  pixel *P;
-  byte C,X,*T,*R;
+  uint8_t C,X,*T,*R;
   int J,K;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,BPal[VDP[7]]);
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,BPal[VDP[7]]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,BPal[VDP[7]]);
@@ -844,7 +832,7 @@ void RefreshLine12(byte Y)
       + (HScroll&0xFC);
     if (FlipEvenOdd && OddPage && VRAM<=T-0x10000) T-=0x10000;
 
-    /* Draw first 4 pixels */
+    /* Draw first 4 uint16_ts */
     C=R[0];P[0]=C? XPal[C]:BPal[VDP[7]];
     C=R[1];P[1]=C? XPal[C]:BPal[VDP[7]];
     C=R[2];P[2]=C? XPal[C]:BPal[VDP[7]];
@@ -872,13 +860,11 @@ void RefreshLine12(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN6, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine6(byte Y)
+void RefreshLine6(uint8_t Y)
 {
-  pixel *P;
-  byte X,*T,*R,C;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,XPal[BGColor&0x03]);
+  uint8_t X,*T,*R,C;
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor&0x03]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor&0x03]);
@@ -909,13 +895,11 @@ void RefreshLine6(byte Y)
 /** Refresh line Y (0..191/211) of SCREEN7, including       **/
 /** sprites in this line.                                   **/
 /*************************************************************/
-void RefreshLine7(byte Y)
+void RefreshLine7(uint8_t Y)
 {
-  pixel *P;
-  byte C,X,*T,*R;
-  byte ZBuf[320];
-
-  P=RefreshBorder(Y,XPal[BGColor]);
+  uint8_t C,X,*T,*R;
+  uint8_t ZBuf[320];
+  uint16_t *P=RefreshBorder(Y,XPal[BGColor]);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,XPal[BGColor]);
@@ -945,13 +929,12 @@ void RefreshLine7(byte Y)
 /** RefreshLineTx80() ****************************************/
 /** Refresh line Y (0..191/211) of TEXT80.                  **/
 /*************************************************************/
-void RefreshLineTx80(byte Y)
+void RefreshLineTx80(uint8_t Y)
 {
-  pixel *P,FC,BC;
-  byte X,M,*T,*C,*G;
-
-  BC=XPal[BGColor];
-  P=RefreshBorder(Y,BC);
+  uint16_t FC;
+  uint8_t X,M,*T,*C,*G;
+  uint16_t BC=XPal[BGColor];
+  uint16_t *P=RefreshBorder(Y,BC);
   if(!P) return;
 
   if(!ScreenON) ClearLine(P,BC);

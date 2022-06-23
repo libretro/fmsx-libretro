@@ -13,6 +13,8 @@
 #ifndef EMULIB_H
 #define EMULIB_H
 
+#include <stdint.h>
+
 /** Button Bits **********************************************/
 /** Bits returned by GetJoystick() and WaitJoystick().      **/
 /*************************************************************/
@@ -64,29 +66,11 @@
 extern "C" {
 #endif
 
-/** pixel ****************************************************/
-/** Pixels may be either 8bit, or 16bit, or 32bit. When no  **/
-/** BPP* specified, we assume the pixel to have the largest **/
-/** size and default to GetColor().                         **/
-/*************************************************************/
-#ifndef PIXEL_TYPE_DEFINED
-#define PIXEL_TYPE_DEFINED
-typedef unsigned short pixel;
-#endif
-
-/** sample ***************************************************/
-/** Audio samples may be either 8bit or 16bit.              **/
-/*************************************************************/
-#ifndef SAMPLE_TYPE_DEFINED
-#define SAMPLE_TYPE_DEFINED
-typedef signed short sample;
-#endif
-
 /** WriteAudio() *********************************************/
 /** Write up to a given number of samples to audio buffer.  **/
 /** Returns the number of samples written.                  **/
 /*************************************************************/
-unsigned int WriteAudio(sample *Data,unsigned int Length);
+unsigned int WriteAudio(int16_t *Data,unsigned int Length);
 
 #ifdef __cplusplus
 }

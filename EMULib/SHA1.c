@@ -2,11 +2,6 @@
 
 #include <streams/file_stream_transforms.h>
 
-#ifndef BYTE_TYPE_DEFINED
-#define BYTE_TYPE_DEFINED
-typedef unsigned char byte;
-#endif
-
 #define ROTATE(Data,Shift) \
   ((((Data)<<(Shift))|((Data)>>(32-(Shift))))&0xFFFFFFFF)
 
@@ -203,7 +198,7 @@ char* SHA1Sum(const char* FileName)
 {
   char* S;
   SHA1 C;
-  byte *Buf;
+  uint8_t *Buf;
   int Len;
   RFILE *F;
 

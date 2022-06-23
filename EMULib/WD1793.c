@@ -23,7 +23,7 @@ extern retro_log_printf_t log_cb;
 /** disks. When Disks=WD1793_EJECT, eject inserted disks,   **/
 /** freeing memory.                                         **/
 /*************************************************************/
-void Reset1793(WD1793 *D,FDIDisk *Disks,byte Eject)
+void Reset1793(WD1793 *D,FDIDisk *Disks,uint8_t Eject)
 {
   int J;
 
@@ -60,9 +60,9 @@ void Reset1793(WD1793 *D,FDIDisk *Disks,byte Eject)
 /** Save WD1793 state to a given buffer of given maximal    **/
 /** size. Returns number of bytes saved or 0 on failure.    **/
 /*************************************************************/
-unsigned int Save1793(const WD1793 *D,byte *Buf,unsigned int Size)
+unsigned int Save1793(const WD1793 *D,uint8_t *Buf,unsigned int Size)
 {
-  unsigned int N = (const byte *)&(D->Ptr) - (const byte *)D;
+  unsigned int N = (const uint8_t *)&(D->Ptr) - (const uint8_t *)D;
   if(N>Size) return(0);
   memcpy(Buf,D,N);
   return(N);
@@ -72,9 +72,9 @@ unsigned int Save1793(const WD1793 *D,byte *Buf,unsigned int Size)
 /** Load WD1793 state from a given buffer of given maximal  **/
 /** size. Returns number of bytes loaded or 0 on failure.   **/
 /*************************************************************/
-unsigned int Load1793(WD1793 *D,byte *Buf,unsigned int Size)
+unsigned int Load1793(WD1793 *D,uint8_t *Buf,unsigned int Size)
 {
-  unsigned int N = (const byte *)&(D->Ptr) - (const byte *)D;
+  unsigned int N = (const uint8_t *)&(D->Ptr) - (const uint8_t *)D;
   if(N>Size) return(0);
   memcpy(D,Buf,N);
   return(N);
@@ -84,7 +84,7 @@ unsigned int Load1793(WD1793 *D,byte *Buf,unsigned int Size)
 /** Read value from a WD1793 register A. Returns read data  **/
 /** on success or 0xFF on failure (bad register address).   **/
 /*************************************************************/
-byte Read1793(WD1793 *D,byte A)
+uint8_t Read1793(WD1793 *D,uint8_t A)
 {
   switch(A)
   {
@@ -150,7 +150,7 @@ byte Read1793(WD1793 *D,byte A)
 /** Write value V into WD1793 register A. Returns DRQ/IRQ   **/
 /** values.                                                 **/
 /*************************************************************/
-byte Write1793(WD1793 *D,byte A,byte V)
+uint8_t Write1793(WD1793 *D,uint8_t A,uint8_t V)
 {
   int J;
 

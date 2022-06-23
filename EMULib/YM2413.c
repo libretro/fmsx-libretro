@@ -45,7 +45,7 @@ void Reset2413(YM2413 *D,int First)
 /** WrCtrl2413() *********************************************/
 /** Write a value V to the OPLL Control Port.               **/
 /*************************************************************/
-void WrCtrl2413(YM2413 *D,byte V)
+void WrCtrl2413(YM2413 *D,uint8_t V)
 {
   D->Latch=V&0x3F;
 }
@@ -53,7 +53,7 @@ void WrCtrl2413(YM2413 *D,byte V)
 /** WrData2413() *********************************************/
 /** Write a value V to the OPLL Data Port.                  **/
 /*************************************************************/
-void WrData2413(YM2413 *D,byte V)
+void WrData2413(YM2413 *D,uint8_t V)
 {
   Write2413(D,D->Latch,V);
 }
@@ -62,9 +62,9 @@ void WrData2413(YM2413 *D,byte V)
 /** Call this function to output a value V into the sound   **/
 /** chip.                                                   **/
 /*************************************************************/
-void Write2413(YM2413 *D,byte R,byte V)
+void Write2413(YM2413 *D,uint8_t R,uint8_t V)
 {
-  byte C,Oct;
+  uint8_t C,Oct;
   int Frq;
 
   /* OPLL registers are 0..63 */
@@ -160,7 +160,7 @@ void Write2413(YM2413 *D,byte R,byte V)
 /** should be YM2413_SYNC/YM2413_ASYNC to set/reset sync,   **/
 /** or YM2413_FLUSH to leave sync mode as it is.            **/
 /*************************************************************/
-void Sync2413(YM2413 *D,byte Sync)
+void Sync2413(YM2413 *D,uint8_t Sync)
 {
   int J,I;
 

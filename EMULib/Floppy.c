@@ -58,9 +58,9 @@
 /** Finds first free cluster starting from the given one.   **/
 /** Returns cluster number on success or 0 on failure.      **/
 /*************************************************************/
-static int FindFreeCluster(const byte *Dsk,int Start)
+static int FindFreeCluster(const uint8_t *Dsk,int Start)
 {
-  const byte *FE;
+  const uint8_t *FE;
   int J;
 
   /* Search for the first zeroed entry */
@@ -82,14 +82,14 @@ static int FindFreeCluster(const byte *Dsk,int Start)
 /** Create disk image in Dsk or allocate memory when Dsk=0. **/
 /** Returns pointer to the disk image or 0 on failure.      **/
 /*************************************************************/
-byte *DSKCreate(byte *Dsk,const char *Label)
+uint8_t *DSKCreate(uint8_t *Dsk,const char *Label)
 {
-  byte *FAT,*DIR,*DAT;
+  uint8_t *FAT,*DIR,*DAT;
 
   /* Allocate memory if needed */
   if(!Dsk)
   {
-    Dsk=(byte *)malloc(DSK_DISK_SIZE);
+    Dsk=(uint8_t *)malloc(DSK_DISK_SIZE);
     if(!Dsk) return(0);
   }
 
@@ -140,9 +140,9 @@ byte *DSKCreate(byte *Dsk,const char *Label)
 /** Create file with a given name, return file ID, or 0 on  **/
 /** failure.                                                **/
 /*************************************************************/
-int DSKFile(byte *Dsk,const char *FileName)
+int DSKFile(uint8_t *Dsk,const char *FileName)
 {
-  byte *P;
+  uint8_t *P;
   int I,J;
 
   /* See if file exists */
@@ -176,7 +176,7 @@ int DSKFile(byte *Dsk,const char *FileName)
 /** DSKFileName() ********************************************/
 /** Return name of a file with a given ID or 0 on failure.  **/
 /*************************************************************/
-const char *DSKFileName(const byte *Dsk,int ID)
+const char *DSKFileName(const uint8_t *Dsk,int ID)
 {
   const char *Name;
 
@@ -190,9 +190,9 @@ const char *DSKFileName(const byte *Dsk,int ID)
 /** DSKFileSize() ********************************************/
 /** Return side of a file with a given ID or 0 on failure.  **/
 /*************************************************************/
-int DSKFileSize(const byte *Dsk,int ID)
+int DSKFileSize(const uint8_t *Dsk,int ID)
 {
-  const byte *Name;
+  const uint8_t *Name;
 
   /* Can't have ID that is out of bounds */
   if((ID<1)||(ID>DSK_DIR_SIZE)) return(0);
@@ -209,9 +209,9 @@ int DSKFileSize(const byte *Dsk,int ID)
 /** Both functions return the number of bytes written or    **/
 /** read from the file, or 0 on failure.                    **/
 /*************************************************************/
-int DSKWrite(byte *Dsk,int ID,const byte *Buf,int Size)
+int DSKWrite(uint8_t *Dsk,int ID,const uint8_t *Buf,int Size)
 {
-  byte *DE,*FE,*FE2,*P;
+  uint8_t *DE,*FE,*FE2,*P;
   int I,J,Written;
 
   /* Can't have ID that is out of bounds */
@@ -269,9 +269,9 @@ int DSKWrite(byte *Dsk,int ID,const byte *Buf,int Size)
   return(Written);
 }
 
-int DSKRead(const byte *Dsk,int ID,byte *Buf,int Size)
+int DSKRead(const uint8_t *Dsk,int ID,uint8_t *Buf,int Size)
 {
-  const byte *P;
+  const uint8_t *P;
   int I,J,Read;
 
   /* Can't have ID that is out of bounds */
@@ -312,9 +312,9 @@ int DSKRead(const byte *Dsk,int ID,byte *Buf,int Size)
 /** Delete file with a given ID. Returns ID on success or 0 **/
 /** on failure.                                             **/
 /*************************************************************/
-int DSKDelete(byte *Dsk,int ID)
+int DSKDelete(uint8_t *Dsk,int ID)
 {
-  byte *DE,*FE,*FE2;
+  uint8_t *DE,*FE,*FE2;
   int J;
 
   /* Can't have ID that is out of bounds */
@@ -362,9 +362,9 @@ int DSKDelete(byte *Dsk,int ID)
 /** functions return pointer to disk contents on success or **/
 /** 0 on failure.                                           **/
 /*************************************************************/
-byte *DSKLoad(const char *Name,byte *Dsk,const char *Label)
+uint8_t *DSKLoad(const char *Name,uint8_t *Dsk,const char *Label)
 {
-  byte *Dsk1,*Buf;
+  uint8_t *Dsk1,*Buf;
   char *Path,FN[32];
   struct stat FS;
   RFILE *F;
@@ -448,7 +448,7 @@ byte *DSKLoad(const char *Name,byte *Dsk,const char *Label)
   return(Dsk1);
 }
 
-const byte *DSKSave(const char *Name,const byte *Dsk)
+const uint8_t *DSKSave(const char *Name,const uint8_t *Dsk)
 {
   const char *T;
   char *Path,*P;

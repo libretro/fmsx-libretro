@@ -30,7 +30,7 @@ void Reset8255(I8255 *D)
 /** Write value V into i8255 register A. Returns 0 when A   **/
 /** is out of range, 1 otherwise.                           **/
 /*************************************************************/
-byte Write8255(I8255 *D,byte A,byte V)
+uint8_t Write8255(I8255 *D,uint8_t A,uint8_t V)
 {
   switch(A)
   {
@@ -69,7 +69,7 @@ byte Write8255(I8255 *D,byte A,byte V)
 /** Read value from an i8255 register A. Returns 0 when A   **/
 /** is out of range.                                        **/
 /*************************************************************/
-byte Read8255(I8255 *D,byte A)
+uint8_t Read8255(I8255 *D,uint8_t A)
 {
   switch(A)
   {

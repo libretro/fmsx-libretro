@@ -23,15 +23,13 @@
 
 #include <streams/file_stream_transforms.h>
 
-void SSlot(byte Value); /* Used to switch secondary slots */
-void PSlot(byte Value); /* Used to switch primary slots   */
-
-extern retro_log_printf_t log_cb;
+void SSlot(uint8_t Value); /* Used to switch secondary slots */
+void PSlot(uint8_t Value); /* Used to switch primary slots   */
 
 /** DiskPresent() ********************************************/
 /** Return 1 if disk drive with a given ID is present.      **/
 /*************************************************************/
-byte DiskPresent(byte ID)
+uint8_t DiskPresent(uint8_t ID)
 {
   return((ID<MAXDRIVES)&&FDD[ID].Data);
 }
@@ -39,9 +37,9 @@ byte DiskPresent(byte ID)
 /** DiskRead() ***********************************************/
 /** Read requested sector from the drive into a buffer.     **/
 /*************************************************************/
-byte DiskRead(byte ID,byte *Buf,int N)
+uint8_t DiskRead(uint8_t ID,uint8_t *Buf,int N)
 {
-  byte *P;
+  uint8_t *P;
 
   if(ID<MAXDRIVES)
   {
@@ -60,9 +58,9 @@ byte DiskRead(byte ID,byte *Buf,int N)
 /** Write contents of the buffer into a given sector of the **/
 /** disk.                                                   **/
 /*************************************************************/
-byte DiskWrite(byte ID,const byte *Buf,int N)
+uint8_t DiskWrite(uint8_t ID,const uint8_t *Buf,int N)
 {
-  byte *P;
+  uint8_t *P;
 
   if(ID<MAXDRIVES)
   {
@@ -87,10 +85,10 @@ byte DiskWrite(byte ID,const byte *Buf,int N)
 /*************************************************************/
 void PatchZ80(Z80 *R)
 {
-  static const byte TapeHeader[8] = { 0x1F,0xA6,0xDE,0xBA,0xCC,0x13,0x7D,0x74 };
+  static const uint8_t TapeHeader[8] = { 0x1F,0xA6,0xDE,0xBA,0xCC,0x13,0x7D,0x74 };
 
   static const struct
-  { int Sectors;byte Heads,Names,PerTrack,PerFAT,PerCluster; }
+  { int Sectors;uint8_t Heads,Names,PerTrack,PerFAT,PerCluster; }
   Info[8] =
   {
     {  720,1,112,9,2,2 },
@@ -103,9 +101,9 @@ void PatchZ80(Z80 *R)
     {  640,2,112,8,1,2 }
   };
 
-  byte Buf[512],Count,PS,SS,N,*P;
+  uint8_t Buf[512],Count,PS,SS,N,*P;
   int J,I,Sector;
-  word Addr;
+  uint16_t Addr;
 
   switch(R->PC.W-2)
   {
@@ -457,6 +455,6 @@ case 0x00F3:
   return;
 
 default:
-  if(log_cb) log_cb(RETRO_LOG_WARN,"Unknown BIOS trap called at PC=%04Xh\n",R->PC.W-2);
+  break;
   }
 }

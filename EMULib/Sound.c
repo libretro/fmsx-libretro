@@ -321,7 +321,7 @@ static void RenderAudio(int *Wave,unsigned int Samples)
 /*************************************************************/
 static unsigned int PlayAudio(int *Wave,unsigned int Samples)
 {
-  sample Buf[256];
+  int16_t Buf[256];
   unsigned int I,K;
   int D;
   /* Check if the buffer contains enough free space */
@@ -332,7 +332,7 @@ static unsigned int PlayAudio(int *Wave,unsigned int Samples)
   for(K=I=J=0;(K<Samples)&&(I==J);K+=I)
   {
     /* Compute number of samples to convert */
-    J = sizeof(Buf)/sizeof(sample);
+    J = sizeof(Buf)/sizeof(int16_t);
     J = Samples-K>J? J:Samples-K;
 
     /* Convert samples */
@@ -377,5 +377,5 @@ unsigned int RenderAndPlayAudio(unsigned int Samples)
   }
 
   /* Return number of samples rendered */
-  return(I);
+  return I;
 }

@@ -46,7 +46,7 @@ static const int Volumes[16] =
 /*************************************************************/
 void Reset8910(AY8910 *D,int ClockHz,int First)
 {
-  static byte RegInit[16] =
+  static uint8_t RegInit[16] =
   {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFD,
     0x00,0x00,0x00,0x00,0x00,0x00,0xFF,0x00
@@ -86,7 +86,7 @@ void Reset8910(AY8910 *D,int ClockHz,int First)
 /** WrCtrl8910() *********************************************/
 /** Write a value V to the PSG Control Port.                **/
 /*************************************************************/
-void WrCtrl8910(AY8910 *D,byte V)
+void WrCtrl8910(AY8910 *D,uint8_t V)
 {
   D->Latch=V&0x0F;
 }
@@ -94,7 +94,7 @@ void WrCtrl8910(AY8910 *D,byte V)
 /** WrData8910() *********************************************/
 /** Write a value V to the PSG Data Port.                   **/
 /*************************************************************/
-void WrData8910(AY8910 *D,byte V)
+void WrData8910(AY8910 *D,uint8_t V)
 {
   Write8910(D,D->Latch,V);
 }
@@ -102,7 +102,7 @@ void WrData8910(AY8910 *D,byte V)
 /** RdData8910() *********************************************/
 /** Read a value from the PSG Data Port.                    **/
 /*************************************************************/
-byte RdData8910(AY8910 *D)
+uint8_t RdData8910(AY8910 *D)
 {
   return(D->R[D->Latch]);
 }
@@ -111,7 +111,7 @@ byte RdData8910(AY8910 *D)
 /** Call this function to output a value V into the sound   **/
 /** chip.                                                   **/
 /*************************************************************/
-void Write8910(AY8910 *D,byte R,byte V)
+void Write8910(AY8910 *D,uint8_t R,uint8_t V)
 {
   int J;
 
@@ -251,7 +251,7 @@ void Loop8910(AY8910 *D,int uSec)
 /** should be AY8910_SYNC/AY8910_ASYNC to set/reset sync,   **/
 /** or AY8910_FLUSH to leave sync mode as it is.            **/
 /*************************************************************/
-void Sync8910(AY8910 *D,byte Sync)
+void Sync8910(AY8910 *D,uint8_t Sync)
 {
   int J,I,K;
   int Freq,Volume,Drums;

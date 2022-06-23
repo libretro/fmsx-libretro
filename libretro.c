@@ -24,13 +24,13 @@
 static bool video_mode_dynamic=false;
 static unsigned frame_number=0;
 static unsigned fps;
-static pixel* image_buffer;
+static uint16_t* image_buffer;
 static unsigned image_buffer_width;
 static unsigned image_buffer_height;
 
-static pixel XPal[80];
-static pixel BPal[256];
-static pixel XPal0;
+static uint16_t XPal[80];
+static uint16_t BPal[256];
+static uint16_t XPal0;
 static bool PaletteFrozen=false;
 
 #ifndef PATH_MAX
@@ -71,18 +71,18 @@ int current_cheat;
 #define SRAM_HEADER 0xA5
 static bool sram_save_phase=false;
 int sram_size = 0;
-byte *sram_content = NULL;
-byte *sram_disk_ptr = NULL;
+uint8_t *sram_content = NULL;
+uint8_t *sram_disk_ptr = NULL;
 
-extern byte *RAMData;
-extern byte *VRAM;
+extern uint8_t *RAMData;
+extern uint8_t *VRAM;
 extern int RAMPages;
 extern int VRAMPages;
-extern byte RTC[4][13];
+extern uint8_t RTC[4][13];
 
 extern int VPeriod;
 
-extern byte DiskROMLoaded;
+extern uint8_t DiskROMLoaded;
 bool require_disk_rom = false;
 
 #define SND_RATE 48000
@@ -95,11 +95,11 @@ bool require_disk_rom = false;
 #define MAX_SCANLINE    (PALVideo?255:242)
 
 #ifdef PSP
-#define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
+#define PIXEL(R,G,B)    (uint16_t)(((31*(B)/255)<<11)|((63*(G)/255)<<5)|(31*(R)/255))
 #elif defined(PS2)
-#define PIXEL(R,G,B)    (pixel)(((31*(B)/255)<<10)|((31*(G)/255)<<5)|(31*(R)/255))
+#define PIXEL(R,G,B)    (uint16_t)(((31*(B)/255)<<10)|((31*(G)/255)<<5)|(31*(R)/255))
 #else
-#define PIXEL(R,G,B)    (pixel)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
+#define PIXEL(R,G,B)    (uint16_t)(((31*(R)/255)<<11)|((63*(G)/255)<<5)|(31*(B)/255))
 #endif
 
 int fmsx_log_level = RETRO_LOG_WARN;
@@ -903,7 +903,7 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
-void set_image_buffer_size(byte screen_mode)
+void set_image_buffer_size(uint8_t screen_mode)
 {
    image_buffer_height = (LastScanline<HEIGHT || !OverscanMode) ? HEIGHT : (LastScanline+1);
    if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
@@ -937,7 +937,7 @@ void PutImage(void)
 
    video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #else
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(pixel));
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
 #endif
    frame_number++;
 
@@ -1374,7 +1374,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
       return false;
 
-   image_buffer = (pixel*)malloc(640*480*sizeof(pixel));
+   image_buffer = (uint16_t*)malloc(640*480*sizeof(uint16_t));
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &ProgDir);
 
@@ -1501,7 +1501,7 @@ bool retro_load_game(const struct retro_game_info *info)
    return true;
 }
 
-void SetColor(byte N,byte R,byte G,byte B)
+void SetColor(uint8_t N,uint8_t R,uint8_t G,uint8_t B)
 {
   if(PaletteFrozen && N<16) return;
   if(N)
@@ -1510,7 +1510,7 @@ void SetColor(byte N,byte R,byte G,byte B)
      XPal0=PIXEL(R,G,B);
 }
 
-unsigned int WriteAudio(sample *Data,unsigned int Length)
+unsigned int WriteAudio(int16_t *Data,unsigned int Length)
 {
    static uint16_t audio_buf[AUDIO_BUFFER_SIZE * 2];
    int i;
@@ -1530,9 +1530,9 @@ unsigned int Joystick(void)
    return joystate;
 }
 
-unsigned int Mouse(byte N)
+/* TODO/FIXME - not implemented yet */
+unsigned int Mouse(uint8_t N)
 {
-   // not implemented yet
    return 0;
 }
 
