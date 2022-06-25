@@ -21,12 +21,7 @@ static uint16_t *RefreshBorder(uint8_t Y,uint16_t C);
 static void  ClearLine(uint16_t *P,uint16_t C);
 static uint16_t YJKColor(int Y,int J,int K);
 
-/** RefreshScreen() ******************************************/
-/** Refresh screen. This function is called in the end of   **/
-/** refresh cycle to show the entire screen.                **/
-/*************************************************************/
 extern void PutImage(void);
-void RefreshScreen(void) { PutImage(); }
 
 /** ClearLine() **********************************************/
 /** Clear 256 uint16_ts from P with color C.                   **/

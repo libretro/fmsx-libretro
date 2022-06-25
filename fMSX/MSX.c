@@ -29,12 +29,7 @@
 #endif
 #include <time.h>
 
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
-
+#include <compat/strl.h>
 #include <streams/file_stream_transforms.h>
 
 extern retro_log_printf_t log_cb;
@@ -497,7 +492,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
         MemMap[I][J][K]=EmptyRAM;
 
   /* Save current directory */
-  WorkDir = GetMemory(1024);
+  WorkDir = (char*)GetMemory(1024);
   if(ProgDir && !getcwd(WorkDir, 1024) && log_cb)
      log_cb(RETRO_LOG_ERROR,"StartMSX(): getcwd() failed\n");
 
@@ -1955,7 +1950,11 @@ uint16_t LoopZ80(Z80 *R)
       VDPStatus[2]&=0xBF;
 
       /* Refresh display */
-      if(UCount>=100) { UCount-=100;RefreshScreen(); }
+      if(UCount>=100)
+      {
+        UCount-=100;
+        PutImage();
+      }
       UCount+=UPeriod;
 
       /* Blinking for TEXT80 */
@@ -2487,7 +2486,7 @@ int AddCheat(const char *Cheat)
   }
 
   /* Add cheat */
-  strcpy((char *)CheatCodes[CheatCount].Text,Cheat);
+  strlcpy((char *)CheatCodes[CheatCount].Text, Cheat, sizeof(CheatCodes[CheatCount].Text));
   if(N==13)
   {
     CheatCodes[CheatCount].Addr = A;

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <streams/file_stream_transforms.h>
 #include <file/file_path.h>
@@ -306,64 +307,22 @@ keymap_t joymap[] = // MSX joystick
 { RETRO_DEVICE_ID_JOYPAD_B,     JST_FIREB },
 };
 
-int custom_keyboard_name_to_fmsx(const char *name)
+static int custom_keyboard_name_to_fmsx(const char *name)
 {
     int i;
-    for(i=0; i<sizeof(keymap)/sizeof(keymap_t);i++)
+    for(i = 0; i < sizeof(keymap) / sizeof(keymap_t); i++)
        if(!strcmp(name, keymap[i].name))
           return keymap[i].fmsx;
     return 0;
 }
 
-char* custom_keyboard_fmsx_to_name(int fmsx)
+static char *custom_keyboard_fmsx_to_name(int fmsx)
 {
     int i;
     for(i=0; i<sizeof(keymap)/sizeof(keymap_t);i++)
        if(fmsx==keymap[i].fmsx)
           return keymap[i].name;
     return "";
-}
-
-void retro_get_system_info(struct retro_system_info *info)
-{
-   info->library_name = "fMSX";
-#ifndef GIT_VERSION
-#define GIT_VERSION ""
-#endif
-   info->library_version  = "6.0" GIT_VERSION;
-   info->need_fullpath    = true;
-   info->block_extract    = false;
-   info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas|m3u";
-}
-
-void retro_get_system_av_info(struct retro_system_av_info *info)
-{
-   info->geometry.base_width   = image_buffer_width;
-   info->geometry.base_height  = image_buffer_height;
-   info->geometry.max_width    = 640;
-   info->geometry.max_height   = 480;
-   info->geometry.aspect_ratio = 0;
-   info->timing.fps            = fps;
-   info->timing.sample_rate    = SND_RATE;
-}
-
-void retro_init(void)
-{
-   int i;
-   struct retro_log_callback log;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
-      log_cb = log.log;
-   else
-      log_cb = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
-      libretro_supports_bitmasks = true;
-}
-
-void retro_deinit(void)
-{
-   libretro_supports_bitmasks = false;
 }
 
 static void set_input_descriptors(void)
@@ -473,7 +432,7 @@ static void set_input_descriptors(void)
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, descriptors);
 }
 
-char* custom_keyboard_values(char *prefix, char *def)
+static char *custom_keyboard_values(char *prefix, char *def)
 {
     int i;
     char values[4096];
@@ -490,127 +449,7 @@ char* custom_keyboard_values(char *prefix, char *def)
     return strdup(values);
 }
 
-void retro_set_environment(retro_environment_t cb)
-{
-   struct retro_vfs_interface_info vfs_iface_info;
-   bool no_content = true;
-
-   static const struct retro_controller_description port0[] = {
-   { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
-   { "Emulated Keyboard",              RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
-   { "Custom Keyboard",                RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2) },
-   { "Keyboard",                       RETRO_DEVICE_KEYBOARD },
-   { "Joystick",                       RETRO_DEVICE_JOYPAD },
-   };
-   static const struct retro_controller_description port1[] = {
-   { "Joystick",                       RETRO_DEVICE_JOYPAD}
-   };
-   static const struct retro_controller_info ports[] = {
-      { port0, 5 },
-      { port1, 1 },
-      { 0 },
-   };
-   char* up_value = custom_keyboard_values("Custom keyboard RetroPad up; ",         custom_keyboard_fmsx_to_name(keybemu1_map[ 0].fmsx));
-   char* down_value = custom_keyboard_values("Custom keyboard RetroPad down; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 1].fmsx));
-   char* left_value = custom_keyboard_values("Custom keyboard RetroPad left; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 2].fmsx));
-   char* right_value = custom_keyboard_values("Custom keyboard RetroPad right; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 3].fmsx));
-   char* b_value = custom_keyboard_values("Custom keyboard RetroPad b; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 4].fmsx));
-   char* a_value = custom_keyboard_values("Custom keyboard RetroPad a; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 5].fmsx));
-   char* x_value = custom_keyboard_values("Custom keyboard RetroPad x; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 6].fmsx));
-   char* y_value = custom_keyboard_values("Custom keyboard RetroPad y; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 7].fmsx));
-   char* select_value = custom_keyboard_values("Custom keyboard RetroPad select; ", custom_keyboard_fmsx_to_name(keybemu1_map[ 8].fmsx));
-   char* start_value = custom_keyboard_values("Custom keyboard RetroPad start; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 9].fmsx));
-   char* l_value = custom_keyboard_values("Custom keyboard RetroPad l; ",           custom_keyboard_fmsx_to_name(keybemu1_map[10].fmsx));
-   char* r_value = custom_keyboard_values("Custom keyboard RetroPad r; ",           custom_keyboard_fmsx_to_name(keybemu1_map[11].fmsx));
-   char* l2_value = custom_keyboard_values("Custom keyboard RetroPad l2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[12].fmsx));
-   char* r2_value = custom_keyboard_values("Custom keyboard RetroPad r2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[13].fmsx));
-   char* l3_value = custom_keyboard_values("Custom keyboard RetroPad l3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[14].fmsx));
-   char* r3_value = custom_keyboard_values("Custom keyboard RetroPad r3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[15].fmsx));
-   const struct retro_variable vars[] = {
-      { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
-      { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL|Dynamic" },
-      { "fmsx_hires", "Support high resolution; Off|Interlaced|Progressive" },
-      { "fmsx_overscan", "Support overscan; No|Yes" },
-      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
-            "Guess|"
-            "Generic 8kB|"
-            "Generic 16kB|"
-            "Konami5 8kB|"
-            "Konami4 8kB|"
-            "ASCII 8kB|"
-            "ASCII 16kB|"
-            "GameMaster2|"
-            "FMPAC"
-      },
-      { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
-      { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
-      { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
-      { "fmsx_game_master", "Support Game Master; No|Yes" },
-      { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
-      { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
-      { "fmsx_allsprites", "Show all sprites; No|Yes" },
-      { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
-      { "fmsx_flush_disk", "Save disk changes; Never|Immediate|On close|To/From SRAM" },
-      { "fmsx_phantom_disk", "Create empty disk when none loaded; No|Yes" },
-      { "fmsx_custom_keyboard_up", up_value},
-      { "fmsx_custom_keyboard_down", down_value},
-      { "fmsx_custom_keyboard_left", left_value},
-      { "fmsx_custom_keyboard_right", right_value},
-      { "fmsx_custom_keyboard_a", a_value},
-      { "fmsx_custom_keyboard_b", b_value},
-      { "fmsx_custom_keyboard_y", y_value},
-      { "fmsx_custom_keyboard_x", x_value},
-      { "fmsx_custom_keyboard_start", start_value},
-      { "fmsx_custom_keyboard_select", select_value},
-      { "fmsx_custom_keyboard_l", l_value},
-      { "fmsx_custom_keyboard_r", r_value},
-      { "fmsx_custom_keyboard_l2", l2_value},
-      { "fmsx_custom_keyboard_r2", r2_value},
-      { "fmsx_custom_keyboard_l3", l3_value},
-      { "fmsx_custom_keyboard_r3", r3_value},
-      { NULL, NULL },
-   };
-
-   environ_cb = cb;
-
-   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
-   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
-
-   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
-
-   vfs_iface_info.required_interface_version = 1;
-   vfs_iface_info.iface                      = NULL;
-   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
-      filestream_vfs_init(&vfs_iface_info);
-
-   free(up_value);
-   free(down_value);
-   free(left_value);
-   free(right_value);
-   free(a_value);
-   free(b_value);
-   free(y_value);
-   free(x_value);
-   free(start_value);
-   free(select_value);
-   free(l_value);
-   free(r_value);
-   free(l2_value);
-   free(r2_value);
-   free(l3_value);
-   free(r3_value);
-}
-
-void retro_set_controller_port_device(unsigned port, unsigned device)
-{
-   if(port == 0)
-   {
-      port0_device = device;
-      set_input_descriptors();
-   }
-}
-
-void flush_disk(void)
+static void flush_disk(void)
 {
    int R,num_patched_images;
    bool found=false;
@@ -652,7 +491,7 @@ void flush_disk(void)
    }
 }
 
-void patch_disk(void)
+static void patch_disk(void)
 {
    int i;
 
@@ -677,7 +516,7 @@ void patch_disk(void)
 }
 
 /* .dsk swap support */
-bool set_eject_state(bool ejected)
+static bool set_eject_state(bool ejected)
 {
    disk_inserted = !ejected;
    if (!disk_inserted)
@@ -689,17 +528,17 @@ bool set_eject_state(bool ejected)
    return true;
 }
 
-bool get_eject_state(void)
+static bool get_eject_state(void)
 {
    return !disk_inserted;
 }
 
-unsigned get_image_index(void)
+static unsigned get_image_index(void)
 {
    return disk_index;
 }
 
-bool set_image_index(unsigned index)
+static bool set_image_index(unsigned index)
 {
    disk_index = index;
 
@@ -726,12 +565,12 @@ bool set_image_index(unsigned index)
    return true;
 }
 
-unsigned get_num_images(void)
+static unsigned get_num_images(void)
 {
    return num_disk_images;
 }
 
-bool add_image_index(void)
+static bool add_image_index(void)
 {
    if (num_disk_images >= MAXDISKS)
       return false;
@@ -742,7 +581,7 @@ bool add_image_index(void)
    return true;
 }
 
-bool replace_image_index(unsigned index, const struct retro_game_info *info)
+static bool replace_image_index(unsigned index, const struct retro_game_info *info)
 {
    char *dot = strrchr(info->path, '.');
    if (!dot || strcasecmp(dot, ".dsk"))
@@ -752,7 +591,7 @@ bool replace_image_index(unsigned index, const struct retro_game_info *info)
    return true;
 }
 
-void attach_disk_swap_interface(void)
+static void attach_disk_swap_interface(void)
 {
    dskcb.set_eject_state = set_eject_state;
    dskcb.get_eject_state = get_eject_state;
@@ -825,16 +664,10 @@ static void extract_directory(char *buf, const char *path, size_t size)
 }
 /* end .dsk swap support */
 
-void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
-void retro_set_audio_sample(retro_audio_sample_t unused) { }
-void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
-void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
-void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
-
-void show_message(const char* msg, unsigned number_of_frames)
+static void show_message(const char* msg, unsigned number_of_frames)
 {
    struct retro_message message;
-   message.msg = msg;
+   message.msg    = msg;
    message.frames = number_of_frames;
    environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
 }
@@ -861,7 +694,7 @@ static void update_fps(void)
    fps = VIDEO(MSX_PAL) ? 50 : 60;
 }
 
-void cleanup_sram(void)
+static void cleanup_sram(void)
 {
    sram_save_phase=false;
    if (sram_content) free(sram_content);
@@ -870,40 +703,7 @@ void cleanup_sram(void)
    sram_size = 0;
 }
 
-void retro_reset(void)
-{
-   flush_disk();
-
-   ResetMSX(Mode,RAMPages,VRAMPages);
-   frame_number=0;
-   update_fps();
-}
-
-size_t retro_serialize_size(void)
-{
-   // max 5MiB: 1778B hardware state, <=4MiB RAM, <=192KiB VRAM
-   // Zipped that will be just a few KiB.
-   return 0x500000;
-}
-
-bool retro_serialize(void *data, size_t size)
-{
-   if (!SaveState(data, size))
-      return false;
-   return true;
-}
-
-bool retro_unserialize(const void *data, size_t size)
-{
-   if (LoadState((unsigned char*)data, size) == 0)
-      return false;
-   return true;
-}
-
-void retro_cheat_reset(void) {}
-void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
-
-void set_image_buffer_size(uint8_t screen_mode)
+static void set_image_buffer_size(uint8_t screen_mode)
 {
    image_buffer_height = (LastScanline<HEIGHT || !OverscanMode) ? HEIGHT : (LastScanline+1);
    if((screen_mode==6)||(screen_mode==7)||(screen_mode==MAXSCREEN+1))
@@ -916,33 +716,6 @@ void set_image_buffer_size(uint8_t screen_mode)
       image_buffer_height <<= 1;
 }
 
-void PutImage(void)
-{
-   set_image_buffer_size(ScrMode);
-
-#ifdef PSP
-   static unsigned int __attribute__((aligned(16))) d_list[32];
-   void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
-
-   sceKernelDcacheWritebackRange(XBuf, 256*240 );
-   sceGuStart(GU_DIRECT, d_list);
-   sceGuCopyImage(GU_PSM_5650, 0, 0, image_buffer_width, image_buffer_height, image_buffer_width, image_buffer, 0, 0, image_buffer_width, texture_vram_p);
-
-   sceGuTexSync();
-   sceGuTexImage(0, 512, 256, image_buffer_width, texture_vram_p);
-   sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
-   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
-   sceGuDisable(GU_BLEND);
-   sceGuFinish();
-
-   video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
-#else
-   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
-#endif
-   frame_number++;
-
-   update_fps();
-}
 
 static void check_variables(void)
 {
@@ -1140,9 +913,7 @@ static void check_variables(void)
          VRAMPages = 12;
    }
    else
-   {
       VRAMPages = ModeVRAM;
-   }
 
    var.key = "fmsx_log_level";
    var.value = NULL;
@@ -1159,9 +930,7 @@ static void check_variables(void)
          fmsx_log_level = -1;
    }
    else
-   {
       fmsx_log_level = RETRO_LOG_WARN;
-   }
 
    var.key = "fmsx_font";
    var.value = NULL;
@@ -1210,17 +979,17 @@ static void check_variables(void)
    update_fps();
 }
 
-void replace_ext(char *fname, const char *ext)
+static void replace_ext(char *fname, const char *ext)
 {
     char *end = fname + strlen(fname);
     char *cur = end;
-    while (cur > fname && *cur != '.') --cur;
-    if (*cur == '.' && end - cur > strlen(ext)) {
+    while (cur > fname && *cur != '.')
+        --cur;
+    if (*cur == '.' && end - cur > strlen(ext))
         strcpy(cur+1, ext);
-    }
 }
 
-void setup_tape_autotype()
+static void setup_tape_autotype(void)
 {
    switch (tape_type)
    {
@@ -1244,41 +1013,80 @@ void setup_tape_autotype()
       autotype = (char*)&AutoType_buffer;
 }
 
-void set_extension(char *buffer, int maxidx, const char *path, const char *ext)
+static void set_extension(char *buffer, int maxidx, const char *path, const char *ext)
 {
    strncpy(buffer, path, maxidx);
    buffer[maxidx]=0;
    replace_ext(buffer, ext);
 }
 
-bool try_loading_cht(const char *path, const char *ext)
+static bool try_loading_cht(const char *path, const char *ext)
 {
    set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
    return (filestream_exists(temp_buffer) && LoadCHT(temp_buffer) > 0);
 }
 
-bool try_loading_mcf(const char *path, const char *ext)
+static bool try_loading_mcf(const char *path, const char *ext)
 {
    set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
    return (filestream_exists(temp_buffer) && LoadMCF(temp_buffer) > 0);
 }
 
-bool try_loading_palette(const char *path, const char *ext)
+static bool try_loading_palette(const char *path, const char *ext)
 {
    set_extension(temp_buffer, sizeof(temp_buffer)-1, path, ext);
    if (filestream_exists(temp_buffer) && LoadPAL(temp_buffer) == 16)
-   {
-      PaletteFrozen=true;
-   }
+      PaletteFrozen = true;
    return PaletteFrozen;
 }
 
-void toggle_frequency()
+static void toggle_frequency(void)
 {
    VDP[9] = VDP[9] ^ 0x02;
    WrZ80(0xFFE8, RdZ80(0xFFE8) ^ 0x02);
    update_fps();
 }
+
+static void load_core_specific_cheats(const char* path)
+{
+   current_cheat=0;
+
+   if (try_loading_cht(path, "cht")
+    || try_loading_cht(path, "CHT")
+    || try_loading_mcf(path, "mcf")
+    || try_loading_mcf(path, "MCF")) {}
+}
+
+static size_t filesize(const char* FileName)
+{
+  size_t Len = -1;
+  RFILE *F;
+
+  if(!(F=rfopen(FileName,"rb"))) return Len;
+  if(rfseek(F,0,SEEK_END)<0)    { rfclose(F);return Len; }
+  Len=rftell(F);
+  rfclose(F);
+  return Len;
+}
+
+static void handle_tape_autotype(void)
+{
+   if (frame_number < BOOT_FRAME_COUNT && autotype)
+      KBD_SET(KBD_SHIFT); // press shift during boot to skip loading DiskROM. Most tape games need the extra memory.
+   else if (frame_number > BOOT_FRAME_COUNT && (frame_number & 3) == 0 && autotype && *autotype)
+   {
+      KBD_SET(*autotype);
+      autotype++;
+      if (*autotype > 1) KBD_SET(*autotype);
+      autotype++;
+   }
+}
+
+void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
+void retro_set_audio_sample(retro_audio_sample_t unused) { }
+void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
+void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
+void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 
 RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
@@ -1338,27 +1146,6 @@ RETRO_CALLCONV void keyboard_event(bool down, unsigned keycode, uint32_t charact
    }
 }
 
-void load_core_specific_cheats(const char* path)
-{
-   current_cheat=0;
-
-   if (try_loading_cht(path, "cht")
-    || try_loading_cht(path, "CHT")
-    || try_loading_mcf(path, "mcf")
-    || try_loading_mcf(path, "MCF")) {}
-}
-
-size_t filesize(const char* FileName)
-{
-  size_t Len = -1;
-  RFILE *F;
-
-  if(!(F=rfopen(FileName,"rb"))) return Len;
-  if(rfseek(F,0,SEEK_END)<0)    { rfclose(F);return Len; }
-  Len=rftell(F);
-  rfclose(F);
-  return Len;
-}
 
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -1413,10 +1200,10 @@ bool retro_load_game(const struct retro_game_info *info)
       else if (dot && ( !strcasecmp(dot, ".dsk") || !strcasecmp(dot, ".fdi") ))
       {
          strcpy(DSKName_buffer, info->path);
-         DSKName[0]=DSKName_buffer;
-         have_image = true;
+         DSKName[0]       = DSKName_buffer;
+         have_image       = true;
          require_disk_rom = true;
-         len=filesize(DSKName_buffer);
+         len              = filesize(DSKName_buffer);
          if (len > 0 && disk_flush==FLUSH_TO_SRAM) {
             sram_size = 1 + len;
             sram_content = malloc(sram_size);
@@ -1501,6 +1288,12 @@ bool retro_load_game(const struct retro_game_info *info)
    return true;
 }
 
+
+bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t c)
+{
+   return false;
+}
+
 void SetColor(uint8_t N,uint8_t R,uint8_t G,uint8_t B)
 {
   if(PaletteFrozen && N<16) return;
@@ -1536,10 +1329,66 @@ unsigned int Mouse(uint8_t N)
    return 0;
 }
 
-bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t c)
+void PutImage(void)
 {
-   return false;
+   set_image_buffer_size(ScrMode);
+
+#ifdef PSP
+   static unsigned int __attribute__((aligned(16))) d_list[32];
+   void* const texture_vram_p = (void*) (0x44200000 - (640 * 480)); // max VRAM address - frame size
+
+   sceKernelDcacheWritebackRange(XBuf, 256*240 );
+   sceGuStart(GU_DIRECT, d_list);
+   sceGuCopyImage(GU_PSM_5650, 0, 0, image_buffer_width, image_buffer_height, image_buffer_width, image_buffer, 0, 0, image_buffer_width, texture_vram_p);
+
+   sceGuTexSync();
+   sceGuTexImage(0, 512, 256, image_buffer_width, texture_vram_p);
+   sceGuTexMode(GU_PSM_5650, 0, 0, GU_FALSE);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuDisable(GU_BLEND);
+   sceGuFinish();
+
+   video_cb(texture_vram_p, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#else
+   video_cb(image_buffer, image_buffer_width, image_buffer_height, image_buffer_width * sizeof(uint16_t));
+#endif
+   frame_number++;
+
+   update_fps();
 }
+
+void retro_reset(void)
+{
+   flush_disk();
+
+   ResetMSX(Mode,RAMPages,VRAMPages);
+   frame_number=0;
+   update_fps();
+}
+
+size_t retro_serialize_size(void)
+{
+   // max 5MiB: 1778B hardware state, <=4MiB RAM, <=192KiB VRAM
+   // Zipped that will be just a few KiB.
+   return 0x500000;
+}
+
+bool retro_serialize(void *data, size_t size)
+{
+   if (!SaveState(data, size))
+      return false;
+   return true;
+}
+
+bool retro_unserialize(const void *data, size_t size)
+{
+   if (LoadState((unsigned char*)data, size) == 0)
+      return false;
+   return true;
+}
+
+void retro_cheat_reset(void) {}
+void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
 void retro_unload_game(void)
 {
@@ -1560,7 +1409,8 @@ void retro_unload_game(void)
 
 unsigned retro_get_region(void)
 {
-   if (fps==60) return RETRO_REGION_NTSC;
+   if (fps==60)
+     return RETRO_REGION_NTSC;
    return RETRO_REGION_PAL;
 }
 
@@ -1613,18 +1463,126 @@ size_t retro_get_memory_size(unsigned id)
    return size;
 }
 
-void handle_tape_autotype()
+void retro_set_environment(retro_environment_t cb)
 {
-   if (frame_number < BOOT_FRAME_COUNT && autotype)
-      KBD_SET(KBD_SHIFT); // press shift during boot to skip loading DiskROM. Most tape games need the extra memory.
-   else if (frame_number > BOOT_FRAME_COUNT && (frame_number & 3) == 0 && autotype && *autotype)
+   struct retro_vfs_interface_info vfs_iface_info;
+   bool no_content = true;
+
+   static const struct retro_controller_description port0[] = {
+   { "Joystick + Emulated Keyboard",   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
+   { "Emulated Keyboard",              RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+   { "Custom Keyboard",                RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2) },
+   { "Keyboard",                       RETRO_DEVICE_KEYBOARD },
+   { "Joystick",                       RETRO_DEVICE_JOYPAD },
+   };
+   static const struct retro_controller_description port1[] = {
+   { "Joystick",                       RETRO_DEVICE_JOYPAD}
+   };
+   static const struct retro_controller_info ports[] = {
+      { port0, 5 },
+      { port1, 1 },
+      { 0 },
+   };
+   char* up_value = custom_keyboard_values("Custom keyboard RetroPad up; ",         custom_keyboard_fmsx_to_name(keybemu1_map[ 0].fmsx));
+   char* down_value = custom_keyboard_values("Custom keyboard RetroPad down; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 1].fmsx));
+   char* left_value = custom_keyboard_values("Custom keyboard RetroPad left; ",     custom_keyboard_fmsx_to_name(keybemu1_map[ 2].fmsx));
+   char* right_value = custom_keyboard_values("Custom keyboard RetroPad right; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 3].fmsx));
+   char* b_value = custom_keyboard_values("Custom keyboard RetroPad b; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 4].fmsx));
+   char* a_value = custom_keyboard_values("Custom keyboard RetroPad a; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 5].fmsx));
+   char* x_value = custom_keyboard_values("Custom keyboard RetroPad x; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 6].fmsx));
+   char* y_value = custom_keyboard_values("Custom keyboard RetroPad y; ",           custom_keyboard_fmsx_to_name(keybemu1_map[ 7].fmsx));
+   char* select_value = custom_keyboard_values("Custom keyboard RetroPad select; ", custom_keyboard_fmsx_to_name(keybemu1_map[ 8].fmsx));
+   char* start_value = custom_keyboard_values("Custom keyboard RetroPad start; ",   custom_keyboard_fmsx_to_name(keybemu1_map[ 9].fmsx));
+   char* l_value = custom_keyboard_values("Custom keyboard RetroPad l; ",           custom_keyboard_fmsx_to_name(keybemu1_map[10].fmsx));
+   char* r_value = custom_keyboard_values("Custom keyboard RetroPad r; ",           custom_keyboard_fmsx_to_name(keybemu1_map[11].fmsx));
+   char* l2_value = custom_keyboard_values("Custom keyboard RetroPad l2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[12].fmsx));
+   char* r2_value = custom_keyboard_values("Custom keyboard RetroPad r2; ",         custom_keyboard_fmsx_to_name(keybemu1_map[13].fmsx));
+   char* l3_value = custom_keyboard_values("Custom keyboard RetroPad l3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[14].fmsx));
+   char* r3_value = custom_keyboard_values("Custom keyboard RetroPad r3; ",         custom_keyboard_fmsx_to_name(keybemu1_map[15].fmsx));
+   const struct retro_variable vars[] = {
+      { "fmsx_mode", "MSX Mode; MSX2+|MSX1|MSX2" },
+      { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL|Dynamic" },
+      { "fmsx_hires", "Support high resolution; Off|Interlaced|Progressive" },
+      { "fmsx_overscan", "Support overscan; No|Yes" },
+      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; "
+            "Guess|"
+            "Generic 8kB|"
+            "Generic 16kB|"
+            "Konami5 8kB|"
+            "Konami4 8kB|"
+            "ASCII 8kB|"
+            "ASCII 16kB|"
+            "GameMaster2|"
+            "FMPAC"
+      },
+      { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
+      { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
+      { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
+      { "fmsx_game_master", "Support Game Master; No|Yes" },
+      { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
+      { "fmsx_autospace", "Use autofire on SPACE; No|Yes" },
+      { "fmsx_allsprites", "Show all sprites; No|Yes" },
+      { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
+      { "fmsx_flush_disk", "Save disk changes; Never|Immediate|On close|To/From SRAM" },
+      { "fmsx_phantom_disk", "Create empty disk when none loaded; No|Yes" },
+      { "fmsx_custom_keyboard_up", up_value},
+      { "fmsx_custom_keyboard_down", down_value},
+      { "fmsx_custom_keyboard_left", left_value},
+      { "fmsx_custom_keyboard_right", right_value},
+      { "fmsx_custom_keyboard_a", a_value},
+      { "fmsx_custom_keyboard_b", b_value},
+      { "fmsx_custom_keyboard_y", y_value},
+      { "fmsx_custom_keyboard_x", x_value},
+      { "fmsx_custom_keyboard_start", start_value},
+      { "fmsx_custom_keyboard_select", select_value},
+      { "fmsx_custom_keyboard_l", l_value},
+      { "fmsx_custom_keyboard_r", r_value},
+      { "fmsx_custom_keyboard_l2", l2_value},
+      { "fmsx_custom_keyboard_r2", r2_value},
+      { "fmsx_custom_keyboard_l3", l3_value},
+      { "fmsx_custom_keyboard_r3", r3_value},
+      { NULL, NULL },
+   };
+
+   environ_cb = cb;
+
+   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+
+   vfs_iface_info.required_interface_version = 1;
+   vfs_iface_info.iface                      = NULL;
+   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      filestream_vfs_init(&vfs_iface_info);
+
+   free(up_value);
+   free(down_value);
+   free(left_value);
+   free(right_value);
+   free(a_value);
+   free(b_value);
+   free(y_value);
+   free(x_value);
+   free(start_value);
+   free(select_value);
+   free(l_value);
+   free(r_value);
+   free(l2_value);
+   free(r2_value);
+   free(l3_value);
+   free(r3_value);
+}
+
+void retro_set_controller_port_device(unsigned port, unsigned device)
+{
+   if(port == 0)
    {
-      KBD_SET(*autotype);
-      autotype++;
-      if (*autotype > 1) KBD_SET(*autotype);
-      autotype++;
+      port0_device = device;
+      set_input_descriptors();
    }
 }
+
 
 void retro_run(void)
 {
@@ -1721,3 +1679,45 @@ void retro_run(void)
 }
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
+
+void retro_get_system_info(struct retro_system_info *info)
+{
+   info->library_name = "fMSX";
+#ifndef GIT_VERSION
+#define GIT_VERSION ""
+#endif
+   info->library_version  = "6.0" GIT_VERSION;
+   info->need_fullpath    = true;
+   info->block_extract    = false;
+   info->valid_extensions = "rom|mx1|mx2|dsk|fdi|cas|m3u";
+}
+
+void retro_get_system_av_info(struct retro_system_av_info *info)
+{
+   info->geometry.base_width   = image_buffer_width;
+   info->geometry.base_height  = image_buffer_height;
+   info->geometry.max_width    = 640;
+   info->geometry.max_height   = 480;
+   info->geometry.aspect_ratio = 0;
+   info->timing.fps            = fps;
+   info->timing.sample_rate    = SND_RATE;
+}
+
+void retro_init(void)
+{
+   int i;
+   struct retro_log_callback log;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
+      log_cb = log.log;
+   else
+      log_cb = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
+}
+
+void retro_deinit(void)
+{
+   libretro_supports_bitmasks = false;
+}

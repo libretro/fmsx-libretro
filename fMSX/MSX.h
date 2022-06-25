@@ -453,11 +453,7 @@ void PlayAllSound(int uSec);
 /************************************ TO BE WRITTEN BY USER **/
 void SetColor(uint8_t N,uint8_t R,uint8_t G,uint8_t B);
 
-/** RefreshScreen() ******************************************/
-/** Refresh screen. This function is called in the end of   **/
-/** refresh cycle to show the entire screen.                **/
-/************************************ TO BE WRITTEN BY USER **/
-void RefreshScreen(void);
+void PutImage(void);
 
 /** RefreshLine#() *******************************************/
 /** Refresh line Y (0..191/211), on an appropriate SCREEN#, **/
