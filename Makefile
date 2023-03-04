@@ -277,6 +277,7 @@ else ifeq ($(platform), wiiu)
    CC_AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   PLATFORM_DEFINES += -ffunction-sections -fdata-sections -D__wiiu__ -D__wut__
    STATIC_LINKING = 1
 	
 # Nintendo Switch (libnx)
