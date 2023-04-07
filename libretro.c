@@ -727,7 +727,7 @@ static void check_variables(void)
    var.key = "fmsx_mode";
    var.value = NULL;
 
-   Mode = MSX_MSXDOS2;
+   Mode = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -845,6 +845,14 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       phantom_disk=true;
+
+   var.key = "fmsx_dos2";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
+   {
+      Mode |= MSX_MSXDOS2;
+   }
 
    var.key = "fmsx_flush_disk";
    var.value = NULL;
@@ -1525,6 +1533,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_font", "Text font; standard|DEFAULT.FNT|ITALIC.FNT|INTERNAT.FNT|CYRILLIC.FNT|KOREAN.FNT|JAPANESE.FNT" },
       { "fmsx_flush_disk", "Save disk changes; Never|Immediate|On close|To/From SRAM" },
       { "fmsx_phantom_disk", "Create empty disk when none loaded; No|Yes" },
+      { "fmsx_dos2", "Load MSXDOS2.ROM when found; No|Yes" },
       { "fmsx_custom_keyboard_up", up_value},
       { "fmsx_custom_keyboard_down", down_value},
       { "fmsx_custom_keyboard_left", left_value},
