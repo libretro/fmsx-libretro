@@ -206,6 +206,7 @@ A restart is required after changing most of these options.
 |`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB|
 |`fmsx_load_game_master`|Load GMASTER(2).ROM when present (will start Game Master before the game)|No*&vert;Yes|
 |`fmsx_simbdos`|Simulate BDOS DiskROM access calls (faster, but does not support CALL FORMAT)|No*&vert;Yes|
+|`fmsx_dos2`|Load MSXDOS2.ROM when found|No*&vert;Yes|
 |`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes|
 |`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes|
 |`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT|
