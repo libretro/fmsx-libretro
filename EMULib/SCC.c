@@ -99,6 +99,7 @@ void WriteSCCP(SCC *D,uint8_t R,uint8_t V)
     R&=0x0F;
     switch(R)
     {
+      // set frequency
       case 0: case 1: case 2: case 3: case 4:
       case 5: case 6: case 7: case 8: case 9:
         /* Exit if the channel is silenced */
@@ -115,6 +116,7 @@ void WriteSCCP(SCC *D,uint8_t R,uint8_t V)
         D->Changed|=1<<R;
         break;
 
+      // set volume
       case 10: case 11: case 12: case 13: case 14:
         /* Compute channel number */
         R-=10;
@@ -124,6 +126,7 @@ void WriteSCCP(SCC *D,uint8_t R,uint8_t V)
         D->Changed|=(1<<R)&I;
         break;
 
+      // on/off bitmask
       case 15:
         /* Find changed channels */
         R=(V^I)&0x1F;
@@ -154,6 +157,7 @@ void WriteSCCP(SCC *D,uint8_t R,uint8_t V)
     /* Write data to SCC */
     D->R[R]=V;
     /* Wrong register, do nothing */
+    /* note: fMSX ignores the deform register (98C0-98DF, B8C0-B8DF) */
     if(R>=0xA0) return;
     /* Mark channel waveform as changed */
     D->WChanged|=1<<(R>>5);

@@ -923,6 +923,12 @@ static void check_variables(void)
    else
       VRAMPages = ModeVRAM;
 
+   var.key = "fmsx_scci_megaram";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "No") == 0)
+      Mode |= MSX_NO_MEGARAM;
+
    var.key = "fmsx_log_level";
    var.value = NULL;
 
@@ -1525,6 +1531,7 @@ void retro_set_environment(retro_environment_t cb)
       },
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
+      { "fmsx_scci_megaram", "Enable SCC-I 128kB MegaRAM; Yes|No" },
       { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
       { "fmsx_game_master", "Support Game Master; No|Yes" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
