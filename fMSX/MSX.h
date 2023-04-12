@@ -151,16 +151,16 @@ extern "C" {
 #define MSX_GUESSA    0x00010000 /* Guess ROM mapper type A  */
 #define MSX_GUESSB    0x00020000 /* Guess ROM mapper type B  */
 
-#define MSX_OPTIONS   0x7FFC0000 /* Miscellaneous Options:   */
-#define MSX_GMASTER   0x00400000 /* Load Game Master 1/2     */
-#define MSX_ALLSPRITE 0x00800000 /* Show ALL sprites         */
-#define MSX_AUTOFIREA 0x01000000 /* Autofire joystick FIRE-A */
-#define MSX_AUTOFIREB 0x02000000 /* Autofire joystick FIRE-B */
-#define MSX_AUTOSPACE 0x04000000 /* Autofire SPACE button    */
-#define MSX_OBSOLETE  0x08000000 /* - removed from fmsx-lr - */
-#define MSX_PATCHBDOS 0x10000000 /* Patch DiskROM routines   */
-#define MSX_FIXEDFONT 0x20000000 /* Use fixed 8x8 text font  */
-#define MSX_MSXDOS2   0x40000000 /* Load MSXDOS2 ROM on boot */
+#define MSX_OPTIONS    0x7FFC0000 /* Miscellaneous Options:   */
+#define MSX_GMASTER    0x00400000 /* Load Game Master 1/2     */
+#define MSX_ALLSPRITE  0x00800000 /* Show ALL sprites         */
+#define MSX_AUTOFIREA  0x01000000 /* Autofire joystick FIRE-A */
+#define MSX_AUTOFIREB  0x02000000 /* Autofire joystick FIRE-B */
+#define MSX_AUTOSPACE  0x04000000 /* Autofire SPACE button    */
+#define MSX_NO_MEGARAM 0x08000000 /* Disable SCC-I MegaRAM    */
+#define MSX_PATCHBDOS  0x10000000 /* Patch DiskROM routines   */
+#define MSX_FIXEDFONT  0x20000000 /* Use fixed 8x8 text font  */
+#define MSX_MSXDOS2    0x40000000 /* Load MSXDOS2 ROM on boot */
 /*************************************************************/
 
 /** Keyboard codes and macros ********************************/

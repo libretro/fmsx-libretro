@@ -72,7 +72,7 @@ uint8_t *VRAM,*VPAGE;                 /* Video RAM              */
 uint8_t *RAM[8];                      /* Main RAM (8x8kB pages) */
 uint8_t *EmptyRAM;                    /* Empty RAM page (8kB)   */
 uint8_t SaveCMOS;                     /* Save CMOS.ROM on exit  */
-uint8_t *MemMap[4][4][8];   /* Memory maps [PPage][SPage][Addr] */
+uint8_t *MemMap[4][4][8]; /* Memory maps [PPage][SPage][Addr>>13] */
 
 uint8_t *RAMData;                     /* RAM Mapper contents    */
 uint8_t RAMMapper[4];                 /* RAM Mapper state       */
@@ -146,8 +146,10 @@ FDIDisk FDD[NUM_FDI_DRIVES];       /* Floppy disk images     */
 AY8910 PSG;                        /* PSG registers & state  */
 YM2413 OPLL;                       /* OPLL registers & state */
 SCC  SCChip;                       /* SCC registers & state  */
-uint8_t SCCOn[2];                     /* 1 = SCC page active    */
-uint16_t FMPACKey;                     /* MAGIC = SRAM active    */
+uint8_t SCCOn[2];                  /* !=0: SCC page active   */
+uint8_t SCCIMode[2];               /* SCC-I mode register    */
+uint8_t *SCCIRAM;                /* SCC-I RAM (16x8kB pages) */
+uint16_t FMPACKey;                 /* MAGIC = SRAM active    */
 
 /** Real-time clock ******************************************/
 uint8_t RTCReg,RTCMode;               /* RTC register numbers   */
@@ -484,6 +486,13 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
   /* Allocate 16kB for the empty space (scratch RAM) */
   if(!(EmptyRAM=GetMemory(0x4000))) { return(0); }
   memset(EmptyRAM,NORAM,0x4000);
+
+  /* Allocate 128kB (16x8kB pages) for SCC-I expanded RAM */
+  if(!(Mode&MSX_NO_MEGARAM))
+  {
+    if(!(SCCIRAM=GetMemory(16*0x2000))) { return(0); }
+    memset(SCCIRAM,0,16*0x2000);
+  }
 
   /* Reset memory map to the empty space */
   for(I=0;I<4;++I)
@@ -916,6 +925,7 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   IRQPending=0x00;                      /* No IRQs pending  */
   SCCOn[0]=SCCOn[1]=0;                  /* SCCs off for now */
+  SCCIMode[0]=SCCIMode[1]=0;            /* bankselect/SCC   */
   RTCReg=RTCMode=0;                     /* Clock registers  */
   KanCount=0;KanLetter=0;               /* Kanji extension  */
   ChrTab=ColTab=ChrGen=VRAM;            /* VDP tables       */
@@ -947,18 +957,21 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 /*************************************************************/
 uint8_t RdZ80(uint16_t A)
 {
-  /* Filter out everything but [xx11 1111 1xxx 1xxx] */
-  if((A&0x3F88)!=0x3F88) return(RAM[A>>13][A&0x1FFF]);
+  uint8_t J,PS,SS,I;
 
   /* Secondary slot selector */
   if(A==0xFFFF /*&& ((PSL[3]==0 && !MODEL(MSX_MSX1)) || PSL[3]==3)*/) return(~SSLReg[PSL[3]]); // might be wrong - should only read back inverse when the primary slot is expanded. Commented code would fix that.
+
+  J  = A>>14;           /* 16kB page number 0-3  */
+  PS = PSL[J];          /* Primary slot number   */
+  SS = SSL[J];          /* Secondary slot number */
 
   /* Floppy disk controller */
   /* 7FF8h..7FFFh Standard DiskROM  */
   /* BFF8h..BFFFh MSX-DOS BDOS      */
   /* 7F80h..7F87h Arabic DiskROM    */
   /* 7FB8h..7FBFh SV738/TechnoAhead */
-  if((PSL[A>>14]==3)&&(SSL[A>>14]==1))
+  if(PS==3&&SS==1)
     switch(A)
     {
       /* Standard      MSX-DOS       Arabic        SV738            */
@@ -970,6 +983,13 @@ uint8_t RdZ80(uint16_t A)
       case 0x7FFF: case 0xBFFF: case 0x7F84: case 0x7FBC: /* SYSTEM */
         return(Read1793(&FDC,WD1793_READY));
     }
+
+  I = CartMap[PS][SS]; /* Cartridge number      */
+  if(I<2 && SCCOn[I] && ((A&0xD800)==0x9800))
+  {
+    J=A&0x00FF;
+    return (A&0x2000) ? ReadSCCP(&SCChip,J) : ReadSCC(&SCChip,J);
+  }
 
   /* Default to reading memory */
   return(RAM[A>>13][A&0x1FFF]);
@@ -1381,11 +1401,46 @@ void MapROM(uint16_t A,uint8_t V)
   /* Drop out if no cartridge in that slot */
   if(I>=MAXSLOTS) return;
 
-  /* SCC: enable/disable for no cart */
-  if(!ROMData[I]&&(A==0x9000)) SCCOn[I]=(V==0x3F)? 1:0;
+  /* SCC handling for no cart */
+  /* Note: we don't do SCC-I handling if we _do_ have a ROM cart - SCC-I was only available in 2 flavours, both without ROM. */
+  if(I<2 && !ROMData[I] && 0x4000<=A && A<0xC000) // only support SCC(-I) in (unexpanded) external slots 1 & 2, page 1&2
+  {
+    if ((A|1)==0xBFFF && !(Mode&MSX_NO_MEGARAM))
+    {
+      SCCIMode[I]=V;
+      return;
+    }
+    /* all banks: SCC-I RAM; SCC regs not writeable nor SCC bank switchable */
+    /* did not implement SCCIMode b0-2 for individual bank handling */
+    if (SCCIMode[I] & 0x10)
+    {
+      RAM[A>>13][A&0x1FFF]=V;
+      return;
+    }
+	if ((A & 0x1800) == 0x1000) {
+      /* bankselect mode & writing to SCC-I mapper - switch 8kB RAM page */
+      J=(A>>13)-2; /* 8kB bank number 0-3 */
+      switch (J)
+      {
+        case 2:
+          SCCOn[I]=(V&0x3F)==0x3F; // SCC enable - write xx111111 to 9000-97FF
+          break;
+        case 3:
+          SCCOn[I]=(V&0x80); // SCC-I a.k.a. SCC+ enable - write 1xxxxxxx to B000-B7FF
+          break;
+      }
+      V&=0x0F; // bitmask for 16 pages
+      if(V!=ROMMapper[I][J] && !(Mode&MSX_NO_MEGARAM) && SCCIRAM)
+      {
+        RAM[J+2]=MemMap[PS][SS][J+2]=SCCIRAM+((int)V<<13);
+        ROMMapper[I][J]=V;
+      }
+      return;
+    }
+  }
 
-  /* If writing to SCC... */
-  if(SCCOn[I]&&((A&0xDF00)==0x9800))
+  /* If writing to SCC... [whether we have a ROM in this slot or not] */
+  if(I<2 && SCCOn[I] && ((A&0xD800)==0x9800)) // D8==1101.1000 => ignore upper b5 for SCC/SCC-I and b0-3 for 8 mirrored SCC register blocks
   {
     /* Compute SCC register number */
     J=A&0x00FF;
@@ -1393,22 +1448,22 @@ void MapROM(uint16_t A,uint8_t V)
     /* If using SCC+... */
     if(A&0x2000)
     {
-    /* When no MegaROM present, we allow the program */
-    /* to write into SCC wave buffer using EmptyRAM  */
-    /* as a scratch pad.                             */
+      /* When no MegaROM present, we allow the program */
+      /* to write into SCC wave buffer using EmptyRAM  */
+      /* as a scratch pad.                             */
       if(!ROMData[I]&&(J<0xA0)) EmptyRAM[0x1800+J]=V;
 
-    /* Output data to SCC chip */
+      /* Output data to SCC chip */
       WriteSCCP(&SCChip,J,V);
   }
-    else
+  else
   {
-    /* When no MegaROM present, we allow the program */
-    /* to write into SCC wave buffer using EmptyRAM  */
-    /* as a scratch pad.                             */
+      /* When no MegaROM present, we allow the program */
+      /* to write into SCC wave buffer using EmptyRAM  */
+      /* as a scratch pad.                             */
       if(!ROMData[I]&&(J<0x80)) EmptyRAM[0x1800+J]=V;
 
-    /* Output data to SCC chip */
+      /* Output data to SCC chip */
       WriteSCC(&SCChip,J,V);
     }
 
@@ -1426,7 +1481,7 @@ void MapROM(uint16_t A,uint8_t V)
       if((A<0x4000)||(A>0xBFFF)) break;
       J=(A-0x4000)>>13;
       /* Turn SCC on/off on writes to 8000h-9FFFh */
-      if(J==2) SCCOn[I]=(V==0x3F)? 1:0;
+      if(J==2 && I<2) SCCOn[I]=(V&0x3F)==0x3F;
       /* Switch ROM pages */
       V&=ROMMask[I];
       if(V!=ROMMapper[I][J])
@@ -1456,7 +1511,7 @@ void MapROM(uint16_t A,uint8_t V)
       if((A<0x5000)||(A>0xB000)||((A&0x1FFF)!=0x1000)) break;
       J=(A-0x5000)>>13;
       /* Turn SCC on/off on writes to 9000h */
-      if(J==2) SCCOn[I]=(V==0x3F)? 1:0;
+      if(J==2 && I<2) SCCOn[I]=(V&0x3F)==0x3F;
       /* Switch ROM pages */
       V&=ROMMask[I];
       if(V!=ROMMapper[I][J])
@@ -3252,6 +3307,15 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
     for(K=0;K<4;++K) State[J++]=ROMMapper[I][K];
   }
 
+  /* SCC setup */
+  if (!(Mode&MSX_NO_MEGARAM))
+  {
+    State[J++] = SCCOn[0];
+    State[J++] = SCCOn[1];
+    State[J++] = SCCIMode[0];
+    State[J++] = SCCIMode[1];
+  }
+
   /* Write out data structures */
   SaveSTRUCT(CPU);
   SaveSTRUCT(PPI);
@@ -3264,6 +3328,8 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
   SaveARRAY(State);
   SaveDATA(RAMData,RAMPages*0x4000);
   SaveDATA(VRAM,VRAMPages*0x4000);
+  if (!(Mode&MSX_NO_MEGARAM) && SCCIRAM)
+    SaveDATA(SCCIRAM,16*0x2000);
 
   /* Return amount of data written */
   return(Size);
@@ -3293,6 +3359,8 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
   LoadARRAY(State);
   LoadDATA(RAMData,RAMPages*0x4000);
   LoadDATA(VRAM,VRAMPages*0x4000);
+  if (!(Mode&MSX_NO_MEGARAM) && SCCIRAM)
+    LoadDATA(SCCIRAM,16*0x2000);
 
   /* Parse hardware state */
   J=0;
@@ -3337,6 +3405,15 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
       ROMMapper[I][1]=ROMMapper[I][0]|1;
       ROMMapper[I][3]=ROMMapper[I][2]|1;
     }
+  }
+
+  /* SCC setup */
+  if (!(Mode&MSX_NO_MEGARAM))
+  {
+    SCCOn[0]    = State[J++];
+    SCCOn[1]    = State[J++];
+    SCCIMode[0] = State[J++];
+    SCCIMode[1] = State[J++];
   }
 
   /* Set RAM mapper pages */
