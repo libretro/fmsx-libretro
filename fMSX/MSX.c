@@ -1480,8 +1480,10 @@ void MapROM(uint16_t A,uint8_t V)
       /* Only interested in writes to 4000h-BFFFh */
       if((A<0x4000)||(A>0xBFFF)) break;
       J=(A-0x4000)>>13;
-      /* Turn SCC on/off on writes to 8000h-9FFFh */
-      if(J==2 && I<2) SCCOn[I]=(V&0x3F)==0x3F;
+      /* Turn SCC on/off on writes to 9000-97FF */
+      if(J==2 && I<2 && (A&0x1800)==0x1000) SCCOn[I]=(V&0x3F)==0x3F;
+      /* Turn SCC-I on/off on writes to B000-B7FF */
+      else if(J==3 && I<2 && (A&0x1800)==0x1000) SCCOn[I]=(V&0x80);
       /* Switch ROM pages */
       V&=ROMMask[I];
       if(V!=ROMMapper[I][J])
@@ -1510,8 +1512,11 @@ void MapROM(uint16_t A,uint8_t V)
       /* Only interested in writes to 5000h/7000h/9000h/B000h */
       if((A<0x5000)||(A>0xB000)||((A&0x1FFF)!=0x1000)) break;
       J=(A-0x5000)>>13;
-      /* Turn SCC on/off on writes to 9000h */
-      if(J==2 && I<2) SCCOn[I]=(V&0x3F)==0x3F;
+      /* Turn SCC on/off on writes to 9000-97FF */
+      /* note that the 'if' above already filtered anything but 9000. That ignores the mirrors - see https://www.msx.org/wiki/MegaROM_Mappers#Konami.27s_MegaROMs_with_SCC */
+      if(J==2 && I<2 && (A&0x1800)==0x1000) SCCOn[I]=(V&0x3F)==0x3F;
+      /* Turn SCC-I on/off on writes to B000-B7FF */
+      else if(J==3 && I<2 && (A&0x1800)==0x1000) SCCOn[I]=(V&0x80);
       /* Switch ROM pages */
       V&=ROMMask[I];
       if(V!=ROMMapper[I][J])
