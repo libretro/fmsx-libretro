@@ -561,6 +561,7 @@ CORE_DIR	= .
 EMULIB	= $(CORE_DIR)/EMULib
 FMSXDIR = $(CORE_DIR)/fMSX
 LIBZ80	= $(CORE_DIR)/Z80
+NUKEYKT	= $(CORE_DIR)/NukeYKT
 
 include Makefile.common
 

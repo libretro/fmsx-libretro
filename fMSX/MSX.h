@@ -14,13 +14,14 @@
 #ifndef MSX_H
 #define MSX_H
 
-#include "Z80.h"            /* Z80 CPU emulation             */
-#include "V9938.h"          /* V9938 VDP opcode emulation    */
-#include "AY8910.h"         /* AY8910 PSG emulation          */
-#include "YM2413.h"         /* YM2413 OPLL emulation         */
-#include "SCC.h"            /* Konami SCC chip emulation     */
-#include "I8255.h"          /* Intel 8255 PPI emulation      */
-#include "WD1793.h"         /* WD1793 FDC emulation          */
+#include "Z80.h"          /* Z80 CPU emulation               */
+#include "V9938.h"        /* V9938 VDP opcode emulation      */
+#include "AY8910.h"       /* AY8910 PSG emulation            */
+#include "YM2413.h"       /* YM2413 OPLL emulation (simple)  */
+#include "../NukeYKT/WrapNukeYKT.h" /* YM2413 OPLL emulation (NukeYKT) */
+#include "SCC.h"          /* Konami SCC chip emulation       */
+#include "I8255.h"        /* Intel 8255 PPI emulation        */
+#include "WD1793.h"       /* WD1793 FDC emulation            */
 
 #include <stdint.h>
 
@@ -109,8 +110,11 @@ extern "C" {
 #define MAXCHUNKS   256     /* Max number of memory blocks   */
 #define MAXCHEATS   256     /* Max number of cheats          */
 
-#define MAXCHANNELS (AY8910_CHANNELS+YM2413_CHANNELS)
-  /* Number of sound channels used by the emulation */
+#define FIRST_AY8910_CHANNEL 0
+#define FIRST_YM2413_CHANNEL AY8910_CHANNELS
+#define FIRST_SCC_CHANNEL (AY8910_CHANNELS+YM2413_CHANNELS)
+/* Number of sound channels used by the emulation, except NukeYKT */
+#define MAXCHANNELS (AY8910_CHANNELS+YM2413_CHANNELS+SCC_CHANNELS)
 
 /** Model and options bits and macros ************************/
 #define MODEL(M)        ((Mode&MSX_MODEL)==(M))
@@ -152,6 +156,7 @@ extern "C" {
 #define MSX_GUESSB    0x00020000 /* Guess ROM mapper type B  */
 
 #define MSX_OPTIONS    0x7FFC0000 /* Miscellaneous Options:   */
+#define MSX_NUKEYKT    0x00200000 /* YM2413 simple (0) or NukeYKT (1)  */
 #define MSX_GMASTER    0x00400000 /* Load Game Master 1/2     */
 #define MSX_ALLSPRITE  0x00800000 /* Show ALL sprites         */
 #define MSX_AUTOFIREA  0x01000000 /* Autofire joystick FIRE-A */
@@ -264,23 +269,23 @@ extern void (*RefreshLine[MAXSCREEN+2])(uint8_t Y);
 /*************************************************************/
 
 extern Z80  CPU;                      /* CPU state/registers */
-extern uint8_t *VRAM;                    /* Video RAM           */
-extern uint8_t VDP[64];                  /* VDP control reg-ers */
-extern uint8_t VDPStatus[16];            /* VDP status reg-ers  */
-extern uint8_t *ChrGen,*ChrTab,*ColTab;  /* VDP tables (screen) */
-extern uint8_t *SprGen,*SprTab;          /* VDP tables (sprites)*/
+extern uint8_t *VRAM;                 /* Video RAM           */
+extern uint8_t VDP[64];               /* VDP control reg-ers */
+extern uint8_t VDPStatus[16];         /* VDP status reg-ers  */
+extern uint8_t *ChrGen,*ChrTab,*ColTab; /*VDP tables (screen)*/
+extern uint8_t *SprGen,*SprTab;       /* VDP tables (sprites)*/
 extern int  ChrGenM,ChrTabM,ColTabM;  /* VDP masks (screen)  */
 extern int  SprTabM;                  /* VDP masks (sprites) */
-extern uint8_t FGColor,BGColor;          /* Colors              */
-extern uint8_t XFGColor,XBGColor;        /* Alternative colors  */
-extern uint8_t ScrMode;                  /* Current screen mode */
+extern uint8_t FGColor,BGColor;       /* Colors              */
+extern uint8_t XFGColor,XBGColor;     /* Alternative colors  */
+extern uint8_t ScrMode;               /* Current screen mode */
 extern int  ScanLine;                 /* Current scanline    */
-extern uint8_t *FontBuf;                 /* Optional fixed font */
+extern uint8_t *FontBuf;              /* Optional fixed font */
 
-extern uint8_t ExitNow;                  /* 1: Exit emulator    */
+extern uint8_t ExitNow;               /* 1: Exit emulator    */
 
-extern uint8_t PSLReg;                   /* Primary slot reg.   */
-extern uint8_t SSLReg[4];                /* Secondary slot reg. */
+extern uint8_t PSLReg;                /* Primary slot reg.   */
+extern uint8_t SSLReg[4];             /* Secondary slot reg. */
 
 extern const char *ProgDir;           /* Program directory   */
 extern const char *ROMName[MAXCARTS]; /* Cart A/B ROM files  */
