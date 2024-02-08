@@ -716,7 +716,6 @@ static void set_image_buffer_size(uint8_t screen_mode)
       image_buffer_height <<= 1;
 }
 
-
 static void check_variables(void)
 {
    bool reset_sfx = false;
@@ -880,6 +879,12 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "Yes") == 0)
       Mode |= MSX_ALLSPRITE;
+
+   var.key = "fmsx_ym2413_core";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && strcmp(var.value, "NukeYKT") == 0)
+      Mode |= MSX_NUKEYKT;
 
    var.key = "fmsx_ram_pages";
    var.value = NULL;
@@ -1532,6 +1537,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_ram_pages", "MSX Main Memory; Auto|64KB|128KB|256KB|512KB|4MB" },
       { "fmsx_vram_pages", "MSX Video Memory; Auto|32KB|64KB|128KB|192KB" },
       { "fmsx_scci_megaram", "Enable SCC-I 128kB MegaRAM; Yes|No" },
+      { "fmsx_ym2413_core", "YM2413 (FM-PAC / MSX-MUSIC) core; fMSX|NukeYKT" },
       { "fmsx_log_level", "fMSX logging; Off|Info|Debug|Spam" },
       { "fmsx_game_master", "Support Game Master; No|Yes" },
       { "fmsx_simbdos", "Simulate DiskROM disk access calls; No|Yes" },
@@ -1598,7 +1604,6 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
       set_input_descriptors();
    }
 }
-
 
 void retro_run(void)
 {

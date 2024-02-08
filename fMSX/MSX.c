@@ -144,7 +144,8 @@ FDIDisk FDD[NUM_FDI_DRIVES];       /* Floppy disk images     */
 
 /** Sound hardware: PSG, SCC, OPLL ***************************/
 AY8910 PSG;                        /* PSG registers & state  */
-YM2413 OPLL;                       /* OPLL registers & state */
+YM2413 OPLL;                /* OPLL registers & state (fMSX) */
+YM2413_NukeYKT OPLL_NukeYKT;/*OPLL registers & state(NukeYKT)*/
 SCC  SCChip;                       /* SCC registers & state  */
 uint8_t SCCOn[2];                  /* !=0: SCC page active   */
 uint8_t SCCIMode[2];               /* SCC-I mode register    */
@@ -886,9 +887,10 @@ int ResetMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
     }
 
   /* Reset sound chips */
-  Reset8910(&PSG,PSG_CLOCK,0);
-  ResetSCC(&SCChip,AY8910_CHANNELS);
-  Reset2413(&OPLL,AY8910_CHANNELS);
+  Reset8910(&PSG,PSG_CLOCK,FIRST_AY8910_CHANNEL);
+  ResetSCC(&SCChip,FIRST_SCC_CHANNEL);
+  Reset2413(&OPLL,FIRST_YM2413_CHANNEL);
+  NukeYKT_Reset2413(&OPLL_NukeYKT);
   Sync8910(&PSG,AY8910_SYNC);
   SyncSCC(&SCChip,SCC_SYNC);
   Sync2413(&OPLL,YM2413_SYNC);
@@ -1199,9 +1201,16 @@ void OutZ80(uint16_t Port,uint8_t Value)
   Port&=0xFF;
   switch(Port)
   {
-
-case 0x7C: WrCtrl2413(&OPLL,Value);return;        /* OPLL Register# */
-case 0x7D: WrData2413(&OPLL,Value);return;        /* OPLL Data      */
+case 0x7C:
+  /* OPLL Register# */
+  WrCtrl2413(&OPLL,Value);
+  NukeYKT_WritePort2413(&OPLL_NukeYKT,NUKEYKT_REGISTER_PORT,Value);
+  return;
+case 0x7D:
+  /* OPLL Data      */
+  WrData2413(&OPLL,Value);
+  NukeYKT_WritePort2413(&OPLL_NukeYKT,NUKEYKT_DATA_PORT,Value);
+  return;
 case 0x91: Printer(Value);return;                 /* Printer Data   */
 case 0xA0: WrCtrl8910(&PSG,Value);return;         /* PSG Register#  */
 case 0xB4: RTCReg=Value&0x0F;return;              /* RTC Register#  */
@@ -2129,6 +2138,9 @@ uint16_t LoopZ80(Z80 *R)
     // fmsx-libretro: do not sync SCC & FM-PAC every 8 scanlines; causes interference
   }
 
+  if(OPTION(MSX_NUKEYKT))
+    NukeYKT_Sync2413(&OPLL_NukeYKT, CPU_HPERIOD);
+
   /* Keyboard, sound, and other stuff always runs at line 192    */
   /* This way, it can't be shut off by overscan tricks (Maarten) */
   if(ScanLine==192)
@@ -2141,7 +2153,8 @@ uint16_t LoopZ80(Z80 *R)
 
     // fmsx-libretro: keep sync SCC & FM-PAC at scanline 192 (version 4.9 & earlier)
     SyncSCC(&SCChip,SCC_FLUSH);
-    Sync2413(&OPLL,YM2413_FLUSH);
+    if(!OPTION(MSX_NUKEYKT))
+      Sync2413(&OPLL,YM2413_FLUSH);
 
     /* Apply RAM-based cheats */
     if(CheatsON&&CheatCount) ApplyCheats();
@@ -3335,6 +3348,7 @@ unsigned int SaveState(unsigned char *Buf,unsigned int MaxSize)
   SaveDATA(VRAM,VRAMPages*0x4000);
   if (!(Mode&MSX_NO_MEGARAM) && SCCIRAM)
     SaveDATA(SCCIRAM,16*0x2000);
+  SaveSTRUCT(OPLL_NukeYKT);
 
   /* Return amount of data written */
   return(Size);
@@ -3366,6 +3380,7 @@ unsigned int LoadState(unsigned char *Buf,unsigned int MaxSize)
   LoadDATA(VRAM,VRAMPages*0x4000);
   if (!(Mode&MSX_NO_MEGARAM) && SCCIRAM)
     LoadDATA(SCCIRAM,16*0x2000);
+  LoadSTRUCT(OPLL_NukeYKT);
 
   /* Parse hardware state */
   J=0;

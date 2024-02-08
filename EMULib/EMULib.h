@@ -54,13 +54,10 @@
 /** Sound ****************************************************/
 // fMSX emulates:
 // - AY8910 PSG: 3 melodic + 3 noise
-// - YM2413 OPLL: 9 FM sound channels, or 6 music + 5 drums
+// - YM2413 OPLL: 9 FM sound channels (or 6 music + 5 drums, but fMSX does not emulate drums)
 // - SCC: 5 wave channels
-// fMSX does not support FM-PAC drums nor instruments (uses triangle waves), and plays either FM-PAC or SCC.
-// Thus: either 15, 12 or 11 channels active at once.
-#define SND_CHANNELS    16     /* Number of sound channels   */
-#define SND_BITS        8
-#define SND_BUFSIZE     (1<<SND_BITS)
+// Thus: max 20 channels active at once.
+#define SND_CHANNELS    20     /* Number of sound channels   */
 
 #ifdef __cplusplus
 extern "C" {
