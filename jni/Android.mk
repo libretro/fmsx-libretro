@@ -4,6 +4,7 @@ CORE_DIR := $(LOCAL_PATH)/..
 EMULIB   := $(CORE_DIR)/EMULib
 FMSXDIR  := $(CORE_DIR)/fMSX
 LIBZ80   := $(CORE_DIR)/Z80
+NUKEYKT  := $(CORE_DIR)/NukeYKT
 
 include $(CORE_DIR)/Makefile.common
 
