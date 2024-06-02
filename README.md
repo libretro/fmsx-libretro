@@ -195,24 +195,27 @@ Specify these in your RetroArch core options, either manually or via the RetroAr
 
 A restart is required after changing most of these options.  
 
-|setting|meaning|choices<br>(*) indicates the default setting|
-|---|---|---|
-|`fmsx_mode`|MSX model|MSX2+*&vert;MSX1&vert;MSX2|
-|`fmsx_video_mode`|select 60Hz or 50Hz|NTSC*&vert;PAL&vert;Dynamic|
-|`fmsx_hires`|Support high resolution|Off*&vert;Interlaced&vert;Progressive|
-|`fmsx_overscan`|Support overscan|*No&vert;Yes|
-|`fmsx_mapper_type_mode`|ROM mapper - use if a ROM does not load|Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC|
-|`fmsx_ram_pages`|RAM size|Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB|
-|`fmsx_vram_pages`|Video-RAM size|Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB|
-|`fmsx_load_game_master`|Load GMASTER(2).ROM when present (will start Game Master before the game)|No*&vert;Yes|
-|`fmsx_simbdos`|Simulate BDOS DiskROM access calls (faster, but does not support CALL FORMAT)|No*&vert;Yes|
-|`fmsx_autospace`|Autofire the spacebar|No*&vert;Yes|
-|`fmsx_allsprites`|Show all sprites - do not emulate VDP hardware limitation|No*&vert;Yes|
-|`fmsx_font`|load a fixed text font from  RetroArch's `system_directory`|standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT|
-|`fmsx_flush_disk`|Save changes to .dsk image or SRAM|Never*&vert;Immediate&vert;On close&vert;To/From SRAM|
-|`fmsx_phantom_disk`|Create empty disk image when none loaded|No*&vert;Yes|
-|`fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3`|For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key|left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br>|
-|`fmsx_log_level`|Configure the amount of fMSX logging|Off*&vert;Info&vert;Debug&vert;Spam|
+| setting                                                                                                                            | meaning                                                                                    | choices<br>(*) indicates the default setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `fmsx_mode`                                                                                                                        | MSX model                                                                                  | MSX2+*&vert;MSX1&vert;MSX2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `fmsx_video_mode`                                                                                                                  | select 60Hz or 50Hz                                                                        | NTSC*&vert;PAL&vert;Dynamic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `fmsx_hires`                                                                                                                       | Support high resolution                                                                    | Off*&vert;Interlaced&vert;Progressive                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `fmsx_overscan`                                                                                                                    | Support overscan                                                                           | *No&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_mapper_type_mode`                                                                                                            | ROM mapper - use if a ROM does not load                                                    | Guess*&vert;Generic 8kB&vert;Generic 16kB&vert;Konami5 8kB&vert;Konami4 8kB&vert;ASCII 8kB&vert;ASCII 16kB&vert;GameMaster2&vert;FMPAC                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `fmsx_ram_pages`                                                                                                                   | RAM size                                                                                   | Auto*&vert;64KB&vert;128KB&vert;256KB&vert;512KB&vert;4MB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `fmsx_vram_pages`                                                                                                                  | Video-RAM size                                                                             | Auto*&vert;32KB&vert;64KB&vert;128KB&vert;192KB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `fmsx_scci_megaram`                                                                                                                | Enable SCC-I 128kB MegaRAM                                                                 | Yes*&vert;No                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_ym2413_core`                                                                                                                 | YM2413 (FM-PAC / MSX-MUSIC) core                                                           | fMSX*&vert;NukeYKT (no restart required)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `fmsx_load_game_master`                                                                                                            | Load GMASTER(2).ROM when present (will start Game Master before the game)                  | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_simbdos`                                                                                                                     | Simulate BDOS DiskROM access calls (faster, but does not support CALL FORMAT)              | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_dos2`                                                                                                                        | Load MSXDOS2.ROM when found                                                                | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_autospace`                                                                                                                   | Autofire the spacebar                                                                      | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_allsprites`                                                                                                                  | Show all sprites - do not emulate VDP hardware limitation                                  | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_font`                                                                                                                        | load a fixed text font from  RetroArch's `system_directory`                                | standard*&vert;DEFAULT.FNT&vert;ITALIC.FNT&vert;INTERNAT.FNT&vert;CYRILLIC.FNT&vert;KOREAN.FNT&vert;JAPANESE.FNT                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `fmsx_flush_disk`                                                                                                                  | Save changes to .dsk image or SRAM                                                         | Never*&vert;Immediate&vert;On close&vert;To/From SRAM                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `fmsx_phantom_disk`                                                                                                                | Create empty disk image when none loaded                                                   | No*&vert;Yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `fmsx_custom_keyboard_XXX`<br>where XXX is `up`,`down`,`left`,`right`,`a`,`b`,`y`,`x`,`start`,`select`,`l`,`r`,`l2`,`r2`,`l3`,`r3` | For User 1 Device Type 'Custom Keyboard', map RetroPad button to selected MSX keyboard key | left&vert;up&vert;right&vert;down&vert;<br>shift&vert;ctrl&vert;graph&vert;<br>backspace&vert;tab&vert;escape&vert;space&vert;capslock&vert;select&vert;home&vert;enter&vert;del&vert;insert&vert;country&vert;dead&vert;stop&vert;<br>f1&vert;f2&vert;f3&vert;f4&vert;f5&vert;<br>keypad0~9&vert;kp_multiply&vert;kp_plus&vert;kp_divide&vert;kp_minus&vert;kp_comma&vert;kp_period&vert;<br>backquote&vert;minus&vert;equals&vert;leftbracket&vert;rightbracket&vert;backslash&vert;semicolon&vert;quote&vert;comma&vert;period&vert;slash&vert;<br>0-9&vert;a-z&vert;<br> |
+| `fmsx_log_level`                                                                                                                   | Configure the amount of fMSX logging                                                       | Off*&vert;Info&vert;Debug&vert;Spam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 
 ## PAL vs. NTSC
@@ -257,73 +260,73 @@ User 1:
 
 * "Joystick": map RetroPad to MSX joystick A
 
-|RetroPad|MSX|
-|---|---|
-|LEFT  | Stick Left|
-|UP    |   Stick Up|
-|DOWN  | Stick Down|
-|RIGHT |Stick Right|
-|A     |     Fire A|
-|B     |     Fire B|
+| RetroPad | MSX         |
+|----------|-------------|
+| LEFT     | Stick Left  |
+| UP       | Stick Up    |
+| DOWN     | Stick Down  |
+| RIGHT    | Stick Right |
+| A        | Fire A      |
+| B        | Fire B      |
 * "Joystick + Emulated Keyboard": map RetroPad to MSX joystick A, plus to a few MSX keyboard keys useful for gaming
 
-|RetroPad|MSX|
-|---|---|
-|LEFT  | Stick Left|
-|UP    |   Stick Up|
-|DOWN  | Stick Down|
-|RIGHT |Stick Right|
-|A     |     Fire A|
-|B     |     Fire B|
-|X     |         F3|
-|Y     |      Space|
-|START |         F1|
-|SELECT|         F2|
-|L     |         F4|
-|R     |         F5|
-|L2    |      Graph|
-|R2    |       Ctrl|
-|L3    |      Enter|
-|R3    |     Escape|
+| RetroPad | MSX         |
+|----------|-------------|
+| LEFT     | Stick Left  |
+| UP       | Stick Up    |
+| DOWN     | Stick Down  |
+| RIGHT    | Stick Right |
+| A        | Fire A      |
+| B        | Fire B      |
+| X        | F3          |
+| Y        | Space       |
+| START    | F1          |
+| SELECT   | F2          |
+| L        | F4          |
+| R        | F5          |
+| L2       | Graph       |
+| R2       | Ctrl        |
+| L3       | Enter       |
+| R3       | Escape      |
 * "Emulated Keyboard": map RetroPad to MSX keyboard cursor, plus to a few _other_ MSX keyboard keys useful for gaming - where * indicates a difference with "Joystick + Emulated Keyboard"
 
-|RetroPad|MSX|
-|---|---|
-|LEFT  | Arrow Left|
-|UP    |   Arrow Up|
-|DOWN  | Arrow Down|
-|RIGHT |Arrow Right|
-|A     |      Space *|
-|B     |      Enter *|
-|X     |          N *|
-|Y     |          M *|
-|START |         F1|
-|SELECT|         F4 *|
-|L     |         F2 *|
-|R     |         F3 *|
-|L2    |      Graph|
-|R2    |       Ctrl|
-|L3    |         F5 *|
-|R3    |     Escape|
+| RetroPad | MSX         |
+|----------|-------------|
+| LEFT     | Arrow Left  |
+| UP       | Arrow Up    |
+| DOWN     | Arrow Down  |
+| RIGHT    | Arrow Right |
+| A        | Space *     |
+| B        | Enter *     |
+| X        | N *         |
+| Y        | M *         |
+| START    | F1          |
+| SELECT   | F4 *        |
+| L        | F2 *        |
+| R        | F3 *        |
+| L2       | Graph       |
+| R2       | Ctrl        |
+| L3       | F5 *        |
+| R3       | Escape      |
 * "Custom Keyboard": maps 16 RetroPad buttons to any of the 88 keys of the MSX keyboard. Configure this in the Options.
 * "Keyboard": maps host keyboard to 88-key MSX keyboard. Only on (RetroArch) platforms with a real keyboard (Linux, Windows, etc). Don't forget to press Scroll Lock to enter Game Focus Mode!
   * MSX1 & 2: US/European keyboard map, cursors, numeric pad, F1-F5
   * MSX2+: Japanese JIS keyboard map - see below
   * with these special keys:
 
-|Host             | MSX|
-|---|---|
-|ctrl             |CONTROL|
-|shift            |SHIFT|
-|left alt         |GRAPH|
-|ins              |INSERT|
-|del              |DELETE|
-|home             |HOME/CLS|
-|end              |SELECT|
-|pause            |STOP/BREAK|
-|pagedown         |CODE/COUNTRY|
-|pageup           |International: DEAD-key; accents `, ´, ^ and ¨<br/>JIS: _ (underscore) and ろ|
-|numpad enter     |numpad comma|
+| Host         | MSX                                                                          |
+|--------------|------------------------------------------------------------------------------|
+| ctrl         | CONTROL                                                                      |
+| shift        | SHIFT                                                                        |
+| left alt     | GRAPH                                                                        |
+| ins          | INSERT                                                                       |
+| del          | DELETE                                                                       |
+| home         | HOME/CLS                                                                     |
+| end          | SELECT                                                                       |
+| pause        | STOP/BREAK                                                                   |
+| pagedown     | CODE/COUNTRY                                                                 |
+| pageup       | International: DEAD-key; accents `, ´, ^ and ¨<br/>JIS: _ (underscore) and ろ |
+| numpad enter | numpad comma                                                                 |
 
 User 2:
 * "Joystick": map RetroPad to MSX joystick B
@@ -349,6 +352,27 @@ To (de)activate KANA LOCK, press page down (COUNTRY). It works just like caps lo
 
 Best enable SCREEN 1 to appreciate the full 8px width of the Japanese characters; in screen 0 characters are only 6px wide.
 
+
+## Sound & music
+fmsx-libretro emulates:
+* [PSG](https://msx.org/wiki/Category:PSG) based on AY-3-8910: 3 channels with either tone or noise
+* [MSX-MUSIC](https://www.msx.org/wiki/MSX-MUSIC) (a.k.a. [FM-PAC](https://www.msx.org/wiki/FM-PAC)) based on YM2413 
+  * 2 cores are available:
+    * standard fMSX emulation is very poor: no drums, and all 6 (or 9) channel voices are rendered as triangle waves.
+      It's also very loud; 16-32 times louder than PSG. Which is funny because some actual MSX hardware also had volume 'tuning' issues ;)
+    * NukeYKT OPLL. Great sound, but a little more taxing on your hardware. For example, on a raspberry pi 3b, retroarch with lr-fmsx increases from approx. 25% to 60% CPU usage when enabling NukeYKT. 
+      Which is why it is disabled by default. The setting is effective immediately; no restart required.
+      If your hardware is powerful enough, this mode is highly recommended. 
+      You _will_ notice a difference in volume when switching back and forth.
+      The NukeYKT core is actually balanced much better against the PSG, volume-wise.
+  * the FM-PAC 8kB SRAM is supported - see section 'Saving state'
+* [SCC](https://www.msx.org/wiki/Konami_051649) and [SCC-I including 128kB MegaRAM](https://www.msx.org/wiki/Konami_Sound_Cartridge) (a.k.a. SCC+): 5 channels of 32-Byte wavetable sound 
+  * SCC/SCC-I is emulated in both cartridge slots 1 and 2 - see section 'Memory layout'
+  * Support for SCC/SCC-I detection and SCC-I MegaRAM was added to this libretro core; fMSX itself does not support either
+  * SCC-I MegaRAM is enabled by default, and can be disabled using core option `fmsx_scci_megaram` for tight memory situations and backwards compatibility with previous save states.
+  * The MegaRAM size is 128kB for compatibility with both [SD-Snatcher](https://www.generation-msx.nl/software/konami/sd-snatcher/release/1267/) as well as [Snatcher](https://www.generation-msx.nl/software/konami/snatcher/release/1144/) and the various Konami Game Collections.
+
+MSX-AUDIO, Moonblaster, MIDI or any other more advanced audio expansions are not supported.
 
 ## Logging
 When running into problems running a game, you can use logging to collect information.
@@ -420,7 +444,6 @@ In hires mode, the vertical output resolution will be doubled. Combined with ove
 528 vertical lines. RetroArch will automatically scale this to retain aspect ratio and window size.
 
 Audio: rendered in 48kHz 16b signed mono.
-fMSX emulates PSG, SCC and FM-PAC.
 
 Framerate: NTSC (US/JP) implies 60Hz - thus 60FPS, PAL (EU) implies 50Hz (=50FPS). 
 Gameplay and audio actually becomes 17% slower when switching from NTSC to PAL - just like on a real MSX.
@@ -430,13 +453,13 @@ Unlike BlueMSX and openMSX, fMSX does not implement any or all specific models s
 The memory and [slot](https://www.msx.org/wiki/Slots) layout of this 'derivative' MSX model differs for model MSX1 vs. MSX2/2+.
 
 #### MSX1
-|primary slot| |0|1|2|3| | | |Address range|
-|---|---|---|---|---|---|---|---|---|---|
-|subslot| |n/a     |n/a                                  |n/a |3-0    |3-1        |3-2         |3-3     |
-|page|3|           |ROM content or empty                 |same|       |           |RAM mapper ^|        |0xC000-0xFFFF|
-|page|2|           |ROM content, Game Master 2 or empty  |same|FMPAC #|           |RAM mapper ^|        |0x8000-0xBFFF|
-|page|1|BASIC ^    |ROM content, Game Master 1/2 or empty|same|FMPAC #|disk ROM *#|RAM mapper  |RS-232 #|0x4000-0x7FFF|
-|page|0|BIOS ^     |ROM content or empty                 |same|       |           |RAM mapper  |        |0x0000-0x3FFF|
+| primary slot |     | 0       | 1                                             | 2    | 3       |             |              |          | Address range |
+|--------------|-----|---------|-----------------------------------------------|------|---------|-------------|--------------|----------|---------------|
+| subslot      |     | n/a     | n/a                                           | n/a  | 3-0     | 3-1         | 3-2          | 3-3      |               |
+| page         | 3   |         | ROM content or empty                          | same |         |             | RAM mapper ^ |          | 0xC000-0xFFFF |
+| page         | 2   |         | ROM content, Game Master 2 or SCC-I MegaRAM   | same | FMPAC # |             | RAM mapper ^ |          | 0x8000-0xBFFF |
+| page         | 1   | BASIC ^ | ROM content, Game Master 1/2 or SCC-I MegaRAM | same | FMPAC # | disk ROM *# | RAM mapper   | RS-232 # | 0x4000-0x7FFF |
+| page         | 0   | BIOS ^  | ROM content or empty                          | same |         |             | RAM mapper   |          | 0x0000-0x3FFF |
 
 Legend:
 - \^: active page at startup
@@ -448,18 +471,21 @@ Regarding game ROM contents:
 - [Game Master](https://www.generation-msx.nl/software/konami/game-master/470/), when present, is always mapped to slot 1.
 - [Game Master 2](https://www.msx.org/wiki/Konami_Game_Master_2) (GM2), when present, is mapped to slot 1 except for Contra & Hai no Majutsushi.
 For those 2 games, GMASTER2.ROM is mapped to slot 2. They only use GM2 for SRAM saves.
-- The game (ROM content) is then mapped to the _other_ external slot, i.e., slot 2 or 1. 
+- The game (ROM content) is then mapped to the _other_ external slot, i.e., slot 2 or 1.
+- The SCC-I MegaRAM is available in a free cartridge slot. When both are free, it is mirrored in cartridge slots 1 and 2. 
+  When a Game Master as well a game ROM is loaded, SCC-I MegaRAM is not available.
+- The SCC/SCC-I music chip is available in a free cartridge slot, and in any cartridge slot with a ROM with "Generic 8kB" or "Konami5 8kB" mapper.
 
 #### MSX2/2+
 For these two models, slot 0 is also expanded, and more optional roms are loaded when present.
 
-|primary slot|   |0      |   |   |   |1                                    |2   |3             |               |            |        |Address range|
-|---         |---|---    |---|---|---|---                                  |--- |---           |---            |---         |---     |---|
-|subslot     |   |0-0    |0-1|0-2|0-3|n/a                                  |n/a |3-0           |3-1            |3-2         |3-3     |
-|page        |3  |       |b  |   |   |ROM content or empty                 |same|a             |               |RAM mapper ^|        |0xC000-0xFFFF|
-|page        |2  |       |b  |c  |   |ROM content, Game Master 2 or empty  |same|a / MSXDOS2 *#|               |RAM mapper ^|        |0x8000-0xBFFF|
-|page        |1  |BASIC ^|b  |c  |   |ROM content, Game Master 1/2 or empty|same|a / MSXDOS2 *#|disk ROM *#    |RAM mapper  |RS-232 #|0x4000-0x7FFF|
-|page        |0  |BIOS ^ |b  |   |   |ROM content or empty                 |same|a             |extended BIOS *|RAM mapper  |        |0x0000-0x3FFF|
+| primary slot |   | 0       |   |   |   | 1                                             | 2    | 3              |                 |              |          | Address range |
+|--------------|---|---------|---|---|---|-----------------------------------------------|------|----------------|-----------------|--------------|----------|---------------|
+| subslot      |   | 0-0     |0-1|0-2|0-3| n/a                                           | n/a  | 3-0            | 3-1             | 3-2          | 3-3      |               |
+| page         |3  |         |b  |   |   | ROM content or empty                          | same | a              |                 | RAM mapper ^ |          | 0xC000-0xFFFF |
+| page         |2  |         |b  |c  |   | ROM content, Game Master 2 or SCC-I MegaRAM   | same | a / MSXDOS2 *# |                 | RAM mapper ^ |          | 0x8000-0xBFFF |
+| page         |1  | BASIC ^ |b  |c  |   | ROM content, Game Master 1/2 or SCC-I MegaRAM | same | a / MSXDOS2 *# | disk ROM *#     | RAM mapper   | RS-232 # | 0x4000-0x7FFF |
+| page         |0  | BIOS ^  |b  |   |   | ROM content or empty                          | same | a              | extended BIOS * | RAM mapper   |          | 0x0000-0x3FFF |
 
 Legend:
 - \^: active page at startup
@@ -472,7 +498,7 @@ If all three optional 'dynamically mapped' ROMs are loaded, they are mapped to t
 - \[0-1] PAINTER.ROM (64k, all 4 pages)
 - \[0-2] FMPAC.ROM (64k, mapped to p1-2)
 
-Regarding game ROM contents, the same applies as described for MSX1 above.
+Regarding game ROM contents, SCC-I MegaRAM and SCC/SCC-I music, the same applies as described for MSX1 above.
 
 The MSXDOS2 ROM (always in 3-0), when loaded, extends the DISK.ROM (in 3-1).
 
