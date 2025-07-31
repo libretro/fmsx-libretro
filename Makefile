@@ -173,6 +173,7 @@ else ifneq (,$(filter $(platform), ps3 psl1ght))
 	PLATFORM_DEFINES := -D__PS3__ -DMSB_FIRST
 	ifeq ($(platform), psl1ght)
 		PLATFORM_DEFINES += -D__PSL1GHT__
+  		EXTRA_INCLUDES := -I$(PS3DEV)/ppu/include
 	endif
 	STATIC_LINKING = 0
 	STATIC_LINK = 1
