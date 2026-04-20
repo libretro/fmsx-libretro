@@ -107,11 +107,11 @@ The cheat file will be loaded automatically." ([fMSX site](https://fms.komkon.or
 Press F7 to activate cheats; press F7 again to deactivate. 
 
 Note: this .cht format is specific to fMSX and differs from [RetroArch's CHT files](https://github.com/libretro/libretro-database/blob/master/cht/Microsoft%20-%20MSX%20-%20MSX2%20-%20MSX2P%20-%20MSX%20Turbo%20R/)!
-This core does not (yet) support [RetroArch cheat codes](https://docs.libretro.com/guides/cheat-codes/).
-Neither Emulator Handled (lr-db for MSX does not even contain any that would apply; no `code` values) 
-nor RetroArch Handled (would probably require support for loading content from memory and/or memory mapping).
 
-A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repeatedly to active cheats one by one, or disable cheats.  
+A BlueMSX MCF named `Game.mcf` will also be loaded automatically. Press F7 repeatedly to active cheats one by one, or disable cheats. The bios (msx.rom, etc) from the fmsx standalone distributions ([fMSX site](https://fms.komkon.org/fMSX) must be in Retroarch system directory. A different bios will not allow the cheat to load.  
+
+This core *does* support [RetroArch cheat codes](https://docs.libretro.com/guides/cheat-codes/), at least for MSX systems. The memory address is 0xC00 lower for .rom games and 0xC00 higher for .dsk games in retroarch than in blueMSX cheats (at least on tested systems). The cheat directory of this repo includes both the blueMSX native cheats, converted versions for retroarch with the 0xC00 offset, and a python script to remake the cheats if you have a different offset. Only a few games have been tested. If your offset is different (not sure why it would be), it can be found by loading the native bluemsx cheat (named same as game rom .mcf in the rom directory), hitting F7, then looking in the Retroarch cheat finder for what address is being patched with that fixed value. Compare that value with the address in the .mcf file, and subtract it.
+
 
 
 ## Cheevos / RetroAchievements
