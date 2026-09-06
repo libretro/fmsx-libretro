@@ -32,6 +32,10 @@
 #include <compat/strl.h>
 #include <streams/file_stream_transforms.h>
 
+#if defined( VITA ) || defined(__PS3__)
+#include <file/file_path.h>
+#endif
+
 extern retro_log_printf_t log_cb;
 
 #define RGB2INT(R,G,B)    ((B)|((int)(G)<<8)|((int)(R)<<16))
