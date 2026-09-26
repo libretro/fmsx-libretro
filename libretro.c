@@ -15,6 +15,7 @@
 
 #ifdef PSP
 #include <pspgu.h>
+#include <psputils.h>
 #endif
 
 #include "MSX.h"
